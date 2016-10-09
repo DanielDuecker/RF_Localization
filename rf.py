@@ -16,6 +16,8 @@ from rtlsdr import *
 from scipy import signal
 from scipy.optimize import curve_fit
 from scipy.special import lambertw
+from drawnow import *
+
 
 # connect to sdr
 sdr = RtlSdr()
@@ -81,8 +83,8 @@ class RfEar(object):
         and gives default tuner value.
         range is between 1.0 and 3.2 MHz
         """
-        print 'Default sample rate: 2.4MHz'
-        print 'Current sample rate: ' + str(sdr.sample_rate)
+        print ('Default sample rate: 2.4MHz')
+        print ('Current sample rate: ' + str(sdr.sample_rate))
 
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
@@ -110,9 +112,11 @@ class RfEar(object):
                 plt.pause(0.001)
             except KeyboardInterrupt:
                 plt.show()
-                print 'Liveplot interrupted by user'
+                print ('Liveplot interrupted by user')
                 drawing = False
         return pxx_den, freq
+
+        return freq, pxx_den
 
     def get_rss(self):
         """Find maximum power values around specified freq points.
@@ -131,9 +135,128 @@ class RfEar(object):
                 10*np.log10(max(pxx_den_right))]
         return rss
 
+
+    def get_absfreq_pden_sorted(self):
+        """
+        gets the iq-samples and calculates the powerdensity.
+        It sorts the freq and pden vector such that the frequencies are increasing.
+        Moreover the centerfrequency is added to freq such that freq contains the absolute frequencies for the
+        corresponding powerdensity
+
+        returns freqsort, pxx_densort
+        """
+        samples = self.get_iq()
+        freq, pxx_den = signal.periodogram(samples,
+                                           fs=sdr.sample_rate, nfft=1024)
+
+        freq_sorted = np.concatenate((freq[len(freq) / 2:], freq[:len(freq) / 2]), axis=1)
+        pxx_den_sorted = np.concatenate((pxx_den[len(pxx_den) / 2:], pxx_den[:len(pxx_den) / 2]), axis=1)
+
+        freq_sorted = freq_sorted + sdr.center_freq # add centerfreq to get absolut frequency values
+
+        # i = 0
+        # while i<len(freq):
+        #    print("freqsort [i] " + str(freqsort[i]))
+        #    i=i+1
+
+        return freq_sorted, pxx_den_sorted
+
+    def find_max_rss_in_freqspan(self, freqset, freqspan, freq, pxx_den):
+        """
+        find maximum rss peaks in spectrum
+        :param freqset: frequency which max power density is looked for
+        :param freqspan: width of the frequency span
+        :param freq: vector of input frequency, must have increasing frequencies
+        :param pxx_den: vector of power spectrum
+        :return: frequeny, maxpower
+        """
+        startindex = 0
+        endindex = len(freq)
+        i = 0
+        while i < len(freq):
+            if freq[i] >= freqset - freqspan / 2:
+                startindex = i
+                break
+            i = i + 1
+
+        while i < len(freq):
+            if freq[i] >= freqset + freqspan / 2:
+                endindex = i
+                break
+            i = i + 1
+
+        pxx_den = np.array(pxx_den)
+
+        # find index of the highest power density
+        maxind = np.where(pxx_den == max(pxx_den[startindex:endindex]))
+
+        pxx_den_max = pxx_den[maxind]
+        freq_den_max = freq[maxind]
+
+        return freq_den_max, pxx_den_max
+
+
+
+    def plot_multi_rss_live(self, freq1, freq2, freqspan = 2e5, numofsamples = 250):
+        """
+
+        :param freq1: 1st frequency to track the power peak
+        :param freq2: 2nd frequency to track the power peak
+        :param freqspan: width of the frequencyspan around the tracked frq
+        :param numofsamples: number of displayed samples (default= 250)
+        :return: rss1, rss2
+        """
+        plt.ion()      # turn interactive mode on
+        drawing = True
+        cnt = 0
+        rss1 = []
+        rss2 = []
+
+        while drawing:
+            try:
+                # Busy-wait for keyboard interrupt (Ctrl+C)
+                freq, pxx_den = self.get_absfreq_pden_sorted()
+
+                # find maximum power peaks in spectrum
+                freq_found1, pxx_den_max1 = self.find_max_rss_in_freqspan(freq1, freqspan, freq, pxx_den)
+                freq_found2, pxx_den_max2 = self.find_max_rss_in_freqspan(freq2, freqspan, freq, pxx_den)
+
+
+                #print("max power = " + str(pxx_den_max) + " at freq = " + str(freq_den_max))
+
+                # plotting
+                rss1.append(10 * np.log10(pxx_den_max1))
+                rss2.append(10 * np.log10(pxx_den_max2))
+
+                plt.clf()
+                plt.title("Live Streaming RSS-Values")
+                plt.ylim(-120,0)
+                plt.plot(rss1, 'b.-', label="Freq1 = " + str(freq1/ 1e6) + ' MHz' + " @ " +str(freq_found1 / 1e6) + ' MHz')
+                plt.plot(rss2, 'r.-', label="Freq2 = " + str(freq2/ 1e6) + ' MHz' + " @ " +str(freq_found2 / 1e6) + ' MHz')  # rss in dB
+                #plt.axis([-1.5e6,
+                #          1.5e6, -120, 0])
+                plt.ylabel('Power [dB]')
+                plt.grid()
+                plt.legend(loc='lower right')
+                #plt.show()
+                plt.pause(0.001)
+                cnt = cnt + 1
+                if cnt > numofsamples:
+                    rss1.pop(0)
+                    rss2.pop(0)
+
+            except KeyboardInterrupt:
+                plt.show()
+                print ('Liveplot interrupted by user')
+                drawing = False
+
+
+        # return frequency with highest power and its power density
+        return rss1, rss2
+
     @abstractmethod
     def rfear_type(self):
-        """"Return a string representing the type of rfear this is."""
+        """Return a string representing the type of rfear this is."""
         pass
 
     #unused
@@ -152,12 +275,12 @@ class RfEar(object):
             try:
                 pmax.append(self.get_rss())
                 if printing:
-                    print self.get_rss()
-                    print '\n'
+                    print (self.get_rss())
+                    print ('\n')
                 else:
                     pass
             except KeyboardInterrupt:
-                print 'Process interrupted by user'
+                print ('Process interrupted by user')
                 return pmax
 
 class CalEar(RfEar):
@@ -196,6 +319,8 @@ class CalEar(RfEar):
         plt.show()
         return powerstack
 
+
+
     def make_test(self, time=10.0):
         """Interactive method to get PSD data
         at characteristic frequencies.
@@ -215,16 +340,16 @@ class CalEar(RfEar):
                           ' or Ctrl+C+Enter to stop testing:\n')
                 elapsed_time = 0
                 powerstack = []
-                print ' ... measuring ...'
+                print (' ... measuring ...')
                 while elapsed_time < time:
                     start_calctime = t.time()
                     powerstack.append(self.get_rss())
                     calc_time = t.time() - start_calctime
                     elapsed_time = elapsed_time + calc_time
                     t.sleep(0.01)
-                print 'done\n'
+                print ('done\n')
                 t.sleep(0.5)
-                print ' ... evaluating ...'
+                print (' ... evaluating ...')
                 modeldata.append(np.mean(powerstack))
                 variance.append(np.var(powerstack))
                 plt.clf()
@@ -235,10 +360,10 @@ class CalEar(RfEar):
                 plt.grid()
                 plt.show()
                 del powerstack
-                print 'done\n'
+                print ('done\n')
                 t.sleep(0.5)
             except KeyboardInterrupt:
-                print 'Testing finished'
+                print ('Testing finished')
                 testing = False
         return modeldata, variance
 
@@ -254,8 +379,8 @@ class CalEar(RfEar):
         SIZE = [4, 8, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256]
         VAR = []
         MEAN = []
-        UPDATE = []  
-        total_time = 0     
+        UPDATE = []
+        total_time = 0
         for i in SIZE:
             cnt = 0
             powerstack = []
@@ -276,9 +401,9 @@ class CalEar(RfEar):
             MEAN.append(np.mean(powerstack))
             UPDATE.append(calctime)
             total_time = total_time+elapsed_time
-        print 'Finished.'
-        print 'Total time [sec]: '
-        print total_time
+        print ('Finished.')
+        print ('Total time [sec]: ')
+        print (total_time)
         plt.figure()
         plt.grid()
         plt.plot(SIZE, VAR, 'ro')
@@ -323,7 +448,7 @@ class CalEar(RfEar):
             return -20*np.log10(xdata)-alpha*xdata-xi
         popt, pcov = curve_fit(func, xdata, pdata)
         del pcov
-        print 'alpha = %s , xi = %s' % (popt[0], popt[1])
+        print ('alpha = %s , xi = %s' % (popt[0], popt[1]))
         xdata = np.linspace(xdata[0], xdata[-1], num=1000)
         plt.plot(xdata, func(xdata, *popt), label='Fitted Curve')
         plt.legend(loc='upper right')
@@ -334,10 +459,10 @@ class CalEar(RfEar):
 
     def rfear_type(self):
         """"Return a string representing the type of rfear and its properties."""
-        print 'CalEar,'
-        print 'Tuned to:' + str(self.get_freq()) + ' MHz,'
+        print ('CalEar,')
+        print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
         self.get_srate()
-        print 'Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.'
+        print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
 
 class LocEar(RfEar):
     """Subclass of Superclass RfEar for 2D dynamic object localization."""
@@ -356,33 +481,33 @@ class LocEar(RfEar):
         time = 5.0
         elapsed_time = 0
         powerstack = []
-        print ' ... measuring ...'
+        print (' ... measuring ...')
         while elapsed_time < time:
             start_calctime = t.time()
             powerstack.append(self.get_rss())
             calc_time = t.time() - start_calctime
             elapsed_time = elapsed_time + calc_time
             t.sleep(0.01)
-        print 'done\n'
+        print ('done\n')
         t.sleep(0.5)
-        print ' ... evaluating ...'
+        print (' ... evaluating ...')
         powerstack = np.array(powerstack)
         p_mean = []
         for i in range(len(self.get_freq())):
             p_mean.append(np.mean(powerstack[:, i]))
         freq_ref = np.argmax(p_mean)
-        print 'Variance [dB]:'
-        print np.var(powerstack[:, freq_ref])
-        print 'Calibration reference frequency: ' + str(self.get_freq()[freq_ref]/1e6) + ' MHz'
+        print ('Variance [dB]:')
+        print (np.var(powerstack[:, freq_ref]))
+        print ('Calibration reference frequency: ' + str(self.get_freq()[freq_ref]/1e6) + ' MHz')
         d_ref = np.array(d_ref, dtype=float)
         p_ref = np.array(max(p_mean), dtype=float)
         popt, pcov = curve_fit(func, [d_ref, self.__alpha, self.__xi], p_ref)
         del pcov
-        print 'Xi alt:'
-        print self.__xi
+        print ('Xi alt:')
+        print (self.__xi)
         self.__xi = self.__xi+popt[0]
-        print 'Xi neu:'
-        print self.__xi
+        print ('Xi neu:')
+        print (self.__xi)
 
     def get_caldata(self):
         """Returns the calibrated RSM params."""
@@ -415,14 +540,14 @@ class LocEar(RfEar):
                 elif len(pos_est[-1]) == 2:
                     x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+d_t**2)/(2*d_t)
                     y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
-                    print [x_est, y_est]
+                    print ([x_est, y_est])
                     plt.plot(x_est, y_est, 'bo')
                 plt.show()
                 plt.pause(0.001)
-                print pos_est[-1]
-                print '\n'
+                print (pos_est[-1])
+                print ('\n')
         except KeyboardInterrupt:
-            print 'Localization interrupted by user'
+            print ('Localization interrupted by user')
             drawing = False
         return pos_est
 
@@ -438,11 +563,11 @@ class LocEar(RfEar):
 
     def rfear_type(self):
         """"Return a string representing the type of rfear this is."""
-        print 'LocEar,'
-        print 'Alpha: ' + str(self.__alpha) + ', Xi: ' + str(self.__xi)
-        print 'Tuned to:' + str(self.get_freq()) + ' MHz,'
+        print ('LocEar,')
+        print ('Alpha: ' + str(self.__alpha) + ', Xi: ' + str(self.__xi))
+        print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
         self.get_srate()
-        print 'Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.'
+        print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
 
 # define general methods
 def plot_result(results):
