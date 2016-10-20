@@ -154,14 +154,10 @@ class RfEar(object):
 
         freq_sorted = freq_sorted + sdr.center_freq # add centerfreq to get absolut frequency values
 
-        # i = 0
-        # while i<len(freq):
-        #    print("freqsort [i] " + str(freqsort[i]))
-        #    i=i+1
 
         return freq_sorted, pxx_den_sorted
 
-    def find_max_rss_in_freqspan(self, freqset, freqspan, freq, pxx_den):
+    def get_max_rss_in_freqspan(self, freqset, freqspan, freq, pxx_den):
         """
         find maximum rss peaks in spectrum
         :param freqset: frequency which max power density is looked for
@@ -218,8 +214,8 @@ class RfEar(object):
                 freq, pxx_den = self.get_absfreq_pden_sorted()
 
                 # find maximum power peaks in spectrum
-                freq_found1, pxx_den_max1 = self.find_max_rss_in_freqspan(freq1, freqspan, freq, pxx_den)
-                freq_found2, pxx_den_max2 = self.find_max_rss_in_freqspan(freq2, freqspan, freq, pxx_den)
+                freq_found1, pxx_den_max1 = self.get_max_rss_in_freqspan(freq1, freqspan, freq, pxx_den)
+                freq_found2, pxx_den_max2 = self.get_max_rss_in_freqspan(freq2, freqspan, freq, pxx_den)
 
 
                 #print("max power = " + str(pxx_den_max) + " at freq = " + str(freq_den_max))
@@ -367,6 +363,58 @@ class CalEar(RfEar):
                 testing = False
         return modeldata, variance
 
+    def measure_rss_var(self, freqset, freqrange=2e4, time=10.0):
+        """
+        Interactive method to get PSD data
+        at characteristic frequencies.
+        :param freqset: tx-frequency [Hz]
+        :param freqrange: range [Hz] around tx-frequency where the peak-rss lies in
+        :param time: time of measurement [s] (default 10.0)
+        :return: modeldata, variance - arrays with mean rss for each distance + its variance
+        """
+        sdr.center_freq = np.mean(self.get_freq())
+        testing = True
+        modeldata = []
+        variance = []
+        plt.figure()
+        plt.grid()
+        print ('RSS ist measured at freq: ' + str(freqset / 1e6) +
+               'MHz, frequency span is +/-' + str(freqrange / 1e3) + 'kHz \n')
+        while testing:
+            try:
+                raw_input('Press Enter to make a measurement,'
+                          ' or Ctrl+C+Enter to stop testing:\n')
+                elapsed_time = 0
+                powerstack = []
+                print (' ... measuring for ' + str(time) + 's ...')
+                while elapsed_time < time:
+                    start_calctime = t.time()
+                    freq_sort, pxx_den_sort = self.get_absfreq_pden_sorted()  # get samples and sort freq/power-array
+                    powerstack.append(self.get_max_rss_in_freqspan(freqset, freqrange, freq_sort, pxx_den_sort))
+                    calc_time = t.time() - start_calctime
+                    elapsed_time = elapsed_time + calc_time
+                    t.sleep(0.01)
+                print ('done\n')
+                t.sleep(0.5)
+                print (' ... evaluating ...')
+                modeldata.append(np.mean(powerstack))
+                variance.append(np.var(powerstack))
+                plt.clf()
+                plt.errorbar(range(len(modeldata)), modeldata, yerr=variance,
+                             fmt='o', ecolor='g')
+                plt.xlabel('Evaluations')
+                plt.ylabel('Mean maximum power [dB]')
+                plt.grid()
+                plt.show()
+                del powerstack
+                print ('done\n')
+                t.sleep(0.5)
+            except KeyboardInterrupt:
+                print ('Testing finished')
+                testing = False
+
+        return modeldata, variance
+
     def get_performance(self, bandwidth=2.4e6):
         """Measure performance at certain sizes and sampling rates.
 
@@ -430,8 +478,8 @@ class CalEar(RfEar):
         The function structure is known.
 
         Keyword arguments:
-        pdata -- array containing the power values [dB]
-        vdata -- array containing the variance of the measurement series [dB]
+        :param pdata -- array containing the power values [dB]
+        :param vdata -- array containing the variance of the measurement series [dB]
         """
         x_init = raw_input('Please enter initial distance [cm]: ')
         x_step = raw_input('Please enter step size [cm]:')
