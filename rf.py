@@ -218,12 +218,18 @@ class RfEar(object):
                 #print("max power = " + str(pxx_den_max) + " at freq = " + str(freq_den_max))
 
                 # plotting
-                rss1.append(10 * np.log10(pxx_den_max1))
-                rss2.append(10 * np.log10(pxx_den_max2))
+                #if len(pxx_den_max1) > 1:
+                 #   print('pxx1 = ' + str(pxx_den_max1))
+                    #pxx_den_max1.pop()
+                # if len(pxx_den_max2) > 1:
+                    #pxx_den_max2.pop()
+                rss1.append(10 * np.log10(pxx_den_max1[0])) # index 0 to avoid append vectors of length 2 @todo
+                rss2.append(10 * np.log10(pxx_den_max2[0]))
 
                 plt.clf()
                 plt.title("Live Streaming RSS-Values")
                 plt.ylim(-120,0)
+                #print('rss1= ' + str(len(rss1)) + ' rss2= ' + str(rss2[-1]))
                 plt.plot(rss1, 'b.-', label="Freq1 = " + str(freq1/ 1e6) + ' MHz' + " @ " +str(freq_found1 / 1e6) + ' MHz')
                 plt.plot(rss2, 'r.-', label="Freq2 = " + str(freq2/ 1e6) + ' MHz' + " @ " +str(freq_found2 / 1e6) + ' MHz')  # rss in dB
                 #plt.axis([-1.5e6,
