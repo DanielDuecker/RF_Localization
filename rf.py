@@ -186,9 +186,9 @@ class RfEar(object):
         # find index of the highest power density
         maxind = np.where(pxx_den == max(pxx_den[startindex:endindex]))
 
-        pxx_den_max = 10 * np.log10(pxx_den[maxind])
+        pdb_den_max = 10 * np.log10(pxx_den[maxind])
         freq_den_max = freq[maxind]
-        return freq_den_max, pxx_den_max
+        return freq_den_max, pdb_den_max
 
     def plot_multi_rss_live(self, freq1, freq2, freqspan = 2e5, numofsamples = 250):
         """
@@ -214,8 +214,8 @@ class RfEar(object):
                 freq_found1, pxx_den_max1 = self.get_max_rss_in_freqspan(freq1, freqspan, freq, pxx_den)
                 freq_found2, pxx_den_max2 = self.get_max_rss_in_freqspan(freq2, freqspan, freq, pxx_den)
 
-                rss1.append(10 * np.log10(pxx_den_max1[0])) # index 0 to avoid append vectors of length 2 @todo
-                rss2.append(10 * np.log10(pxx_den_max2[0]))
+                rss1.append(pxx_den_max1[0]) # index 0 to avoid append vectors of length 2 @todo
+                rss2.append(pxx_den_max2[0])
 
                 plt.clf()
                 plt.title("Live Streaming RSS-Values")
@@ -383,15 +383,20 @@ class CalEar(RfEar):
                 while elapsed_time < time:
                     start_calctime = t.time()
                     freq_sort, pxx_den_sort = self.get_absfreq_pden_sorted()  # get samples and sort freq/power-array
-                    powerstack.append(self.get_max_rss_in_freqspan(freqset, freqrange, freq_sort, pxx_den_sort))
+                    freqs, rss = self.get_max_rss_in_freqspan(freqset, freqrange, freq_sort, pxx_den_sort)
+                    del freqs
+                    powerstack.append(rss)
+                    #print('powerloop ' + str(powerstack))
                     calc_time = t.time() - start_calctime
                     elapsed_time = elapsed_time + calc_time
                     t.sleep(0.01)
                 print ('done\n')
                 t.sleep(0.5)
                 print (' ... evaluating ...')
+                #print('powerstack: ' + str(powerstack))
                 modeldata.append(np.mean(powerstack))
                 variance.append(np.var(powerstack))
+                print('var ' + str(variance))
                 plt.clf()
                 plt.errorbar(range(len(modeldata)), modeldata, yerr=variance, fmt='o', ecolor='g')
                 plt.xlabel('Evaluations')
@@ -527,7 +532,7 @@ class LocEar(RfEar):
             """RSM structure with correction param xi_diff_cal."""
             return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] + xi_diff_cal
 
-        time = 1.0
+        time = 20.0
         elapsed_time = 0
         powerstack = []
 
