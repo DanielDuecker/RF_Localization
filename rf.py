@@ -400,8 +400,7 @@ class CalEar(RfEar):
                 modeldata.append(np.mean(powerstack))
                 variance.append(np.var(powerstack))
                 plt.clf()
-                plt.errorbar(range(len(modeldata)), modeldata, yerr=variance,
-                             fmt='o', ecolor='g')
+                plt.errorbar(range(len(modeldata)), modeldata, yerr=variance, fmt='o', ecolor='g')
                 plt.xlabel('Evaluations')
                 plt.ylabel('Mean maximum power [dB]')
                 plt.grid()
@@ -491,9 +490,9 @@ class CalEar(RfEar):
         plt.grid()
         plt.errorbar(xdata, pdata, yerr=vdata,
                      fmt='ro', ecolor='g', label='Original Data')
-        def func(xdata, alpha, xi):
+        def func(dist, alpha, xi):
             """Range Sensor Model (RSM) structure."""
-            return -20*np.log10(xdata)-alpha*xdata-xi
+            return -20*np.log10(dist)-alpha*dist-xi
         popt, pcov = curve_fit(func, xdata, pdata)
         del pcov
         print ('alpha = %s , xi = %s' % (popt[0], popt[1]))
@@ -512,54 +511,68 @@ class CalEar(RfEar):
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
 
+
 class LocEar(RfEar):
     """Subclass of Superclass RfEar for 2D dynamic object localization."""
-    def __init__(self, alpha, xi, *args):
+    def __init__(self, alpha, xi, freqtx, freqspan, *args):
         RfEar.__init__(self, *args)
         self.__alpha = alpha
         self.__xi = xi
+        self.__freqtx = freqtx
+        self.__freqspan = freqspan
 
-    def calibrate(self):
-        """Adjust RSM in line with measurement."""
-        d_ref = raw_input('Please enter distance'
-                          'from transmitter to receiver [cm]: ')
-        def func(ref, xi_cal):
-            """RSM structure with correction param xi_cal."""
-            return -20*np.log10(ref[0])-ref[1]*ref[0]-ref[2]+xi_cal
-        time = 5.0
+    def calibrate(self, numtx=0):
+        """Adjust RSM in line with measurement.
+        :param numtx - number of the tx which needs to be calibrated
+        """
+
+        dist_ref = raw_input('Please enter distance'
+                             'from transmitter to receiver [cm]: ')
+
+        def func(ref, xi_diff_cal):
+            """RSM structure with correction param xi_diff_cal."""
+            return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] + xi_diff_cal
+
+        time = 1.0
         elapsed_time = 0
         powerstack = []
-        print (' ... measuring ...')
+
+        # get measurements
+        print (' ... measuring ' + str(time) + 's ...')
         while elapsed_time < time:
             start_calctime = t.time()
-            powerstack.append(self.get_rss())
+            freq_sorted, pxx_den_sorted = self.get_absfreq_pden_sorted()  # get sorted sample
+            freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx[numtx], self.__freqspan,
+                                                                     freq_sorted, pxx_den_sorted)
+            powerstack.append(pxx_den_max)
             calc_time = t.time() - start_calctime
             elapsed_time = elapsed_time + calc_time
             t.sleep(0.01)
         print ('done\n')
         t.sleep(0.5)
+
         print (' ... evaluating ...')
         powerstack = np.array(powerstack)
         p_mean = []
-        for i in range(len(self.get_freq())):
-            p_mean.append(np.mean(powerstack[:, i]))
-        freq_ref = np.argmax(p_mean)
-        print ('Variance [dB]:')
-        print (np.var(powerstack[:, freq_ref]))
-        print ('Calibration reference frequency: ' + str(self.get_freq()[freq_ref]/1e6) + ' MHz')
-        d_ref = np.array(d_ref, dtype=float)
-        p_ref = np.array(max(p_mean), dtype=float)
-        popt, pcov = curve_fit(func, [d_ref, self.__alpha, self.__xi], p_ref)
-        del pcov
-        print ('Xi alt:')
-        print (self.__xi)
-        self.__xi = self.__xi+popt[0]
-        print ('Xi neu:')
-        print (self.__xi)
+        p_mean.append(np.mean(powerstack))  # powerstack is a vector of all rss-peaks
 
-    def get_caldata(self):
+        print ('Variance [dB]:')
+        print (np.var(powerstack))
+
+        print ('Calibration reference frequency: ' + str(self.__freqtx[numtx] / 1e6) + ' MHz')
+        dist_ref = np.array(dist_ref, dtype=float)
+        p_ref = p_mean
+
+        # curve fit with calibrated value - dist_ref, alpha, xi are fixed -> xi_diff_opt is the change in xi by new meas
+        xi_diff_opt, pcov = curve_fit(func, [dist_ref, self.__alpha[numtx], self.__xi[numtx]], p_ref)
+        del pcov
+        print ('Xi alt: ' + str(self.__xi[numtx]))
+        self.__xi[numtx] = self.__xi[numtx] + xi_diff_opt[0]  # update xi with calibration
+        print ('Xi neu: ' + str(self.__xi[numtx]))
+
+    def get_caldata(self, numtx=0):
         """Returns the calibrated RSM params."""
-        return self.__alpha, self.__xi
+        return self.__alpha[numtx], self.__xi[numtx]
 
     def map_path(self, d_t=55.0):
         """Maps estimated location in 1D or 2D respectively.
@@ -617,6 +630,7 @@ class LocEar(RfEar):
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
 
+
 # define general methods
 def plot_result(results):
     """Plot results extracted from textfile."""
@@ -627,6 +641,7 @@ def plot_result(results):
     plt.xlabel('Updates')
     plt.ylabel('Maximum power (dBm)')
     plt.show()
+
 
 def write_to_file(results, text, filename='Experiments'):
     """Save experimental results in a simple text file.
@@ -642,6 +657,7 @@ def write_to_file(results, text, filename='Experiments'):
     datei.write(str(results))
     datei.write('\n\n')
     datei.close()
+
 
 def plot_map(pos_est, x_max=53.5):
     """Plot path from recorded data.
