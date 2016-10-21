@@ -418,7 +418,7 @@ class CalEar(RfEar):
         """Measure performance at certain sizes and sampling rates.
 
         Keyword arguments:
-        bandwidth -- sampling rate of sdr [Ms/s] (default 2.4e6)
+        :param bandwidth -- sampling rate of sdr [Ms/s] (default 2.4e6)
         """
         sdr.center_freq = np.mean(self.get_freq())
         self.set_srate(bandwidth)
@@ -520,6 +520,7 @@ class LocEar(RfEar):
         self.__xi = xi
         self.__freqtx = freqtx
         self.__freqspan = freqspan
+        self.__numoftx = len(freqtx)
 
     def calibrate(self, numtx=0):
         """Adjust RSM in line with measurement.
@@ -574,15 +575,15 @@ class LocEar(RfEar):
         """Returns the calibrated RSM params."""
         return self.__alpha[numtx], self.__xi[numtx]
 
-    def map_path(self, d_t=55.0):
+    def map_path(self, dist_tx):
         """Maps estimated location in 1D or 2D respectively.
 
-        Keyword argumennts:
-        d_t -- distance between the transmitting stations [cm] (default 55.0)
+        Keyword arguments:
+        :param dist_tx -- distance between the transmitting stations [cm] (default 55.0)
         """
         sdr.center_freq = np.mean(self.get_freq())
         x_min = -10.0
-        x_max = d_t+10.0
+        x_max = dist_tx+10.0
         y_min = -100.0
         y_max = 100.0
         plt.axis([x_min, x_max, y_min, y_max])
@@ -599,7 +600,7 @@ class LocEar(RfEar):
                 if len(pos_est[-1]) == 1:
                     plt.plot(pos_est[-1], 0, 'bo')
                 elif len(pos_est[-1]) == 2:
-                    x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+d_t**2)/(2*d_t)
+                    x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+dist_tx**2)/(2*dist_tx)
                     y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
                     print ([x_est, y_est])
                     plt.plot(x_est, y_est, 'bo')
@@ -612,18 +613,66 @@ class LocEar(RfEar):
             drawing = False
         return pos_est
 
-    def lambertloc(self, rss):
+    def map_path_multi_tx(self, dist_tx):
+        """Maps estimated location in 1D or 2D respectively.
+
+        Keyword arguments:
+        :param dist_tx -- distance between the transmitting stations [cm]
+        """
+        sdr.center_freq = np.mean(self.get_freq())
+        x_min = -10.0
+        x_max = dist_tx+10.0
+        y_min = -100.0
+        y_max = 100.0
+        plt.axis([x_min, x_max, y_min, y_max])
+        plt.ion()
+        plt.grid()
+        plt.xlabel('x-Axis [cm]')
+        plt.ylabel('y-Axis [cm]')
+        drawing = True
+        pos_est = np.zeros((self.__numoftx, 1))
+        try:
+            while drawing:
+                # iterate through all tx-rss-values
+                for numtx in range(self.__numoftx):
+                    freq_sorted, pxx_den_sorted = self.get_absfreq_pden_sorted()  # get sorted sample
+                    freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx[numtx], self.__freqspan,
+                                                                     freq_sorted, pxx_den_sorted)
+                    #powerstack.append(pxx_den_max)
+                    print('tx = ' + str(numtx) + ' rss = ' + str(rss))
+                    pos_est[numtx, 0] = self.lambertloc(rss, numtx)
+                    print ('pos_est ' + str(pos_est.shape))
+
+                if len(pos_est[-1]) == 1:
+                    plt.plot(pos_est[-1], 0, 'bo')
+                elif len(pos_est[-1]) == 2:
+                    x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+dist_tx**2)/(2*dist_tx)
+                    y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
+                    print ([x_est, y_est])
+                    plt.plot(x_est, y_est, 'bo')
+                plt.show()
+                plt.pause(0.001)
+                print (pos_est[-1])
+                print ('\n')
+        except KeyboardInterrupt:
+            print ('Localization interrupted by user')
+            drawing = False
+        return pos_est
+
+    def lambertloc(self, rss, numtx=0):
         """Inverse function of the RSM. Returns estimated range in [cm].
 
         Keyword arguments:
-        rss -- received power values [dB]
-        alpha, xi -- RSM params
+        :param rss -- received power values [dB]
+        :param numtx  -- number of the tx which rss is processed. Required to use the corresponding alpha and xi-values.
         """
-        Z = [20/(np.log(10)*self.__alpha)*lambertw(np.log(10)*self.__alpha/20*np.exp(-np.log(10)/20*(i+self.__xi))) for i in rss]
-        return [z.real for z in Z]
+        # Z = [20/(np.log(10)*self.__alpha[numtx])*lambertw(np.log(10)*self.__alpha[numtx]/20*np.exp(-np.log(10)/20*(i+self.__xi[numtx]))) for i in rss]
+        z = 20 / (np.log(10) * self.__alpha[numtx]) * lambertw(
+            np.log(10) * self.__alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + self.__xi[numtx])))
+        return z.real
 
     def rfear_type(self):
-        """"Return a string representing the type of rfear this is."""
+        """Return a string representing the type of RfEar this is."""
         print ('LocEar,')
         print ('Alpha: ' + str(self.__alpha) + ', Xi: ' + str(self.__xi))
         print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
