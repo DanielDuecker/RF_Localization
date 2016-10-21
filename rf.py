@@ -186,12 +186,9 @@ class RfEar(object):
         # find index of the highest power density
         maxind = np.where(pxx_den == max(pxx_den[startindex:endindex]))
 
-        pxx_den_max = pxx_den[maxind]
+        pxx_den_max = 10 * np.log10(pxx_den[maxind])
         freq_den_max = freq[maxind]
-
         return freq_den_max, pxx_den_max
-
-
 
     def plot_multi_rss_live(self, freq1, freq2, freqspan = 2e5, numofsamples = 250):
         """
