@@ -21,5 +21,5 @@ freqtx = [433.91e6]#, 433.91e6]
 freqspan = 2e4
 freqcenter = 433.9e6
 loc = rf.LocEar(alpha, xi, freqtx, freqspan, freqcenter)
-loc.calibrate()
-#loc.map_path_multi_tx(80.0)
+#loc.calibrate()
+loc.map_path_multi_tx(80.0)

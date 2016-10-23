@@ -520,8 +520,9 @@ class LocEar(RfEar):
         self.__freqspan = freqspan
         self.__numoftx = len(freqtx)
 
-    def calibrate(self, numtx=0):
+    def calibrate(self, numtx=0, time=20.0):
         """Adjust RSM in line with measurement.
+        :param time - time for calibration measurement in [s]
         :param numtx - number of the tx which needs to be calibrated
         """
 
@@ -532,8 +533,7 @@ class LocEar(RfEar):
             """RSM structure with correction param xi_diff_cal."""
             return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] + xi_diff_cal
 
-        time = 20.0
-        elapsed_time = 0
+        elapsed_time = 0.0
         powerstack = []
 
         # get measurements
