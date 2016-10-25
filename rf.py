@@ -190,7 +190,7 @@ class RfEar(object):
         freq_den_max = freq[maxind]
         return freq_den_max, pdb_den_max
 
-    def plot_multi_rss_live(self, freq1, freq2, freqspan = 2e5, numofsamples = 250):
+    def plot_multi_rss_live(self, freq1, freq2, freqspan=2e4, numofplottedsamples=250):
         """
 
         :param freq1: 1st frequency to track the power peak
@@ -204,6 +204,10 @@ class RfEar(object):
         cnt = 0
         rss1 = []
         rss2 = []
+
+        # take first sample after boot dvb-t-dongle and delete it since
+        firstsample = self.get_size()
+        del firstsample
 
         while drawing:
             try:
@@ -230,7 +234,7 @@ class RfEar(object):
                 #plt.show()
                 plt.pause(0.001)
                 cnt = cnt + 1
-                if cnt > numofsamples:
+                if cnt > numofplottedsamples:
                     rss1.pop(0)
                     rss2.pop(0)
 
@@ -323,6 +327,10 @@ class CalEar(RfEar):
         variance = []
         plt.figure()
         plt.grid()
+        # take first sample after boot dvb-t-dongle and delete it since
+        firstsample = self.get_size()
+        del firstsample
+
         while testing:
             try:
                 raw_input('Press Enter to make a measurement,'
@@ -536,6 +544,10 @@ class LocEar(RfEar):
         elapsed_time = 0.0
         powerstack = []
 
+        # take first sample after boot dvb-t-dongle and delete it since
+        firstsample = self.get_size()
+        del firstsample
+
         # get measurements
         print (' ... measuring ' + str(time) + 's ...')
         while elapsed_time < time:
@@ -629,6 +641,9 @@ class LocEar(RfEar):
         plt.ylabel('y-Axis [cm]')
         drawing = True
         pos_est = np.zeros((self.__numoftx, 1))
+        # take first sample after boot dvb-t-dongle and delete it since
+        firstsample = self.get_size()
+        del firstsample
         try:
             while drawing:
                 # iterate through all tx-rss-values
