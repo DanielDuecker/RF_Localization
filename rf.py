@@ -154,40 +154,47 @@ class RfEar(object):
 
         freq_sorted = freq_sorted + sdr.center_freq # add centerfreq to get absolut frequency values
 
-
         return freq_sorted, pxx_den_sorted
 
-    def get_max_rss_in_freqspan(self, freqset, freqspan, freq, pxx_den):
+    def get_max_rss_in_freqspan(self, freqtx, freqspan):
         """
         find maximum rss peaks in spectrum
-        :param freqset: frequency which max power density is looked for
+        :param freqtx: frequency which max power density is looked for
         :param freqspan: width of the frequency span
-        :param freq: vector of input frequency, must have increasing frequencies
-        :param pxx_den: vector of power spectrum
         :return: frequeny, maxpower
         """
-        startindex = 0
-        endindex = len(freq)
-        i = 0
-        while i < len(freq):
-            if freq[i] >= freqset - freqspan / 2:
-                startindex = i
-                break
-            i = i + 1
 
-        while i < len(freq):
-            if freq[i] >= freqset + freqspan / 2:
-                endindex = i
-                break
-            i = i + 1
+        freq, pxx_den = self.get_absfreq_pden_sorted()
 
-        pxx_den = np.array(pxx_den)
+        freq_den_max = []
+        pdb_den_max = []
 
-        # find index of the highest power density
-        maxind = np.where(pxx_den == max(pxx_den[startindex:endindex]))
+        # loop for alle tx-frequencies
+        for ifreq in range(len(freqtx)):
+            startindex = 0
+            endindex = len(freq)
+            i = 0
+            # find start index of frequency vector
+            while i < len(freq):
+                if freq[i] >= freqtx[ifreq] - freqspan / 2:
+                    startindex = i
+                    break
+                i = i + 1
+            # find end index of frequency vector
+            while i < len(freq):
+                if freq[i] >= freqtx[ifreq] + freqspan / 2:
+                    endindex = i
+                    break
+                i = i + 1
 
-        pdb_den_max = 10 * np.log10(pxx_den[maxind])
-        freq_den_max = freq[maxind]
+            pxx_den = np.array(pxx_den)
+
+            # find index of the highest power density
+            maxind = np.where(pxx_den == max(pxx_den[startindex:endindex]))
+
+            pdb_den_max.append(10 * np.log10(pxx_den[maxind]))
+            freq_den_max.append(freq[maxind])
+
         return freq_den_max, pdb_den_max
 
     def plot_multi_rss_live(self, freq1, freq2, freqspan=2e4, numofplottedsamples=250):
@@ -205,9 +212,10 @@ class RfEar(object):
         rss1 = []
         rss2 = []
 
-        # take first sample after boot dvb-t-dongle and delete it since
-        firstsample = self.get_size()
-        del firstsample
+        # take first samples after boot dvb-t-dongle and delete it since
+        for idel in range(10):
+            firstsample = self.get_size()
+            del firstsample
 
         while drawing:
             try:
@@ -215,18 +223,19 @@ class RfEar(object):
                 freq, pxx_den = self.get_absfreq_pden_sorted()
 
                 # find maximum power peaks in spectrum
-                freq_found1, pxx_den_max1 = self.get_max_rss_in_freqspan(freq1, freqspan, freq, pxx_den)
-                freq_found2, pxx_den_max2 = self.get_max_rss_in_freqspan(freq2, freqspan, freq, pxx_den)
+                freq = [freq1, freq2]
+                numtx = 2
+                freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, numtx, freqspan)
 
-                rss1.append(pxx_den_max1[0]) # index 0 to avoid append vectors of length 2 @todo
-                rss2.append(pxx_den_max2[0])
+                rss1.append(pxx_den_max[0])  # index 0 to avoid append vectors of length 2 @todo
+                rss2.append(pxx_den_max[1])
 
                 plt.clf()
                 plt.title("Live Streaming RSS-Values")
                 plt.ylim(-120,0)
 
-                plt.plot(rss1, 'b.-', label="Freq1 = " + str(freq1/ 1e6) + ' MHz' + " @ " +str(freq_found1 / 1e6) + ' MHz')
-                plt.plot(rss2, 'r.-', label="Freq2 = " + str(freq2/ 1e6) + ' MHz' + " @ " +str(freq_found2 / 1e6) + ' MHz')  # rss in dB
+                plt.plot(rss1, 'b.-', label="Freq1 = " + str(freq1/ 1e6) + ' MHz' + " @ " +str(freq_found[0] / 1e6) + ' MHz')
+                plt.plot(rss2, 'r.-', label="Freq2 = " + str(freq2/ 1e6) + ' MHz' + " @ " +str(freq_found[1] / 1e6) + ' MHz')  # rss in dB
 
                 plt.ylabel('Power [dB]')
                 plt.grid()
@@ -364,22 +373,24 @@ class CalEar(RfEar):
                 testing = False
         return modeldata, variance
 
-    def measure_rss_var(self, freqset, freqrange=2e4, time=10.0):
+    def measure_rss_var(self, freqtx, freqrange=2e4, time=10.0):
         """
         Interactive method to get PSD data
         at characteristic frequencies.
-        :param freqset: tx-frequency [Hz]
+        :param freqtx: tx-frequency [Hz]
         :param freqrange: range [Hz] around tx-frequency where the peak-rss lies in
         :param time: time of measurement [s] (default 10.0)
         :return: modeldata, variance - arrays with mean rss for each distance + its variance
         """
         sdr.center_freq = np.mean(self.get_freq())
+        # take first samples after boot dvb-t-dongle and delete it since
+
         testing = True
         modeldata = []
         variance = []
         plt.figure()
         plt.grid()
-        print ('RSS ist measured at freq: ' + str(freqset / 1e6) +
+        print ('RSS ist measured at freq: ' + str(freqtx[0] / 1e6) +
                'MHz, frequency span is +/-' + str(freqrange / 1e3) + 'kHz \n')
         while testing:
             try:
@@ -390,8 +401,7 @@ class CalEar(RfEar):
                 print (' ... measuring for ' + str(time) + 's ...')
                 while elapsed_time < time:
                     start_calctime = t.time()
-                    freq_sort, pxx_den_sort = self.get_absfreq_pden_sorted()  # get samples and sort freq/power-array
-                    freqs, rss = self.get_max_rss_in_freqspan(freqset, freqrange, freq_sort, pxx_den_sort)
+                    freqs, rss = self.get_max_rss_in_freqspan(freqtx, freqrange)
                     del freqs
                     powerstack.append(rss)
                     #print('powerloop ' + str(powerstack))
@@ -402,9 +412,11 @@ class CalEar(RfEar):
                 t.sleep(0.5)
                 print (' ... evaluating ...')
                 #print('powerstack: ' + str(powerstack))
+                powerstack.pop(0)  # uggly workaround to ignore first element after dvb-t boot up
+                #print('powerstack: ' + str(powerstack))
                 modeldata.append(np.mean(powerstack))
                 variance.append(np.var(powerstack))
-                print('var ' + str(variance))
+                #print('var ' + str(variance))
                 plt.clf()
                 plt.errorbar(range(len(modeldata)), modeldata, yerr=variance, fmt='o', ecolor='g')
                 plt.xlabel('Evaluations')
@@ -552,9 +564,8 @@ class LocEar(RfEar):
         print (' ... measuring ' + str(time) + 's ...')
         while elapsed_time < time:
             start_calctime = t.time()
-            freq_sorted, pxx_den_sorted = self.get_absfreq_pden_sorted()  # get sorted sample
-            freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx[numtx], self.__freqspan,
-                                                                     freq_sorted, pxx_den_sorted)
+            #freq_sorted, pxx_den_sorted = self.get_absfreq_pden_sorted()  # get sorted sample
+            freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx[numtx], numtx, self.__freqspan)
             powerstack.append(pxx_den_max)
             calc_time = t.time() - start_calctime
             elapsed_time = elapsed_time + calc_time
@@ -647,18 +658,16 @@ class LocEar(RfEar):
         try:
             while drawing:
                 # iterate through all tx-rss-values
+
+                freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
                 for numtx in range(self.__numoftx):
-                    freq_sorted, pxx_den_sorted = self.get_absfreq_pden_sorted()  # get sorted sample
-                    freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx[numtx], self.__freqspan,
-                                                                     freq_sorted, pxx_den_sorted)
-                    #powerstack.append(pxx_den_max)
-                    print('tx = ' + str(numtx) + ' rss = ' + str(rss))
-                    pos_est[numtx, 0] = self.lambertloc(rss, numtx)
+                    #print('tx = ' + str(numtx) + ' rss = ' + str(rss[numtx]))
+                    pos_est[numtx, 0] = self.lambertloc(rss[numtx], numtx)
                     print ('pos_est ' + str(pos_est.shape))
 
-                if len(pos_est[-1]) == 1:
+                if self.__numoftx == 1:
                     plt.plot(pos_est[-1], 0, 'bo')
-                elif len(pos_est[-1]) == 2:
+                elif self.__numoftx == 2:
                     x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+dist_tx**2)/(2*dist_tx)
                     y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
                     print ([x_est, y_est])
