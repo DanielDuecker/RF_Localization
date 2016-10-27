@@ -169,7 +169,7 @@ class RfEar(object):
         freq_den_max = []
         pdb_den_max = []
 
-        # loop for alle tx-frequencies
+        # loop for all tx-frequencies
         for ifreq in range(len(freqtx)):
             startindex = 0
             endindex = len(freq)
@@ -192,6 +192,10 @@ class RfEar(object):
             # find index of the highest power density
             maxind = np.where(pxx_den == max(pxx_den[startindex:endindex]))
 
+            # workaround to avoid that two max values are used in the further code
+            maxind = maxind[0]  # converts array to list
+            maxind = maxind[0]  # takes first list element
+
             pdb_den_max.append(10 * np.log10(pxx_den[maxind]))
             freq_den_max.append(freq[maxind])
 
@@ -203,7 +207,7 @@ class RfEar(object):
         :param freq1: 1st frequency to track the power peak
         :param freq2: 2nd frequency to track the power peak
         :param freqspan: width of the frequencyspan around the tracked frq
-        :param numofsamples: number of displayed samples (default= 250)
+        :param numofplottedsamples: number of displayed samples (default= 250)
         :return: rss1, rss2
         """
         plt.ion()      # turn interactive mode on
@@ -224,18 +228,18 @@ class RfEar(object):
 
                 # find maximum power peaks in spectrum
                 freq = [freq1, freq2]
-                numtx = 2
-                freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, numtx, freqspan)
-
+                freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, freqspan)
+                #print ('pxx_den ' + str(pxx_den_max))
+                #print ('freq_found ' + str(freq_found))
                 rss1.append(pxx_den_max[0])  # index 0 to avoid append vectors of length 2 @todo
                 rss2.append(pxx_den_max[1])
 
                 plt.clf()
                 plt.title("Live Streaming RSS-Values")
-                plt.ylim(-120,0)
+                plt.ylim(-120, 0)
 
-                plt.plot(rss1, 'b.-', label="Freq1 = " + str(freq1/ 1e6) + ' MHz' + " @ " +str(freq_found[0] / 1e6) + ' MHz')
-                plt.plot(rss2, 'r.-', label="Freq2 = " + str(freq2/ 1e6) + ' MHz' + " @ " +str(freq_found[1] / 1e6) + ' MHz')  # rss in dB
+                plt.plot(rss1, 'b.-', label="Freq1 = " + str(freq1/1e6) + ' MHz' + " @ " + str(freq_found[0] / 1e6) + ' MHz')
+                plt.plot(rss2, 'r.-', label="Freq2 = " + str(freq2/1e6) + ' MHz' + " @ " + str(freq_found[1] / 1e6) + ' MHz')  # rss in dB
 
                 plt.ylabel('Power [dB]')
                 plt.grid()
@@ -634,52 +638,101 @@ class LocEar(RfEar):
             drawing = False
         return pos_est
 
-    def map_path_multi_tx(self, dist_tx):
+    def map_path_ekf(self, txpos):
         """Maps estimated location in 1D or 2D respectively.
 
         Keyword arguments:
-        :param dist_tx -- distance between the transmitting stations [cm]
+        :param txpos -- vector of tx positions [x,y], first tx is origin of coordinate frame [cm]
         """
+        def h_meas(x_est, txpos, numtx):
+            tx_pos = txpos[numtx, :]  # position of the transceiver
+            # r = sqrt((x-x_tx)^2+(y-y_tx)^2)
+            r_dist = np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
+            return r_dist
+
+        def h_jacobian(x_est, txpos, numtx):
+            tx_pos = txpos[numtx, :]  # position of the transceiver
+            factor = 0.5/np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
+            h_jac = np.array([factor*2*x_est[0], factor*2*x_est[1]])  # = [dh/dx1, dh/dx2]
+            #print('h_jac ' + str(h_jac))
+            return h_jac
+
         sdr.center_freq = np.mean(self.get_freq())
-        x_min = -10.0
-        x_max = dist_tx+10.0
-        y_min = -100.0
-        y_max = 100.0
+        x_min = -200.0
+        x_max = 200.0
+        y_min = -200.0
+        y_max = 200.0
         plt.axis([x_min, x_max, y_min, y_max])
         plt.ion()
         plt.grid()
         plt.xlabel('x-Axis [cm]')
         plt.ylabel('y-Axis [cm]')
         drawing = True
-        pos_est = np.zeros((self.__numoftx, 1))
+        # pos_est = np.zeros((self.__numoftx, 1))
+
         # take first sample after boot dvb-t-dongle and delete it since
         firstsample = self.get_size()
         del firstsample
-        try:
-            while drawing:
-                # iterate through all tx-rss-values
 
-                freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
-                for numtx in range(self.__numoftx):
-                    #print('tx = ' + str(numtx) + ' rss = ' + str(rss[numtx]))
-                    pos_est[numtx, 0] = self.lambertloc(rss[numtx], numtx)
-                    print ('pos_est ' + str(pos_est.shape))
+        # standard deviations
+        sig_x1 = 5
+        sig_x2 = 5
+        p_mat = np.array(np.diag([sig_x1 ** 2, sig_x2 ** 2]))
 
-                if self.__numoftx == 1:
-                    plt.plot(pos_est[-1], 0, 'bo')
-                elif self.__numoftx == 2:
-                    x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+dist_tx**2)/(2*dist_tx)
-                    y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
-                    print ([x_est, y_est])
-                    plt.plot(x_est, y_est, 'bo')
-                plt.show()
-                plt.pause(0.001)
-                print (pos_est[-1])
-                print ('\n')
-        except KeyboardInterrupt:
-            print ('Localization interrupted by user')
-            drawing = False
-        return pos_est
+        # process noise
+        sig_w1 = 1
+        sig_w2 = 2
+        q_mat = np.array(np.diag([sig_w1 ** 2, sig_w2 ** 2]))
+
+        # measurement noise
+        sig_r = 3
+        r_mat = sig_r ** 2
+
+        # initial values and system dynamic (=eye)
+        x_est = np.array([30, 30])
+        i_mat = np.eye(2)
+
+        print('mat = ' + str(i_mat))
+
+        if self.__numoftx > 1:
+            try:
+                while drawing:
+                    # iterate through all tx-rss-values
+
+                    freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+                    for numtx in range(self.__numoftx):
+
+                        # prediction
+                        x_est = x_est + np.random.randn(2)*1 # = I * x_est
+                        p_mat_est = i_mat.dot(p_mat.dot(i_mat)) + q_mat
+
+                        # update
+                        z_meas = self.lambertloc(rss[numtx], numtx)  # get distance from rss-measurement
+                        y_tild = z_meas - h_meas(x_est, txpos, numtx)
+                        h_jac_mat = h_jacobian(x_est, txpos, numtx)
+
+                        s_mat = np.dot(h_jac_mat.transpose(), np.dot(p_mat, h_jac_mat)) + r_mat  # = H^t * P * H + R
+                        #print('s_mat ' + str(s_mat))
+                        # k_mat = p_mat.dot(np.dot(h_jac_mat.transpose(), s_mat.linalg.inv()))  # = P*H^t*S^-1
+                        s_scal = s_mat
+                        #print ('h_trans ' + str(h_jac_mat.transpose()))
+                        k_mat = np.dot(p_mat, h_jac_mat.transpose() / s_scal)  # 1/s_scal since s_mat is dim = 1x1
+                        #print ('k_mat ' + str(k_mat))
+                        x_est = x_est + k_mat * y_tild  # = x_est + k * y_tild
+                        p_mat = (i_mat - k_mat.dot(h_jac_mat)) * p_mat_est  # = (I-KH)*P
+
+                    print ('x_est ' + str(x_est))
+                    plt.plot(x_est[0], x_est[1], 'bo')
+                    plt.show()
+                    plt.pause(0.001)
+
+                    print ('\n')
+            except KeyboardInterrupt:
+                print ('Localization interrupted by user')
+                drawing = False
+        else:
+            print ('This method needs at least 2 tx!')
+        return x_est
 
     def lambertloc(self, rss, numtx=0):
         """Inverse function of the RSM. Returns estimated range in [cm].
