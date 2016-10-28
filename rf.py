@@ -680,12 +680,12 @@ class LocEar(RfEar):
         p_mat = np.array(np.diag([sig_x1 ** 2, sig_x2 ** 2]))
 
         # process noise
-        sig_w1 = 1
-        sig_w2 = 2
+        sig_w1 = 3
+        sig_w2 = 3
         q_mat = np.array(np.diag([sig_w1 ** 2, sig_w2 ** 2]))
 
         # measurement noise
-        sig_r = 3
+        sig_r = 2
         r_mat = sig_r ** 2
 
         # initial values and system dynamic (=eye)
@@ -705,10 +705,11 @@ class LocEar(RfEar):
                         # prediction
                         x_est = x_est + np.random.randn(2)*1 # = I * x_est
                         p_mat_est = i_mat.dot(p_mat.dot(i_mat)) + q_mat
-
+                        print ('x_est_start ' + str(x_est))
                         # update
                         z_meas = self.lambertloc(rss[numtx], numtx)  # get distance from rss-measurement
                         y_tild = z_meas - h_meas(x_est, txpos, numtx)
+                        print('z_meas= ' + str(z_meas) + ' y_est= ' + str(h_meas(x_est, txpos, numtx)))
                         h_jac_mat = h_jacobian(x_est, txpos, numtx)
 
                         s_mat = np.dot(h_jac_mat.transpose(), np.dot(p_mat, h_jac_mat)) + r_mat  # = H^t * P * H + R
@@ -717,7 +718,7 @@ class LocEar(RfEar):
                         s_scal = s_mat
                         #print ('h_trans ' + str(h_jac_mat.transpose()))
                         k_mat = np.dot(p_mat, h_jac_mat.transpose() / s_scal)  # 1/s_scal since s_mat is dim = 1x1
-                        #print ('k_mat ' + str(k_mat))
+                        print ('numtx=' + str(numtx) + ' k_mat ' + str(k_mat))
                         x_est = x_est + k_mat * y_tild  # = x_est + k * y_tild
                         p_mat = (i_mat - k_mat.dot(h_jac_mat)) * p_mat_est  # = (I-KH)*P
 
