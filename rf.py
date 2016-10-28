@@ -550,7 +550,7 @@ class LocEar(RfEar):
         :param numtx - number of the tx which needs to be calibrated
         """
 
-        dist_ref = raw_input('Please enter distance'
+        dist_ref = raw_input('Please enter distance '
                              'from transmitter to receiver [cm]: ')
 
         def func(ref, xi_diff_cal):
@@ -569,8 +569,8 @@ class LocEar(RfEar):
         while elapsed_time < time:
             start_calctime = t.time()
             #freq_sorted, pxx_den_sorted = self.get_absfreq_pden_sorted()  # get sorted sample
-            freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx[numtx], numtx, self.__freqspan)
-            powerstack.append(pxx_den_max)
+            freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+            powerstack.append(pxx_den_max[numtx])
             calc_time = t.time() - start_calctime
             elapsed_time = elapsed_time + calc_time
             t.sleep(0.01)
@@ -638,7 +638,7 @@ class LocEar(RfEar):
             drawing = False
         return pos_est
 
-    def map_path_ekf(self, txpos):
+    def map_path_ekf(self, x0, txpos):
         """Maps estimated location in 1D or 2D respectively.
 
         Keyword arguments:
@@ -689,7 +689,7 @@ class LocEar(RfEar):
         r_mat = sig_r ** 2
 
         # initial values and system dynamic (=eye)
-        x_est = np.array([30, 30])
+        x_est = x0
         i_mat = np.eye(2)
 
         print('mat = ' + str(i_mat))
@@ -754,6 +754,72 @@ class LocEar(RfEar):
         print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
+
+    def plot_multi_dist_live(self, freq, freqspan=2e4, numofplottedsamples=250):
+        """
+
+        :param freq1: 1st frequency to track the power peak
+        :param freq2: 2nd frequency to track the power peak
+        :param freqspan: width of the frequencyspan around the tracked frq
+        :param numofplottedsamples: number of displayed samples (default= 250)
+        :return: rss1, rss2
+        """
+        plt.ion()  # turn interactive mode on
+        drawing = True
+        cnt = 0
+        rdist1 = []
+        rdist2 = []
+        rdist3 = []
+
+        # take first samples after boot dvb-t-dongle and delete it since
+        for idel in range(10):
+            firstsample = self.get_size()
+            del firstsample
+
+        while drawing:
+            try:
+                # Busy-wait for keyboard interrupt (Ctrl+C)
+
+                # find maximum power peaks in spectrum
+                freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, freqspan)
+                # print ('pxx_den ' + str(pxx_den_max))
+                # print ('freq_found ' + str(freq_found))
+
+                tx = [0, 1, 2]
+                rdist1.append(self.lambertloc(pxx_den_max[0], tx[0]))
+                rdist2.append(self.lambertloc(pxx_den_max[1], tx[1]))
+                rdist3.append(self.lambertloc(pxx_den_max[2], tx[2]))
+
+                plt.clf()
+                plt.title("Live Streaming Distance-Values")
+                plt.ylim(-10, 300)
+
+                plt.plot(rdist1, 'b.-',
+                         label="Freq1 = " + str(freq[0] / 1e6) + ' MHz' + " @ " + str(freq_found[0] / 1e6) + ' MHz')
+                plt.plot(rdist2, 'r.-',
+                         label="Freq2 = " + str(freq[1]/ 1e6) + ' MHz' + " @ " + str(freq_found[1] / 1e6) + ' MHz')
+                plt.plot(rdist3, 'g.-',
+                         label="Freq3 = " + str(freq[2] / 1e6) + ' MHz' + " @ " + str(freq_found[2] / 1e6) + ' MHz')
+
+                plt.ylabel('R [cm]')
+                plt.grid()
+                plt.legend(loc='upper right')
+                # plt.show()
+                plt.pause(0.001)
+                cnt = cnt + 1
+                if cnt > numofplottedsamples:
+                    rdist1.pop(0)
+                    rdist2.pop(0)
+                    rdist3.pop(0)
+
+            except KeyboardInterrupt:
+                plt.show()
+                print ('Liveplot interrupted by user')
+                drawing = False
+
+        # return frequency with highest power and its power density
+        return 0
+
 
 
 # define general methods

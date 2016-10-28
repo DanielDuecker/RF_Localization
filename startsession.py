@@ -7,7 +7,7 @@ cal = rf.CalEar(433.9e6)
 freqtx = [433.7e6]  # [433.9e6] ##  [434.16e6] #
 #cal.get_max_rss_in_freqspan(freqtx, 2e4)
 # cal.make_test(5.0)
-#cal.plot_multi_rss_live(433.7e6, 434.16e6)
+#cal.plot_multi_rss_live(433.91e6, 434.16e6)
 
 
 #rss, var = cal.measure_rss_var(freqtx, 2e4, 10.0)
@@ -62,7 +62,9 @@ freqtx = [433.7e6]  # [433.9e6] ##  [434.16e6] #
 
 
 alpha = [0.12615852725, 0.117592701848, 0.114243243761]
-xi = [28.2177151396, 11.9628114874, 47.7769228175]
+# xi = [28.2177151396, 11.9628114874, 47.7769228175]
+# xi = [44.7672072423, 11.9628114874, 47.7769228175]  # after calibration of tx0
+xi = [11.7672072423, 11.9628114874, 47.7769228175]  # tuning tx0
 freqtx = [433.91e6, 434.16e6, 433.7e6]
 freqspan = 2e4
 freqcenter = 434.0e6
@@ -78,5 +80,7 @@ txpos = np.array([[0.0, 0.0],
 # print ('freq_max ' + str(freqmax) + ' rss_max ' + str(rssmax))
 
 loc = rf.LocEar(alpha, xi, freqtx, freqspan, freqcenter)
-# loc.calibrate()
-loc.map_path_ekf(txpos)
+loc.plot_multi_dist_live(freqtx)
+#loc.calibrate(2)
+x0 = np.array([40,60])
+#loc.map_path_ekf(x0, txpos)
