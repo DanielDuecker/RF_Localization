@@ -555,7 +555,7 @@ class LocEar(RfEar):
 
         def func(ref, xi_diff_cal):
             """RSM structure with correction param xi_diff_cal."""
-            return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] + xi_diff_cal
+            return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] - xi_diff_cal # ... -xi -xi_diff
 
         elapsed_time = 0.0
         powerstack = []
@@ -594,6 +594,7 @@ class LocEar(RfEar):
         del pcov
         print ('Xi alt: ' + str(self.__xi[numtx]))
         self.__xi[numtx] = self.__xi[numtx] + xi_diff_opt[0]  # update xi with calibration
+        print ('Xi_diff: ' + str(xi_diff_opt[0]))
         print ('Xi neu: ' + str(self.__xi[numtx]))
 
     def get_caldata(self, numtx=0):
@@ -627,12 +628,12 @@ class LocEar(RfEar):
                 elif len(pos_est[-1]) == 2:
                     x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+dist_tx**2)/(2*dist_tx)
                     y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
-                    print ([x_est, y_est])
+                    #print ([x_est, y_est])
                     plt.plot(x_est, y_est, 'bo')
                 plt.show()
                 plt.pause(0.001)
-                print (pos_est[-1])
-                print ('\n')
+                #print (pos_est[-1])
+                #print ('\n')
         except KeyboardInterrupt:
             print ('Localization interrupted by user')
             drawing = False
@@ -653,20 +654,42 @@ class LocEar(RfEar):
         def h_jacobian(x_est, txpos, numtx):
             tx_pos = txpos[numtx, :]  # position of the transceiver
             factor = 0.5/np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
-            h_jac = np.array([factor*2*x_est[0], factor*2*x_est[1]])  # = [dh/dx1, dh/dx2]
+            h_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
             #print('h_jac ' + str(h_jac))
             return h_jac
 
         sdr.center_freq = np.mean(self.get_freq())
-        x_min = -200.0
-        x_max = 200.0
-        y_min = -200.0
+        # fig, (ax1, ax2) = plt.subplots(2)
+        # You probably won't need this if you're embedding things in a tkinter plot...
+        plt.ion()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        x_min = -50.0
+        x_max = 150.0
+        y_min = -50.0
         y_max = 200.0
         plt.axis([x_min, x_max, y_min, y_max])
-        plt.ion()
+
         plt.grid()
         plt.xlabel('x-Axis [cm]')
         plt.ylabel('y-Axis [cm]')
+
+        circle1 = plt.Circle((txpos[0, 0], txpos[0, 1]), 0.01, color='r', fill=False)
+        circle11 = plt.Circle((txpos[0, 0], txpos[0, 1]), 0.01, color='g', fill=False)
+        ax.add_artist(circle1)
+        ax.add_artist(circle11)
+        circle2 = plt.Circle((txpos[1, 0], txpos[1, 1]), 0.01, color='r', fill=False)
+        circle21 = plt.Circle((txpos[1, 0], txpos[1, 1]), 0.01, color='g', fill=False)
+        ax.add_artist(circle2)
+        ax.add_artist(circle21)
+        circle3 = plt.Circle((txpos[2, 0], txpos[2, 1]), 0.01, color='r', fill=False)
+        circle31 = plt.Circle((txpos[2, 0], txpos[2, 1]), 0.01, color='g', fill=False)
+        ax.add_artist(circle3)
+        ax.add_artist(circle31)
+
+
         drawing = True
         # pos_est = np.zeros((self.__numoftx, 1))
 
@@ -675,39 +698,48 @@ class LocEar(RfEar):
         del firstsample
 
         # standard deviations
-        sig_x1 = 5
-        sig_x2 = 5
+        sig_x1 = 50
+        sig_x2 = 50
         p_mat = np.array(np.diag([sig_x1 ** 2, sig_x2 ** 2]))
 
         # process noise
-        sig_w1 = 3
-        sig_w2 = 3
+        sig_w1 = 2
+        sig_w2 = 2
         q_mat = np.array(np.diag([sig_w1 ** 2, sig_w2 ** 2]))
 
         # measurement noise
-        sig_r = 2
+        sig_r = 1
         r_mat = sig_r ** 2
 
         # initial values and system dynamic (=eye)
         x_est = x0
         i_mat = np.eye(2)
 
+<<<<<<< HEAD
+=======
+        z_meas = [0, 0, 0]
+        y_est = [0, 0, 0]
+
+
+>>>>>>> 817a446f204499cef389ac9d7d825f46b1f13158
         if self.__numoftx > 1:
             try:
                 while drawing:
                     # iterate through all tx-rss-values
-
+                    #fig.clf()
                     freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
                     for numtx in range(self.__numoftx):
 
                         # prediction
                         x_est = x_est + np.random.randn(2)*1 # = I * x_est
                         p_mat_est = i_mat.dot(p_mat.dot(i_mat)) + q_mat
-                        print ('x_est_start ' + str(x_est))
+
                         # update
-                        z_meas = self.lambertloc(rss[numtx], numtx)  # get distance from rss-measurement
-                        y_tild = z_meas - h_meas(x_est, txpos, numtx)
-                        print('z_meas= ' + str(z_meas) + ' y_est= ' + str(h_meas(x_est, txpos, numtx)))
+                        z_meas[numtx] = self.lambertloc(rss[numtx], numtx)  # get distance from rss-measurement
+
+                        y_est[numtx] = h_meas(x_est, txpos, numtx)
+                        y_tild = z_meas[numtx] - y_est[numtx]
+                        #print('z_meas= ' + str(z_meas[numtx]) + ' y_est= ' + str(y_est[numtx]) + ' y_tild = ' + str(y_tild))
                         h_jac_mat = h_jacobian(x_est, txpos, numtx)
 
                         s_mat = np.dot(h_jac_mat.transpose(), np.dot(p_mat, h_jac_mat)) + r_mat  # = H^t * P * H + R
@@ -716,14 +748,27 @@ class LocEar(RfEar):
                         s_scal = s_mat
                         #print ('h_trans ' + str(h_jac_mat.transpose()))
                         k_mat = np.dot(p_mat, h_jac_mat.transpose() / s_scal)  # 1/s_scal since s_mat is dim = 1x1
-                        print ('numtx=' + str(numtx) + ' k_mat ' + str(k_mat))
+                        #print ('numtx=' + str(numtx) + ' k_mat ' + str(k_mat))
+                        #print ('x_est = ' + str(x_est) + 'k_mat*y_tild = ' + str(k_mat * y_tild))
                         x_est = x_est + k_mat * y_tild  # = x_est + k * y_tild
                         p_mat = (i_mat - k_mat.dot(h_jac_mat)) * p_mat_est  # = (I-KH)*P
 
-                    print ('x_est ' + str(x_est))
-                    plt.plot(x_est[0], x_est[1], 'bo')
-                    plt.show()
+                    #print ('x_est ' + str(x_est))
+                    ax.plot(x_est[0], x_est[1], 'bo')
+                    for i in range(self.__numoftx):
+                        ax.plot(txpos[i, 0], txpos[i, 1], 'ro')
+                    circle1.set_radius(z_meas[0])
+                    circle11.set_radius(y_est[0])
+                    circle2.set_radius(z_meas[1])
+                    circle21.set_radius(y_est[1])
+                    circle3.set_radius(z_meas[2])
+                    circle31.set_radius(y_est[2])
+
+
+                    #plt.show()
+                    fig.canvas.draw()
                     plt.pause(0.001)
+
 
                     print ('\n')
             except KeyboardInterrupt:
@@ -732,6 +777,21 @@ class LocEar(RfEar):
         else:
             print ('This method needs at least 2 tx!')
         return x_est
+
+    def unused_method(self):
+        x = np.linspace(0, 6 * np.pi, 100)
+        y = np.sin(x)
+
+        # You probably won't need this if you're embedding things in a tkinter plot...
+        plt.ion()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        line1, = ax.plot(x, y, 'r-')  # Returns a tuple of line objects, thus the comma
+
+        for phase in np.linspace(0, 10 * np.pi, 500):
+            line1.set_ydata(np.sin(x + phase))
+            fig.canvas.draw()
 
     def lambertloc(self, rss, numtx=0):
         """Inverse function of the RSM. Returns estimated range in [cm].
@@ -752,6 +812,9 @@ class LocEar(RfEar):
         print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
+
+
+
 
     def plot_multi_dist_live(self, freq, freqspan=2e4, numofplottedsamples=250):
         """

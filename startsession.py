@@ -64,13 +64,14 @@ freqtx = [433.7e6]  # [433.9e6] ##  [434.16e6] #
 alpha = [0.12615852725, 0.117592701848, 0.114243243761]
 # xi = [28.2177151396, 11.9628114874, 47.7769228175]
 # xi = [44.7672072423, 11.9628114874, 47.7769228175]  # after calibration of tx0
-xi = [11.7672072423, 11.9628114874, 47.7769228175]  # tuning tx0
+# xi = [11.7672072423, 11.9628114874, 47.7769228175]  # tuning tx0
+xi = [10.6176901836, 12.9628114874, 23.2984322235]  # tuning tx0
 freqtx = [433.91e6, 434.16e6, 433.7e6]
 freqspan = 2e4
 freqcenter = 434.0e6
 txpos = np.array([[0.0, 0.0],
                   [80.0, 0.0],
-                  [40.0, 76.0]])  #
+                  [40.0, 62.0]])  #
 
 # mat_test = np.array([[1,2], [3, 4]])
 # print('mat_out' + str(mat_test))
@@ -80,7 +81,7 @@ txpos = np.array([[0.0, 0.0],
 # print ('freq_max ' + str(freqmax) + ' rss_max ' + str(rssmax))
 
 loc = rf.LocEar(alpha, xi, freqtx, freqspan, freqcenter)
-loc.plot_multi_dist_live(freqtx)
-#loc.calibrate(2)
-x0 = np.array([40,60])
-#loc.map_path_ekf(x0, txpos)
+# loc.plot_multi_dist_live(freqtx)
+# loc.calibrate(2)
+x0 = np.array([0, 40])
+loc.map_path_ekf(x0, txpos)
