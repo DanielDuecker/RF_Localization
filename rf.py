@@ -692,8 +692,6 @@ class LocEar(RfEar):
         x_est = x0
         i_mat = np.eye(2)
 
-        print('mat = ' + str(i_mat))
-
         if self.__numoftx > 1:
             try:
                 while drawing:
