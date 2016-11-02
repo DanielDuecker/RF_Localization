@@ -215,13 +215,13 @@ class RfEar(object):
                 if freq[i] >= freqtx[ifreq] - freqspan / 2:
                     startindex = i
                     break
-                i = i + 1
+                i += 1
             # find end index of frequency vector
             while i < len(freq):
                 if freq[i] >= freqtx[ifreq] + freqspan / 2:
                     endindex = i
                     break
-                i = i + 1
+                i += 1
 
             pxx_den = np.array(pxx_den)
 
@@ -278,7 +278,7 @@ class RfEar(object):
                 plt.grid()
                 plt.legend(loc='lower right')
                 plt.pause(0.001)
-                cnt = cnt + 1
+                cnt += 1
                 if cnt > numofplottedsamples:
                     rss1.pop(0)
                     rss2.pop(0)
@@ -759,7 +759,7 @@ class LocEar(RfEar):
                 plt.legend(loc='upper right')
 
                 plt.pause(0.001)
-                cnt = cnt + 1
+                cnt += 1
                 if cnt > numofplottedsamples:
                     rdist1.pop(0)
                     rdist2.pop(0)
