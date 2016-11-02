@@ -1,7 +1,7 @@
 import rf
 import numpy as np
 cal = rf.CalEar(433.9e6)
-# cal.plot_psd()
+#cal.plot_psd()
 
 #cal.plot_multi_rss_live(433.91e6, 434.16e6, 2e4)
 freqtx = [433.7e6]  # [433.9e6] ##  [434.16e6] #
@@ -81,7 +81,7 @@ txpos = np.array([[0.0, 0.0],
 # print ('freq_max ' + str(freqmax) + ' rss_max ' + str(rssmax))
 
 loc = rf.LocEar(alpha, xi, freqtx, freqspan, freqcenter)
-# loc.plot_multi_dist_live(freqtx)
+loc.plot_multi_dist_live(freqtx)
 # loc.calibrate(2)
 x0 = np.array([0, 40])
-loc.map_path_ekf(x0, txpos)
+#loc.map_path_ekf(x0, txpos)
