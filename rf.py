@@ -290,6 +290,58 @@ class RfEar(object):
 
         return True
 
+    def plot_txrss_live(self, freq, freqspan=2e4, numofplottedsamples=250):
+        """ Live plot for the measured rss from each tx
+
+        :param freqspan: width of the frequencyspan around the tracked frq
+        :param numofplottedsamples: number of displayed samples (default= 250)
+        :return: 0
+        """
+        numoftx = len(freq)
+        if numoftx > 7:
+            print('Number of tracked tx needs to be <=7!') # see length of colorvec
+            print('Terminate method!')
+            return True
+
+        rdist = np.zeros((numoftx, 1))
+        temp = np.zeros((numoftx, 1))
+
+        plt.ion()  # turn interactive mode on
+        colorvec = ['b', 'r', 'g', 'm', 'c', 'k', 'y']  # all colors which can be used in the plot
+
+        cnt = 0
+        drawing = True
+        while drawing:
+            try:
+                # Busy-wait for keyboard interrupt (Ctrl+C)
+                cnt += 1
+                # find maximum power peaks in spectrum
+                freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, freqspan)
+
+                for i in range(numoftx):
+                    temp[i, 0] = pxx_den_max[i]
+                rdist = np.append(rdist, temp, axis=1)
+
+                # plot data for all tx
+                plt.clf()
+                firstdata = 1  # set max number of plotted points per tx
+                if cnt > numofplottedsamples:
+                    firstdata = cnt - numofplottedsamples
+
+                for i in range(numoftx):
+                    plt.plot(rdist[i, firstdata:-1], str(colorvec[i])+'.-',
+                             label="Freq = " + str(freq_found[i] / 1e6) + ' MHz')
+                plt.ylim(-120, 10)
+                plt.ylabel('RSS [dB]')
+                plt.grid()
+                plt.legend(loc='upper right')
+                plt.pause(0.001)
+
+            except KeyboardInterrupt:
+                print ('Liveplot interrupted by user')
+                drawing = False
+        return True
+
     @abstractmethod
     def rfear_type(self):
         """Return a string representing the type of rfear this is."""
@@ -334,8 +386,8 @@ class CalEar(RfEar):
         :param time: time of measurement [s] (default 10.0)
         :return: modeldata, variance - arrays with mean rss for each distance + its variance
         """
+
         sdr.center_freq = np.mean(self.get_freq())
-        # take first samples after boot dvb-t-dongle and delete it since
 
         testing = True
         modeldata = []
@@ -362,12 +414,12 @@ class CalEar(RfEar):
                 print ('done\n')
                 t.sleep(0.5)
                 print (' ... evaluating ...')
-                #print('powerstack: ' + str(powerstack))
+
                 powerstack.pop(0)  # uggly workaround to ignore first element after dvb-t boot up
-                #print('powerstack: ' + str(powerstack))
+
                 modeldata.append(np.mean(powerstack))
                 variance.append(np.var(powerstack))
-                #print('var ' + str(variance))
+
                 plt.clf()
                 plt.errorbar(range(len(modeldata)), modeldata, yerr=variance, fmt='o', ecolor='g')
                 plt.xlabel('# of Evaluations')
@@ -500,7 +552,7 @@ class LocEar(RfEar):
         dist_ref = raw_input('Please enter distance '
                              'from transmitter to receiver [cm]: ')
 
-        def func(ref, xi_diff_cal):
+        def rsm_func(ref, xi_diff_cal):
             """RSM structure with correction param xi_diff_cal."""
             return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] - xi_diff_cal  # ... -xi -xi_diff
 
@@ -536,7 +588,7 @@ class LocEar(RfEar):
         p_ref = p_mean
 
         # curve fit with calibrated value - dist_ref, alpha, xi are fixed -> xi_diff_opt is the change in xi by new meas
-        xi_diff_opt, pcov = curve_fit(func, [dist_ref, self.__alpha[numtx], self.__xi[numtx]], p_ref)
+        xi_diff_opt, pcov = curve_fit(rsm_func, [dist_ref, self.__alpha[numtx], self.__xi[numtx]], p_ref)
         del pcov
         print ('Xi alt: ' + str(self.__xi[numtx]))
         self.__xi[numtx] = self.__xi[numtx] + xi_diff_opt[0]  # update xi with calibration
@@ -547,56 +599,21 @@ class LocEar(RfEar):
         """Returns the calibrated RSM params."""
         return self.__alpha[numtx], self.__xi[numtx]
 
-    def map_path(self, dist_tx):
-        """Maps estimated location in 1D or 2D respectively.
 
-        Keyword arguments:
-        :param dist_tx -- distance between the transmitting stations [cm] (default 55.0)
-        """
-        sdr.center_freq = np.mean(self.get_freq())
-        x_min = -10.0
-        x_max = dist_tx+10.0
-        y_min = -100.0
-        y_max = 100.0
-        plt.axis([x_min, x_max, y_min, y_max])
-        plt.ion()
-        plt.grid()
-        plt.xlabel('x-Axis [cm]')
-        plt.ylabel('y-Axis [cm]')
-        drawing = True
-        pos_est = []
-        while drawing:
-            try:
-                rss = self.get_rss()
-                pos_est.append(self.lambertloc(rss))
-                if len(pos_est[-1]) == 1:
-                    plt.plot(pos_est[-1], 0, 'bo')
-                elif len(pos_est[-1]) == 2:
-                    x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+dist_tx**2)/(2*dist_tx)
-                    y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
-                    #print ([x_est, y_est])
-                    plt.plot(x_est, y_est, 'bo')
-                plt.show()
-                plt.pause(0.001)
-                #print (pos_est[-1])
-                #print ('\n')
-            except KeyboardInterrupt:
-                print ('Localization interrupted by user')
-                drawing = False
-        return pos_est
 
-    def map_path_ekf(self, x0, txpos, bplot=True):
+    def map_path_ekf(self, x0, txpos, bplot=True, blog=False):
         """ map/track the position of the mobile node using an EKF
 
         Keyword arguments:
         :param x0 -- initial estimate of the mobile node position
         :param txpos -- vector of tx positions [x,y], first tx is origin of coordinate frame [cm]
         :param bplot -- Activate/Deactivate liveplotting the data (True/False)
+        :param blog -- activate data logging to file (default: False)
         """
 
         # measurement function
-        def h_meas(x, txpos, numtx):
-            tx_pos = txpos[numtx, :]  # position of the transceiver
+        def h_meas(x, txposition, numtx):
+            tx_pos = txposition[numtx, :]  # position of the transceiver
             # r = sqrt((x-x_tx)^2+(y-y_tx)^2)
             r_dist = np.sqrt((x[0]-tx_pos[0])**2+(x[1]-tx_pos[1])**2)
             return r_dist
@@ -611,8 +628,8 @@ class LocEar(RfEar):
         """ setup figure """
         if bplot:
             plt.ion()
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
+            fig1 = plt.figure(1)
+            ax = fig1.add_subplot(111)
 
             x_min = -50.0
             x_max = 150.0
@@ -652,7 +669,9 @@ class LocEar(RfEar):
         r_mat = sig_r ** 2
 
         # initial values and system dynamic (=eye)
-        x_est = x0
+        x_log = np.array([[x0[0]], [x0[1]]])
+        x_est = x_log
+
         i_mat = np.eye(2)
 
         z_meas = [0, 0, 0]
@@ -664,42 +683,70 @@ class LocEar(RfEar):
             try:
                 # iterate through all tx-rss-values
                 freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+                x_est[:, 0] = x_log[:, -1]
+
                 for i in range(self.__numoftx):
 
                     """ prediction """
-                    x_est = x_est + np.random.randn(2) * 1 # = I * x_est
+                    x_est[:, 0] = x_est[:, 0] + np.random.randn(1, 2) * 1  # = I * x_est
+
                     p_mat_est = i_mat.dot(p_mat.dot(i_mat)) + q_mat
+
+                    # print('x_est: ' + str(x_est))
 
                     """ update """
                     # get new measurement / get distance from rss-measurement
                     z_meas[i] = self.lambertloc(rss[i], i)
                     # estimate measurement from x_est
-                    y_est[i] = h_meas(x_est, txpos, i)
+                    y_est[i] = h_meas(x_est[:, 0], txpos, i)
                     y_tild = z_meas[i] - y_est[i]
 
                     # calc K-gain
-                    h_jac_mat = h_jacobian(x_est, txpos, i)
+                    h_jac_mat = h_jacobian(x_est[:, 0], txpos, i)
                     s_mat = np.dot(h_jac_mat.transpose(), np.dot(p_mat, h_jac_mat)) + r_mat  # = H^t * P * H + R
                     k_mat = np.dot(p_mat, h_jac_mat.transpose() / s_mat)  # 1/s_scal since s_mat is dim = 1x1
 
-                    x_est = x_est + k_mat * y_tild  # = x_est + k * y_tild
+                    x_est[:, 0] = x_est[:, 0] + k_mat * y_tild  # = x_est + k * y_tild
                     p_mat = (i_mat - k_mat.dot(h_jac_mat)) * p_mat_est  # = (I-KH)*P
+
+                x_log = np.append(x_log, x_est, axis=1)
 
                 """ update figure / plot after all measurements are processed """
                 if bplot:
                     # add new x_est to plot
-                    ax.plot(x_est[0], x_est[1], 'bo')
+                    ax.plot(x_est[0, -1], x_est[1, -1], 'bo')
                     # update measurement circles around tx-nodes
                     for i in range(self.__numoftx):
                         circle_meas[i].set_radius(z_meas[i])
                         circle_meas_est[i].set_radius(y_est[i])
-                    # update figure
-                    fig.canvas.draw()
+                    # update figure 1
+                    fig1.canvas.draw()
                     plt.pause(0.001)  # pause to allow for keyboard inputs
 
             except KeyboardInterrupt:
                 print ('Localization interrupted by user')
                 tracking = False
+
+        if blog:
+            print ('Logging mode enabled')
+            print ('TODO: implement code to write data to file')
+            # write_to_file(x_log, 'I am a log file')
+
+        if bplot:
+            fig2 = plt.figure(2)
+            ax21 = fig2.add_subplot(211)
+            ax21.grid()
+            ax21.set_ylabel('x-position [cm]')
+            ax21.plot(x_log[0, :], 'b-')
+
+            ax22 = fig2.add_subplot(212)
+            ax22.grid()
+            ax22.set_ylabel('y-position [cm]')
+            ax22.plot(x_log[1, :], 'b-')
+
+            fig2.canvas.draw()
+
+            raw_input('Press Enter to close the figure and terminate the method!')
 
         return x_est
 
@@ -714,62 +761,97 @@ class LocEar(RfEar):
             np.log(10) * self.__alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + self.__xi[numtx])))
         return z.real
 
-    def plot_multi_dist_live(self, freq, freqspan=2e4, numofplottedsamples=250):
+    def plot_txdist_live(self,freqspan=2e4, numofplottedsamples=250):
         """ Live plot for the measured distances from each tx using rss
 
-        :param freq: 1st frequency to track the power peak
         :param freqspan: width of the frequencyspan around the tracked frq
         :param numofplottedsamples: number of displayed samples (default= 250)
         :return: 0
         """
-        # @todo make number of tx dynamic
-        rdist1 = []
-        rdist2 = []
-        rdist3 = []
+
+        freq = 0  # for later access through a parameter. In this version all freqtx are tracked
+        if freq == 0:
+            freq = self.__freqtx
+
+        numoftx = self.__numoftx
+        if numoftx > 7:
+            print('Number of tracked tx needs to be <=7!') # see length of colorvec
+            print('Terminate method!')
+            return True
+
+        rdist = np.zeros((numoftx, 1))
+        temp = np.zeros((numoftx, 1))
 
         plt.ion()  # turn interactive mode on
-        drawing = True
-        cnt = 0
+        colorvec = ['b', 'r', 'g', 'm', 'c', 'k', 'y']  # all colors which can be used in the plot
 
+        cnt = 0
+        drawing = True
         while drawing:
             try:
                 # Busy-wait for keyboard interrupt (Ctrl+C)
-
+                cnt += 1
                 # find maximum power peaks in spectrum
                 freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, freqspan)
 
-                tx = [0, 1, 2]
-                rdist1.append(self.lambertloc(pxx_den_max[0], tx[0]))
-                rdist2.append(self.lambertloc(pxx_den_max[1], tx[1]))
-                rdist3.append(self.lambertloc(pxx_den_max[2], tx[2]))
+                for i in range(numoftx):
+                    temp[i, 0] = self.lambertloc(pxx_den_max[i], i)
+                rdist = np.append(rdist, temp, axis=1)
 
+                # plot data for all tx
                 plt.clf()
-                plt.title("Live Streaming Distance-Values")
+                firstdata = 1  # set max number of plotted points per tx
+                if cnt > numofplottedsamples:
+                    firstdata = cnt - numofplottedsamples
+
+                for i in range(numoftx):
+                    plt.plot(rdist[i, firstdata:-1], str(colorvec[i])+'.-',
+                             label="Freq = " + str(freq_found[i] / 1e6) + ' MHz')
                 plt.ylim(-10, 300)
-
-                plt.plot(rdist1, 'b.-',
-                         label="Freq1 = " + str(freq[0] / 1e6) + ' MHz' + " @ " + str(freq_found[0] / 1e6) + ' MHz')
-                plt.plot(rdist2, 'r.-',
-                         label="Freq2 = " + str(freq[1] / 1e6) + ' MHz' + " @ " + str(freq_found[1] / 1e6) + ' MHz')
-                plt.plot(rdist3, 'g.-',
-                         label="Freq3 = " + str(freq[2] / 1e6) + ' MHz' + " @ " + str(freq_found[2] / 1e6) + ' MHz')
-
                 plt.ylabel('R [cm]')
                 plt.grid()
                 plt.legend(loc='upper right')
-
                 plt.pause(0.001)
-                cnt += 1
-                if cnt > numofplottedsamples:
-                    rdist1.pop(0)
-                    rdist2.pop(0)
-                    rdist3.pop(0)
 
             except KeyboardInterrupt:
                 print ('Liveplot interrupted by user')
                 drawing = False
-
         return True
+
+    def map_path(self, dist_tx):
+        """Maps estimated location in 1D or 2D respectively.
+
+        Keyword arguments:
+        :param dist_tx -- distance between the transmitting stations [cm] (default 55.0)
+        """
+        sdr.center_freq = np.mean(self.get_freq())
+        x_min = -10.0
+        x_max = dist_tx+10.0
+        y_min = -100.0
+        y_max = 100.0
+        plt.axis([x_min, x_max, y_min, y_max])
+        plt.ion()
+        plt.grid()
+        plt.xlabel('x-Axis [cm]')
+        plt.ylabel('y-Axis [cm]')
+        drawing = True
+        pos_est = []
+        while drawing:
+            try:
+                rss = self.get_rss()
+                pos_est.append(self.lambertloc(rss))
+                if len(pos_est[-1]) == 1:
+                    plt.plot(pos_est[-1], 0, 'bo')
+                elif len(pos_est[-1]) == 2:
+                    x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+dist_tx**2)/(2*dist_tx)
+                    y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
+                    plt.plot(x_est, y_est, 'bo')
+                plt.show()
+                plt.pause(0.001)
+            except KeyboardInterrupt:
+                print ('Localization interrupted by user')
+                drawing = False
+        return pos_est
 
     def rfear_type(self):
         """Return a string representing the type of RfEar this is."""
