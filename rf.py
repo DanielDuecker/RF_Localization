@@ -237,59 +237,6 @@ class RfEar(object):
 
         return freq_den_max, pdb_den_max
 
-    def plot_multi_rss_live(self, freq, freqspan=2e4, numofplottedsamples=250):
-        """ Live plot for multi frequency rss-values
-
-        :param freq: vector of frequencies to track the power peak
-        :param freqspan: width of the frequencyspan around the tracked frq
-        :param numofplottedsamples: number of displayed samples (default= 250)
-        :return: True
-        """
-        plt.ion()      # turn interactive mode on
-
-        rss1 = []
-        rss2 = []
-
-        # take first samples after boot dvb-t-dongle and delete it since
-        for idel in range(10):
-            firstsample = self.get_size()
-            del firstsample
-
-        drawing = True
-        cnt = 0
-        while drawing:
-            try:
-                # Busy-wait for keyboard interrupt (Ctrl+C)
-
-                # find maximum power peaks in spectrum
-                freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, freqspan)
-
-                rss1.append(pxx_den_max[0])  # index 0 to avoid append vectors of length 2 @todo
-                rss2.append(pxx_den_max[1])
-
-                plt.clf()
-                plt.title("Live Streaming RSS-Values")
-                plt.ylim(-120, 0)
-
-                plt.plot(rss1, 'b.-', label="RSS for " + str(freq[0]/1e6) + ' MHz' + " @ " + str(freq_found[0] / 1e6) + ' MHz')
-                plt.plot(rss2, 'r.-', label="RSS for " + str(freq[1]/1e6) + ' MHz' + " @ " + str(freq_found[1] / 1e6) + ' MHz')  # rss in dB
-
-                plt.ylabel('Power [dB]')
-                plt.grid()
-                plt.legend(loc='lower right')
-                plt.pause(0.001)
-                cnt += 1
-                if cnt > numofplottedsamples:
-                    rss1.pop(0)
-                    rss2.pop(0)
-
-            except KeyboardInterrupt:
-                plt.show()
-                print ('Liveplot interrupted by user')
-                drawing = False
-
-        return True
-
     def plot_txrss_live(self, freq, freqspan=2e4, numofplottedsamples=250):
         """ Live plot for the measured rss from each tx
 
@@ -601,7 +548,7 @@ class LocEar(RfEar):
 
 
 
-    def map_path_ekf(self, x0, txpos, bplot=True, blog=False):
+    def map_path_ekf(self, x0, txpos, bplot=True, blog=False, bprintdata=False):
         """ map/track the position of the mobile node using an EKF
 
         Keyword arguments:
@@ -722,6 +669,9 @@ class LocEar(RfEar):
                     # update figure 1
                     fig1.canvas.draw()
                     plt.pause(0.001)  # pause to allow for keyboard inputs
+
+                if bprintdata:
+                    print(str(x_est) + ', ' + str(p_mat))  # print data to console
 
             except KeyboardInterrupt:
                 print ('Localization interrupted by user')
