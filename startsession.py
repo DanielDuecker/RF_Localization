@@ -67,7 +67,7 @@ freqcenter = 434.0e6
 
 
 loc = rf.LocEar(alpha, xi, freqtx, freqspan, freqcenter)
-loc.plot_txdist_live()
+#loc.plot_txdist_live()
 # loc.calibrate(2)
 
 # relative tx position
@@ -76,4 +76,4 @@ txpos = np.array([[0.0, 0.0],     # 433,91MHz
                   [40.0, 62.0]])  # 433,70MHz
 
 x0 = np.array([30, 40])  # initial estimate
-# loc.map_path_ekf(x0, txpos)
+loc.map_path_ekf(x0, txpos, False, False, True)
