@@ -115,6 +115,25 @@ class RfEar(object):
                 drawing = False
         return True
 
+    def print_pxx_density(self):
+        """ method to print the sorted power density values to console
+
+        :return:
+        """
+        printing = True
+        while printing:
+            try:
+                freq, pxx_den = self.get_absfreq_pden_sorted()
+                print(str(pxx_den))
+                plt.pause(0.001)
+
+            except KeyboardInterrupt:
+                print ('Liveplot interrupted by user')
+                printing = False
+        return True
+
+
+
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
 
