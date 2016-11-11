@@ -86,35 +86,6 @@ class RfEar(object):
         print ('Default sample rate: 2.4MHz')
         print ('Current sample rate: ' + str(sdr.sample_rate / 1e6) + 'MHz')
 
-    def plot_psd_old(self):
-        """Get Power Spectral Density Live Plot."""
-        sdr.center_freq = np.mean(self.__freq)
-        plt.ion()      # turn interactive mode on
-        drawing = True
-        while drawing:
-            try:
-                # Busy-wait for keyboard interrupt (Ctrl+C)
-                plt.clf()
-                plt.axis([-1.5e6,
-                          1.5e6, -120, 0])
-                samples = self.get_iq()
-                # use matplotlib to estimate and plot the PSD
-                freq, pxx_den = signal.periodogram(samples, fs=sdr.sample_rate, nfft=1024)
-                plt.plot(freq, 10*np.log10(pxx_den)) #rss in dB
-                xlabels = np.linspace((sdr.center_freq-.5*sdr.sample_rate)/1e6,
-                                      (sdr.center_freq+.5*sdr.sample_rate)/1e6, 5)
-                plt.xticks(np.linspace(min(freq), max(freq), 5), xlabels, rotation='horizontal')
-                plt.grid()
-                plt.xlabel('Frequency [MHz]')
-                plt.ylabel('Power [dB]')
-                plt.show()
-                plt.pause(0.001)
-            except KeyboardInterrupt:
-                plt.show()
-                print ('Liveplot interrupted by user')
-                drawing = False
-        return True
-
     def print_pxx_density(self):
         """ method to print the sorted power density values to console
 
@@ -132,8 +103,6 @@ class RfEar(object):
                 printing = False
         return True
 
-
-
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
 
@@ -142,7 +111,7 @@ class RfEar(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         # init x and y -> y is update with each sample
-        x = np.linspace(sdr.center_freq-1024e3, sdr.center_freq+1022e3, sdr.sample_rate)
+        x = np.linspace(sdr.center_freq-1024e3, sdr.center_freq+1022e3, 1024)  # 1024 as the fft has 1024frequency-steps
         y = x
         line1, = ax.plot(x, y, 'b-')
         """ setup plot properties """
@@ -158,6 +127,7 @@ class RfEar(object):
             try:
                 # Busy-wait for keyboard interrupt (Ctrl+C)
                 freq, pxx_den = self.get_absfreq_pden_sorted()
+
                 line1.set_ydata(10*np.log10(pxx_den))
 
                 ## @todo annotations on the frequency peaks

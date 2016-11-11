@@ -2,9 +2,9 @@ import rf
 import numpy as np
 cal = rf.CalEar(433.9e6)
 
-cal.print_pxx_density()
+#cal.print_pxx_density()
 
-#cal.plot_psd()
+cal.plot_psd()
 
 
 freqtx = [433.7e6]  # [433.9e6] ##  [434.16e6] #
