@@ -103,7 +103,7 @@ class RfEar(object):
                 printing = False
         return True
 
-    def wp_generator(self, wp_filename='wplist.txt', x0=[0, 0], xn=[1000, 1000], steps=[11, 11], timemeas=10.0):
+    def wp_generator(self, wp_filename='wplist.txt', x0=[0, 0], xn=[1000, 1000], steps=[11, 11], timemeas=1.0):
         """
         :param wp_filename:
         :param x0: [x0,y0] - start position of the grid
@@ -144,28 +144,14 @@ class RfEar(object):
 
         return wp_filename  # file output [line#, x, y, time]
 
-    def write_sample_sequence_to_file(self, ofile, wp, time, numsample, sampleseq):
+    def measure_at_waypoint(self, wplist_filename, measdata_filename):
         """
-
-        :param ofile:
-        :param wp:
-        :param time:
-        :param numsample:
-        :param sampleseq:
-        :return:
-        """
-        strrow = str(wp[0]) + ', ' + str(wp[1]) + ', ' + str(time) + ', ' + str(numsample) + ', ' + str(sampleseq)
-        ofile.write(strrow + '\n')
-
-        return True
-
-    def measure_at_waypoint(self, wplist_filename, measfilename):
-        """
-
+        #
         :param wplist_filename:
+        :param measdata_filename:
         :return:
         """
-        measfile = open(measfilename, 'a')
+        measfile = open(measdata_filename, 'w')
 
         with open(wplist_filename, 'r') as wpfile:
             measfile.write(t.ctime() + '\n')
@@ -174,35 +160,41 @@ class RfEar(object):
 
             # loop through wp-list
             for line in wpfile:
-                print line
-                if 'str' in line:
-                    break
-                measfile.write(line)
+                wp_line = line
+
+                tempstr = [x.strip() for x in wp_line.split(',')]  # 'strip' removes white spaces
+
+                print tempstr
+                numwp = int(tempstr[0])
+                wp = [float(tempstr[1]), float(tempstr[2])]
+                meastime = float(tempstr[3])
+
+                print ('Move to new way-point #' + str(numwp) + ' @ position x= ' + str(wp[0]) + ', y = ' + str(wp[1]))
+                t.sleep(0.5)
+                print ('arrived')
+                print ('... measuring for ' + str(meastime) + 's ...')
+
                 elapsed_time = 0.0
                 sampleseq = []
+                while elapsed_time < meastime:
+                    start_calctime = t.time()
 
-            time = 3.14  # debug value
+                    # freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
 
-            # get measurements
-            print (' ... measuring ' + str(time) + 's ')  # 'at wp #x/totalwp @ pos (x,y)
-            """
-            while elapsed_time < time:
+                    sampleseq.append(self.get_iq())
+                    # print (str(len(self.get_iq()))) --> reduces # of sample in 10s by 50%
+                    # powerstack.append(pxx_den_max[numtx])
 
-                start_calctime = t.time()
+                    calc_time = t.time() - start_calctime
+                    elapsed_time = elapsed_time + calc_time
+                    t.sleep(0.01)
 
-                # freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+                print ('shape_sample = ' + str(len(sampleseq)))
 
-                sampleseq.append(self.get_iq())
-                # powerstack.append(pxx_den_max[numtx])
-
-                calc_time = t.time() - start_calctime
-                elapsed_time = elapsed_time + calc_time
-                t.sleep(0.01)
-            numsample = len(sampleseq)
-            self.write_sample_sequence_to_file(ofile, wp, meastime, numsample, sampleseq)
-            print ('done\n')
-            t.sleep(0.5)
-            """
+                # do one fft instead
+                numofsample = len(sampleseq)
+                str1 = str(numwp) + ', ' + str(wp[0]) + ', ' + str(wp[1]) + ', ' + str(numofsample)
+                measfile.write(str1 + str(sampleseq) + '\n')
 
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
@@ -254,12 +246,12 @@ class RfEar(object):
                                            fs=sdr.sample_rate, nfft=1024)
         del freq
         if len(self.__freq) == 1:
-            rss = [10*np.log10(max(pxx_den))] #Power in dB !!!
+            rss = [10*np.log10(max(pxx_den))]  # Power in dB !!!
         elif len(self.__freq) == 2:
             pxx_den_left = pxx_den[:len(pxx_den)/2]
             pxx_den_right = pxx_den[len(pxx_den)/2:]
             rss = [10*np.log10(max(pxx_den_left)),
-                10*np.log10(max(pxx_den_right))]
+                   10*np.log10(max(pxx_den_right))]
         return rss
 
     def get_absfreq_pden_sorted(self):
@@ -336,7 +328,7 @@ class RfEar(object):
         """
         numoftx = len(freq)
         if numoftx > 7:
-            print('Number of tracked tx needs to be <=7!') # see length of colorvec
+            print('Number of tracked tx needs to be <=7!')  # see length of colorvec
             print('Terminate method!')
             return True
 
