@@ -103,6 +103,107 @@ class RfEar(object):
                 printing = False
         return True
 
+    def wp_generator(self, wp_filename='wplist.txt', x0=[0, 0], xn=[1000, 1000], steps=[11, 11], timemeas=10.0):
+        """
+        :param wp_filename:
+        :param x0: [x0,y0] - start position of the grid
+        :param xn: [xn,yn] - end position of the grid
+        :param steps: [numX, numY] - step size
+        :param timestep: - time [s] to wait at each position for measurements
+        :return: wp_mat [x, y, t]
+        """
+        startx = x0[0]
+        endx = xn[0]
+        stepx = steps[0]
+
+        starty = x0[1]
+        endy = xn[1]
+        stepy = steps[1]
+
+        xpos = np.linspace(startx, endx, stepx)
+        ypos = np.linspace(starty, endy, stepy)
+
+        wp_matx, wp_maty = np.meshgrid(xpos, ypos)
+        wp_vecx = np.reshape(wp_matx, (len(xpos)*len(ypos), 1))
+        wp_vecy = np.reshape(wp_maty, (len(ypos)*len(xpos), 1))
+        wp_time = np.ones((len(xpos)*len(ypos), 1)) * timemeas
+
+        wp_mat = np.append(wp_vecx, wp_vecy, axis=1)
+        wp_mat = np.append(wp_mat, wp_time, axis=1)
+
+        plt.figure()
+        plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
+        plt.show()
+
+        with open(wp_filename, 'a') as wpfile:
+            # wpfile.write(t.ctime() + '\n')
+            # wpfile.write('some describtion' + '\n')
+            for i in range(wp_mat.shape[0]):
+                wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + '\n')
+            wpfile.close()
+
+        return wp_filename  # file output [line#, x, y, time]
+
+    def write_sample_sequence_to_file(self, ofile, wp, time, numsample, sampleseq):
+        """
+
+        :param ofile:
+        :param wp:
+        :param time:
+        :param numsample:
+        :param sampleseq:
+        :return:
+        """
+        strrow = str(wp[0]) + ', ' + str(wp[1]) + ', ' + str(time) + ', ' + str(numsample) + ', ' + str(sampleseq)
+        ofile.write(strrow + '\n')
+
+        return True
+
+    def measure_at_waypoint(self, wplist_filename, measfilename):
+        """
+
+        :param wplist_filename:
+        :return:
+        """
+        measfile = open(measfilename, 'a')
+
+        with open(wplist_filename, 'r') as wpfile:
+            measfile.write(t.ctime() + '\n')
+            measfile.write('some describtion' + '\n')
+            measfile.write('\n')
+
+            # loop through wp-list
+            for line in wpfile:
+                print line
+                if 'str' in line:
+                    break
+                measfile.write(line)
+                elapsed_time = 0.0
+                sampleseq = []
+
+            time = 3.14  # debug value
+
+            # get measurements
+            print (' ... measuring ' + str(time) + 's ')  # 'at wp #x/totalwp @ pos (x,y)
+            """
+            while elapsed_time < time:
+
+                start_calctime = t.time()
+
+                # freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+
+                sampleseq.append(self.get_iq())
+                # powerstack.append(pxx_den_max[numtx])
+
+                calc_time = t.time() - start_calctime
+                elapsed_time = elapsed_time + calc_time
+                t.sleep(0.01)
+            numsample = len(sampleseq)
+            self.write_sample_sequence_to_file(ofile, wp, meastime, numsample, sampleseq)
+            print ('done\n')
+            t.sleep(0.5)
+            """
+
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
 

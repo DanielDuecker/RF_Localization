@@ -4,11 +4,14 @@ cal = rf.CalEar(433.9e6)
 
 #cal.print_pxx_density()
 
-cal.plot_psd()
+#cal.plot_psd()
+
+cal.wp_generator('test_wp_list.txt')
+cal.measure_at_waypoint('test_wp_list.txt', 'meas_test.txt')
 
 
-freqtx = [433.7e6]  # [433.9e6] ##  [434.16e6] #
-#cal.plot_multi_rss_live(freqtx)
+freqtx = [433.7e6, 433.9e6, 434.16e6]
+#cal.plot_txrss_live(freqtx)
 
 #rss, var = cal.measure_rss_var(freqtx, 2e4, 10.0)
 #alpha, xi = cal.get_model(rss, var)
