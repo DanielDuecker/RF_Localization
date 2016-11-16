@@ -170,8 +170,15 @@ class RfEar(object):
                 meastime = float(tempstr[3])
 
                 print ('Move to new way-point #' + str(numwp) + ' @ position x= ' + str(wp[0]) + ', y = ' + str(wp[1]))
+
+                # send command with waypoint to gantry controller
+                print ()
                 t.sleep(0.5)
-                print ('arrived')
+                print ('send waypoint to gantry')
+                # receive confirmation
+                print ('confirmation: gantry arrived at waypoint')
+                print ()
+
                 print ('... measuring for ' + str(meastime) + 's ...')
 
                 elapsed_time = 0.0
