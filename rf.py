@@ -103,105 +103,43 @@ class RfEar(object):
                 printing = False
         return True
 
-    def wp_generator(self, wp_filename='wplist.txt', x0=[0, 0], xn=[1000, 1000], steps=[11, 11], timemeas=1.0):
+    def take_measurement(self, meastime, outputmode='sampleseq'):
         """
-        :param wp_filename:
-        :param x0: [x0,y0] - start position of the grid
-        :param xn: [xn,yn] - end position of the grid
-        :param steps: [numX, numY] - step size
-        :param timestep: - time [s] to wait at each position for measurements
-        :return: wp_mat [x, y, t]
-        """
-        startx = x0[0]
-        endx = xn[0]
-        stepx = steps[0]
 
-        starty = x0[1]
-        endy = xn[1]
-        stepy = steps[1]
-
-        xpos = np.linspace(startx, endx, stepx)
-        ypos = np.linspace(starty, endy, stepy)
-
-        wp_matx, wp_maty = np.meshgrid(xpos, ypos)
-        wp_vecx = np.reshape(wp_matx, (len(xpos)*len(ypos), 1))
-        wp_vecy = np.reshape(wp_maty, (len(ypos)*len(xpos), 1))
-        wp_time = np.ones((len(xpos)*len(ypos), 1)) * timemeas
-
-        wp_mat = np.append(wp_vecx, wp_vecy, axis=1)
-        wp_mat = np.append(wp_mat, wp_time, axis=1)
-
-        plt.figure()
-        plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
-        plt.show()
-
-        with open(wp_filename, 'a') as wpfile:
-            # wpfile.write(t.ctime() + '\n')
-            # wpfile.write('some describtion' + '\n')
-            for i in range(wp_mat.shape[0]):
-                wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + '\n')
-            wpfile.close()
-
-        return wp_filename  # file output [line#, x, y, time]
-
-    def measure_at_waypoint(self, wplist_filename, measdata_filename):
-        """
-        #
-        :param wplist_filename:
-        :param measdata_filename:
+        :param meastime:
+        :param outputmode:
         :return:
         """
-        measfile = open(measdata_filename, 'w')
 
-        with open(wplist_filename, 'r') as wpfile:
-            measfile.write(t.ctime() + '\n')
-            measfile.write('some describtion' + '\n')
-            measfile.write('\n')
+        print ('... measuring for ' + str(meastime) + 's ...')
+        elapsed_time = 0.0
+        dataseq = []
 
-            # loop through wp-list
-            for line in wpfile:
-                wp_line = line
+        if outputmode == 'sampleseq':
+            while elapsed_time < meastime:
+                start_calctime = t.time()
 
-                tempstr = [x.strip() for x in wp_line.split(',')]  # 'strip' removes white spaces
+                dataseq.append(self.get_iq())
 
-                print tempstr
-                numwp = int(tempstr[0])
-                wp = [float(tempstr[1]), float(tempstr[2])]
-                meastime = float(tempstr[3])
+                calc_time = t.time() - start_calctime
+                elapsed_time = elapsed_time + calc_time
+                t.sleep(0.01)
+            return dataseq
+        elif outputmode == 'fft':
+            print('FFT not implemented yet')
+            while elapsed_time < meastime:
+                start_calctime = t.time()
 
-                print ('Move to new way-point #' + str(numwp) + ' @ position x= ' + str(wp[0]) + ', y = ' + str(wp[1]))
+                freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+                np.append(dataseq, pxx_den_max, axis=1)
 
-                # send command with waypoint to gantry controller
-                print ()
-                t.sleep(0.5)
-                print ('send waypoint to gantry')
-                # receive confirmation
-                print ('confirmation: gantry arrived at waypoint')
-                print ()
+                calc_time = t.time() - start_calctime
+                elapsed_time = elapsed_time + calc_time
+                t.sleep(0.01)
+            return dataseq
+        else:
+            print('ERROR: -take_measurement- outputmode has to be "sampleseq" or "fft" !')
 
-                print ('... measuring for ' + str(meastime) + 's ...')
-
-                elapsed_time = 0.0
-                sampleseq = []
-                while elapsed_time < meastime:
-                    start_calctime = t.time()
-
-                    # freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
-
-                    sampleseq.append(self.get_iq())
-                    # print (str(len(self.get_iq()))) --> reduces # of sample in 10s by 50%
-                    # powerstack.append(pxx_den_max[numtx])
-
-                    calc_time = t.time() - start_calctime
-                    elapsed_time = elapsed_time + calc_time
-                    t.sleep(0.01)
-
-                print ('shape_sample = ' + str(len(sampleseq)))
-
-                # do one fft instead
-                numofsample = len(sampleseq)
-                str1 = str(numwp) + ', ' + str(wp[0]) + ', ' + str(wp[1]) + ', ' + str(numofsample)
-                measfile.write(str1 + str(sampleseq) + '\n')
 
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
@@ -596,7 +534,7 @@ class LocEar(RfEar):
         powerstack = []
 
         # take first sample after boot dvb-t-dongle and delete it
-        firstsample = self.get_size()
+        firstsample = self.get_iq()
         del firstsample
 
         # get measurements
