@@ -42,8 +42,6 @@ class GantryControl(object):
             bvalid_wp = False
         return bvalid_wp
 
-
-
     def transmit_wp_to_gantry(self, targetwp):
 
         if self.set_target_wp(targetwp):
@@ -93,21 +91,44 @@ class GantryControl(object):
                 measfile.write(t.ctime() + '\n')
                 measfile.write('some describtion' + '\n')
                 measfile.write('\n')
-
-                # loop through wp-list
+                plt.ion()
+                plt.xlabel('Distance in mm')
+                plt.ylabel('Distance in mm')
+                plt.xlim(-10, 2600)
+                plt.ylim(-10, 4500)
+                plt.grid()
+                plt.show()
+                wp_data_mat = np.zeros((1,4))
                 for line in wpfile:
                     wp_line = line
 
                     tempstr = [x.strip() for x in wp_line.split(',')]  # 'strip' removes white spaces
 
                     numwp = int(tempstr[0])
-                    new_target_wp = [float(tempstr[1]), float(tempstr[2])]
+                    new_target_wpx = float(tempstr[1])
+                    new_target_wpy = float(tempstr[2])
                     meastime = float(tempstr[3])
+                    single_wp_data = [numwp, new_target_wpx, new_target_wpy, meastime]
+                    #np.append(wp_data_mat, single_wp_data, axis=0)
+                    #print (str(single_wp_data))
+                    wp_data_mat[-1, :] = single_wp_data
+                    print(str(wp_data_mat))
+
+                # loop through wp-list
+                for i in range(wp_data_mat.shape[0]):
+                    #print(str(wp_data_mat[i,:]))
+                    numwp = wp_data_mat[i, 0]
+                    new_target_wp = wp_data_mat[i, 1:2]
+                    meastime = wp_data_mat[i, 3]
+                    #np.append(plot_wp, new_target_wp, axis=1)
+                    #print (plot_wp.shape)
 
                     if self.transmit_wp_to_gantry(new_target_wp):
                         if self.move_gantry_to_target():
                             if self.confirm_arrived_at_wp():
                                 print('START Measurement for ' + str(meastime) + 's')
+                                plt.plot(new_target_wp[0], new_target_wp[1], 'go')
+                                plt.title('Way-Points')
                         else:
                             print ('Error: Failed to move gantry to new way-point!')
                             print ('Way-point #' + str(numwp) + ' @ position x= ' +
@@ -117,14 +138,16 @@ class GantryControl(object):
                         print ('Error: Failed to transmit new way-point to gantry!')
                         print ('point#' + str(numwp) + ' @ position x= ' +
                                str(new_target_wp[0]) + ', y = ' + str(new_target_wp[1]))
+                    plt.pause(0.001)
                     print
+
                 wpfile.close()
             measfile.close()
         return True
 
     def start_sdr(self):
         rf.CalEar(433.9e6)
-    return True
+        return True
 
 
 """
@@ -160,15 +183,15 @@ def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1000, 1000], steps=[11
     wp_mat = np.append(wp_vecx, wp_vecy, axis=1)
     wp_mat = np.append(wp_mat, wp_time, axis=1)
 
-    plt.figure()
-    plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
-    plt.show()
-
     with open(wp_filename, 'a') as wpfile:
         # wpfile.write(t.ctime() + '\n')
         # wpfile.write('some describtion' + '\n')
         for i in range(wp_mat.shape[0]):
             wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + '\n')
         wpfile.close()
+
+    plt.figure()
+    plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
+    plt.show()
 
     return wp_filename  # file output [line#, x, y, time]
