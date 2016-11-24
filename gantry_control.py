@@ -3,10 +3,11 @@ import matplotlib.pyplot as plt
 import time as t
 import rf
 
+
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0,0,2500,4500]):
+    def __init__(self, gantry_dimensions=[0, 2500, 0, 4500]):  # [x0,x1 y0, y1]
         self.__dimensions = gantry_dimensions
-        self.__gantry_pos = [0, 0] # initial position after start
+        self.__gantry_pos = [0, 0]  # initial position after start
         self.__target_wp = []
 
     def get_gantry_dimensions(self):
@@ -24,15 +25,18 @@ class GantryControl(object):
                 self.__target_wp = target_wp
                 b_new_wp = True
             else:
+                print('ERROR:target way-point: x=' + str(target_wp(0) + ' y=' + str(target_wp(1)) + ' not in workspace'))
                 b_new_wp = False
         else:
+            print('ERROR: Dimension mismatch!')
+            print('len(target_wp) ='+str(len(target_wp))+' ~= len(self.__gantry_pos)  ='+str(len(self.__gantry_pos)))
             b_new_wp = False
         return b_new_wp
 
     def check_wp_in_workspace(self, wp):
         gantry_dim = self.get_gantry_dimensions()
 
-        if wp[0] >= gantry_dim[0] and wp[0] <= gantry_dim[2] and wp[1] >= gantry_dim[1] and wp[1] <= gantry_dim[3]:
+        if wp[0] >= gantry_dim[0] and wp[0] <= gantry_dim[1] and wp[1] >= gantry_dim[2] and wp[1] <= gantry_dim[3]:
             bvalid_wp = True
         else:
             print ('ERROR: Target way-point cannot be approached!')
@@ -43,7 +47,6 @@ class GantryControl(object):
         return bvalid_wp
 
     def transmit_wp_to_gantry(self, targetwp):
-
         if self.set_target_wp(targetwp):
             btransmission = True
         else:
@@ -85,63 +88,59 @@ class GantryControl(object):
         :param measdata_filename:
         :return:
         """
+        # read data from waypoint file
+        with open(wplist_filename, 'r') as wpfile:
+            wp_data_list = [map(float, line.split(',')) for line in wpfile]
+            wp_data_mat = np.asarray(wp_data_list)
+            wpfile.close()
 
         with open(measdata_filename, 'w') as measfile:
-            with open(wplist_filename, 'r') as wpfile:
-                measfile.write(t.ctime() + '\n')
-                measfile.write('some describtion' + '\n')
-                measfile.write('\n')
-                plt.ion()
-                plt.xlabel('Distance in mm')
-                plt.ylabel('Distance in mm')
-                plt.xlim(-10, 2600)
-                plt.ylim(-10, 4500)
-                plt.grid()
-                plt.show()
-                wp_data_mat = np.zeros((1,4))
-                for line in wpfile:
-                    wp_line = line
+            # write header to measurement file
 
-                    tempstr = [x.strip() for x in wp_line.split(',')]  # 'strip' removes white spaces
+            measfile.write(t.ctime() + '\n')
+            measfile.write('some describtion' + '\n')
+            measfile.write('\n')
 
-                    numwp = int(tempstr[0])
-                    new_target_wpx = float(tempstr[1])
-                    new_target_wpy = float(tempstr[2])
-                    meastime = float(tempstr[3])
-                    single_wp_data = [numwp, new_target_wpx, new_target_wpy, meastime]
-                    #np.append(wp_data_mat, single_wp_data, axis=0)
-                    #print (str(single_wp_data))
-                    wp_data_mat[-1, :] = single_wp_data
-                    print(str(wp_data_mat))
+            # setup plot
+            plt.ion()
+            plt.plot(wp_data_mat[:, 1], wp_data_mat[:, 2], 'b.-')
+            plt.xlabel('Distance in mm')
+            plt.ylabel('Distance in mm')
+            plt.xlim(-10, 2600)
+            plt.ylim(-10, 4500)
+            plt.grid()
+            plt.show()
 
-                # loop through wp-list
-                for i in range(wp_data_mat.shape[0]):
-                    #print(str(wp_data_mat[i,:]))
-                    numwp = wp_data_mat[i, 0]
-                    new_target_wp = wp_data_mat[i, 1:2]
-                    meastime = wp_data_mat[i, 3]
-                    #np.append(plot_wp, new_target_wp, axis=1)
-                    #print (plot_wp.shape)
+            totnumofwp = np.shape(wp_data_mat)
+            totnumofwp = totnumofwp[0]
+            print ('Number of waypoints = ' + str(totnumofwp) + '\n')
 
-                    if self.transmit_wp_to_gantry(new_target_wp):
-                        if self.move_gantry_to_target():
-                            if self.confirm_arrived_at_wp():
-                                print('START Measurement for ' + str(meastime) + 's')
-                                plt.plot(new_target_wp[0], new_target_wp[1], 'go')
-                                plt.title('Way-Points')
-                        else:
-                            print ('Error: Failed to move gantry to new way-point!')
-                            print ('Way-point #' + str(numwp) + ' @ position x= ' +
-                                   str(new_target_wp[0]) + ', y = ' + str(new_target_wp[1]))
+            # loop over all way-points
+            for row in wp_data_mat:
 
+                numwp = int(row[0])
+                new_target_wpx = row[1]
+                new_target_wpy = row[2]
+                new_target_wp = [new_target_wpx, new_target_wpy]  # find a solution for this uggly workaround...
+                meastime = row[3]
+
+                if self.transmit_wp_to_gantry(new_target_wp):
+                    if self.move_gantry_to_target():
+                        if self.confirm_arrived_at_wp():
+                            print('START Measurement for ' + str(meastime) + 's')
+                            plt.plot(new_target_wp[0], new_target_wp[1], 'go')
+                            plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + 'way-points')
                     else:
-                        print ('Error: Failed to transmit new way-point to gantry!')
-                        print ('point#' + str(numwp) + ' @ position x= ' +
+                        print ('Error: Failed to move gantry to new way-point!')
+                        print ('Way-point #' + str(numwp) + ' @ position x= ' +
                                str(new_target_wp[0]) + ', y = ' + str(new_target_wp[1]))
-                    plt.pause(0.001)
-                    print
 
-                wpfile.close()
+                else:
+                    print ('Error: Failed to transmit new way-point to gantry!')
+                    print ('point#' + str(numwp) + ' @ position x= ' +
+                           str(new_target_wp[0]) + ', y = ' + str(new_target_wp[1]))
+                plt.pause(0.001)
+                print
             measfile.close()
         return True
 
