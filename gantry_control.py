@@ -5,10 +5,12 @@ import rf
 
 
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0, 2500, 0, 4500]):  # [x0,x1 y0, y1]
+    def __init__(self, gantry_dimensions=[0, 2500, 0, 4500]):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0]  # initial position after start
         self.__target_wp = []
+        self.__oCal = []
+        self.__oLoc = []
 
     def get_gantry_dimensions(self):
         return self.__dimensions
@@ -130,6 +132,8 @@ class GantryControl(object):
                             print('START Measurement for ' + str(meastime) + 's')
                             plt.plot(new_target_wp[0], new_target_wp[1], 'go')
                             plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + 'way-points')
+                            # Cal.take_measurement(meastime, outputmode='fft')
+
                     else:
                         print ('Error: Failed to move gantry to new way-point!')
                         print ('Way-point #' + str(numwp) + ' @ position x= ' +
@@ -144,8 +148,12 @@ class GantryControl(object):
             measfile.close()
         return True
 
-    def start_sdr(self):
-        rf.CalEar(433.9e6)
+    def start_CalEar(self, centerfreq=433.9e6):
+        self.__oCal = rf.CalEar(centerfreq)
+        return True
+
+    def start_LocEar(self, centerfreq=433.9e6):
+        #rf.CalEar(centerfreq)
         return True
 
 

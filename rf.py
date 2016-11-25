@@ -103,7 +103,7 @@ class RfEar(object):
                 printing = False
         return True
 
-    def take_measurement(self, meastime, outputmode='fft'):
+    def take_measurement(self, meastime, outputmode):
         """
 
         :param meastime:
@@ -131,6 +131,7 @@ class RfEar(object):
                 start_calctime = t.time()
 
                 freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+
                 np.append(dataseq, pxx_den_max, axis=1)
 
                 calc_time = t.time() - start_calctime
