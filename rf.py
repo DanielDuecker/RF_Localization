@@ -54,7 +54,7 @@ class RfEar(object):
         return samples
 
     def set_freq(self, *args):
-        """Defines frequencies where to listen (between 27MMz and 1.7GHz).
+        """Defines frequencies where to listen (between 27MHz and 1.7GHz).
         The range must be in the __sdr.sample_rate bandwidth.
 
         Keyword arguments:
@@ -71,7 +71,7 @@ class RfEar(object):
         """Returns list of frequencies assigned to the object."""
         return self.__freq
 
-    def set_srate(self, srate):
+    def set_srate(self, srate=2.4e6):
         """Defines the sampling rate.
 
         Keyword arguments:
@@ -325,6 +325,7 @@ class CalEar(RfEar):
         variance = []
         plt.figure()
         plt.grid()
+
         print ('RSS ist measured at freq: ' + str(freqtx[0] / 1e6) +
                'MHz, frequency span is +/-' + str(freqrange / 1e3) + 'kHz \n')
         while testing:
@@ -375,8 +376,8 @@ class CalEar(RfEar):
         :param pdata -- array containing the power values [dB]
         :param vdata -- array containing the variance of the measurement series [dB]
         """
-        x_init = raw_input('Please enter initial distance [cm]: ')
-        x_step = raw_input('Please enter step size [cm]:')
+        x_init = raw_input('Please enter initial distance [mm]: ')
+        x_step = raw_input('Please enter step size [mm]:')
         xdata = np.arange(int(x_init), int(x_init)+len(pdata)*int(x_step), int(x_step))
         xdata = np.array(xdata, dtype=float)
         pdata = np.array(pdata, dtype=float)
@@ -394,7 +395,7 @@ class CalEar(RfEar):
         xdata = np.linspace(xdata[0], xdata[-1], num=1000)
         plt.plot(xdata, func(xdata, *popt), label='Fitted Curve')
         plt.legend(loc='upper right')
-        plt.xlabel('Distance [cm]')
+        plt.xlabel('Distance [mm]')
         plt.ylabel('RSS [dB]')
         plt.show()
         return popt
@@ -488,7 +489,7 @@ class LocEar(RfEar):
         """
 
         dist_ref = raw_input('Please enter distance '
-                             'from transmitter to receiver [cm]: ')
+                             'from transmitter to receiver [mm]: ')
 
         def rsm_func(ref, xi_diff_cal):
             """RSM structure with correction param xi_diff_cal."""
@@ -537,16 +538,15 @@ class LocEar(RfEar):
         """Returns the calibrated RSM params."""
         return self.__alpha[numtx], self.__xi[numtx]
 
-
-
     def map_path_ekf(self, x0, txpos, bplot=True, blog=False, bprintdata=False):
         """ map/track the position of the mobile node using an EKF
 
         Keyword arguments:
         :param x0 -- initial estimate of the mobile node position
-        :param txpos -- vector of tx positions [x,y], first tx is origin of coordinate frame [cm]
+        :param txpos -- vector of tx positions [x,y], first tx is origin of coordinate frame [mm]
         :param bplot -- Activate/Deactivate liveplotting the data (True/False)
         :param blog -- activate data logging to file (default: False)
+        :param bprintdata -
         """
 
         # measurement function
@@ -569,15 +569,15 @@ class LocEar(RfEar):
             fig1 = plt.figure(1)
             ax = fig1.add_subplot(111)
 
-            x_min = -50.0
-            x_max = 150.0
-            y_min = -50.0
-            y_max = 200.0
+            x_min = -500.0
+            x_max = 1500.0
+            y_min = -500.0
+            y_max = 2000.0
             plt.axis([x_min, x_max, y_min, y_max])
 
             plt.grid()
-            plt.xlabel('x-Axis [cm]')
-            plt.ylabel('y-Axis [cm]')
+            plt.xlabel('x-Axis [mm]')
+            plt.ylabel('y-Axis [mm]')
 
             for i in range(self.__numoftx):
                 ax.plot(txpos[i, 0], txpos[i, 1], 'ro')
@@ -593,17 +593,17 @@ class LocEar(RfEar):
 
         """ initialize EKF """
         # standard deviations
-        sig_x1 = 50
-        sig_x2 = 50
+        sig_x1 = 500
+        sig_x2 = 500
         p_mat = np.array(np.diag([sig_x1 ** 2, sig_x2 ** 2]))
 
         # process noise
-        sig_w1 = 2
-        sig_w2 = 2
+        sig_w1 = 20
+        sig_w2 = 20
         q_mat = np.array(np.diag([sig_w1 ** 2, sig_w2 ** 2]))
 
         # measurement noise
-        sig_r = 1
+        sig_r = 10
         r_mat = sig_r ** 2
 
         # initial values and system dynamic (=eye)
@@ -677,12 +677,12 @@ class LocEar(RfEar):
             fig2 = plt.figure(2)
             ax21 = fig2.add_subplot(211)
             ax21.grid()
-            ax21.set_ylabel('x-position [cm]')
+            ax21.set_ylabel('x-position [mm]')
             ax21.plot(x_log[0, :], 'b-')
 
             ax22 = fig2.add_subplot(212)
             ax22.grid()
-            ax22.set_ylabel('y-position [cm]')
+            ax22.set_ylabel('y-position [mm]')
             ax22.plot(x_log[1, :], 'b-')
 
             fig2.canvas.draw()
@@ -700,7 +700,7 @@ class LocEar(RfEar):
         """
         z = 20 / (np.log(10) * self.__alpha[numtx]) * lambertw(
             np.log(10) * self.__alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + self.__xi[numtx])))
-        return z.real
+        return z.real # [mm]
 
     def plot_txdist_live(self,freqspan=2e4, numofplottedsamples=250):
         """ Live plot for the measured distances from each tx using rss
@@ -748,8 +748,8 @@ class LocEar(RfEar):
                 for i in range(numoftx):
                     plt.plot(rdist[i, firstdata:-1], str(colorvec[i])+'.-',
                              label="Freq = " + str(freq_found[i] / 1e6) + ' MHz')
-                plt.ylim(-10, 300)
-                plt.ylabel('R [cm]')
+                plt.ylim(-100, 3000)
+                plt.ylabel('R [mm]')
                 plt.grid()
                 plt.legend(loc='upper right')
                 plt.pause(0.001)
@@ -767,56 +767,3 @@ class LocEar(RfEar):
         print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
-
-
-# define general methods
-def plot_result(results):
-    """Plot results extracted from textfile."""
-    plt.figure()
-    plt.grid()
-    plt.axis([0, len(results), -50, 30])
-    plt.plot(10*np.log10(results), 'o')
-    plt.xlabel('Updates')
-    plt.ylabel('Maximum power (dBm)')
-    plt.show()
-
-
-def write_to_file(results, text, filename='Experiments'):
-    """Save experimental results in a simple text file.
-
-    Keyword arguments:
-    :param results -- list containing data
-    :param text -- description of results
-    :param filename -- name of file (default 'Experiments')
-    """
-    datei = open(filename, 'a')
-    datei.write(t.ctime() + '\n')
-    datei.write(text + '\n')
-    datei.write(str(results))
-    datei.write('\n\n')
-    datei.close()
-
-
-def plot_map(pos_est, x_max=53.5):
-    """Plot path from recorded data.
-
-    Keyword arguments:
-    x_max -- distance between the transmitting stations [cm] (default 53.5)
-    """
-    x_min = 0
-    y_min = -100
-    y_max = 100
-    x_est = []
-    y_est = []
-    for i in pos_est:
-        x_est.append((np.power(i[0],2)-np.power(i[1],2)+np.power(x_max,2))/(2*x_max))
-        y_est.append(np.sqrt(np.power(i[0],2) - np.power(x_est[-1],2)))
-    plt.figure()
-    plt.plot(x_est, y_est, 'bo')
-    plt.axis([x_min, x_max, y_min, y_max])
-    plt.grid()
-    plt.show()
-
-
-
-
