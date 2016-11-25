@@ -103,7 +103,7 @@ class RfEar(object):
                 printing = False
         return True
 
-    def take_measurement(self, meastime, outputmode='sampleseq'):
+    def take_measurement(self, meastime, outputmode='fft'):
         """
 
         :param meastime:
@@ -135,11 +135,10 @@ class RfEar(object):
 
                 calc_time = t.time() - start_calctime
                 elapsed_time = elapsed_time + calc_time
-                t.sleep(0.01)
+                t.sleep(0.001)
             return dataseq
         else:
             print('ERROR: -take_measurement- outputmode has to be "sampleseq" or "fft" !')
-
 
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
@@ -165,7 +164,6 @@ class RfEar(object):
             try:
                 # Busy-wait for keyboard interrupt (Ctrl+C)
                 freq, pxx_den = self.get_absfreq_pden_sorted()
-
                 line1.set_ydata(10*np.log10(pxx_den))
 
                 ## @todo annotations on the frequency peaks
@@ -181,23 +179,6 @@ class RfEar(object):
                 print ('Liveplot interrupted by user')
                 drawing = False
         return True
-
-    def get_rss(self):
-        """Find maximum power values around specified freq points.
-        Returns received signal strength (rss) in dB.
-        """
-        samples = self.get_iq()
-        freq, pxx_den = signal.periodogram(samples,
-                                           fs=sdr.sample_rate, nfft=1024)
-        del freq
-        if len(self.__freq) == 1:
-            rss = [10*np.log10(max(pxx_den))]  # Power in dB !!!
-        elif len(self.__freq) == 2:
-            pxx_den_left = pxx_den[:len(pxx_den)/2]
-            pxx_den_right = pxx_den[len(pxx_den)/2:]
-            rss = [10*np.log10(max(pxx_den_left)),
-                   10*np.log10(max(pxx_den_right))]
-        return rss
 
     def get_absfreq_pden_sorted(self):
         """
@@ -219,11 +200,11 @@ class RfEar(object):
 
         return freq_sorted, pxx_den_sorted
 
-    def get_max_rss_in_freqspan(self, freqtx, freqspan):
+    def get_max_rss_in_freqspan(self, freqtx, freqspan=2e4):
         """
         find maximum rss peaks in spectrum
         :param freqtx: frequency which max power density is looked for
-        :param freqspan: width of the frequency span
+        :param freqspan: width of the frequency span (default 2e4Hz)
         :return: frequeny, maxpower
         """
 
@@ -320,30 +301,6 @@ class RfEar(object):
     def rfear_type(self):
         """Return a string representing the type of rfear this is."""
         pass
-
-    #unused
-    def rpi_get_power(self, printing=0, size=256):
-        """Routine for Raspberry Pi.
-
-        Keyword arguments:
-        :param printing -- visible output on terminal (default  0)
-        :param size -- measure for length of fft (default 256*1024)
-        """
-        sdr.center_freq = np.mean(self.__freq)
-        running = True
-        pmax = []
-        self.set_size(size)
-        while running:
-            try:
-                pmax.append(self.get_rss())
-                if printing:
-                    print (self.get_rss())
-                    print ('\n')
-                else:
-                    pass
-            except KeyboardInterrupt:
-                print ('Process interrupted by user')
-                return pmax
 
 
 class CalEar(RfEar):
@@ -449,12 +406,15 @@ class CalEar(RfEar):
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
 
-    def get_performance(self, bandwidth=2.4e6):
+    def get_performance(self, testfreqtx=433.91e6, bandwidth=2.4e6):
         """Measure performance at certain sizes and sampling rates.
 
         Keyword arguments:
+        :param testfreqtx -- single frequency for which the performence is determined
         :param bandwidth -- sampling rate of sdr [Ms/s] (default 2.4e6)
         """
+        print('Performance test started!')
+        freqtx = [testfreqtx]
         sdr.center_freq = np.mean(self.get_freq())
         self.set_srate(bandwidth)
         measurements = 100
@@ -473,7 +433,8 @@ class CalEar(RfEar):
                 start_calctime = t.time()
                 # use matplotlib to estimate the PSD and save the max power
                 self.set_size(i)
-                powerstack.append(self.get_rss())
+                freqmax, pxx_max = self.get_max_rss_in_freqspan(freqtx)
+                powerstack.append(pxx_max)
                 t.sleep(0.005)
                 calctime = t.time() - start_calctime
                 timestack.append(calctime)
@@ -483,6 +444,9 @@ class CalEar(RfEar):
             MEAN.append(np.mean(powerstack))
             UPDATE.append(calctime)
             total_time = total_time+elapsed_time
+            print (str(measurements) + ' measurements for batch-size ' + str(self.get_size()) +
+                   ' * 1024 finished after ' + str(elapsed_time) + 's. => ' + str(measurements/elapsed_time) + 'Hz')
+        print('')
         print ('Finished.')
         print ('Total time [sec]: ')
         print (total_time)
@@ -794,41 +758,6 @@ class LocEar(RfEar):
                 print ('Liveplot interrupted by user')
                 drawing = False
         return True
-
-    def map_path(self, dist_tx):
-        """Maps estimated location in 1D or 2D respectively.
-
-        Keyword arguments:
-        :param dist_tx -- distance between the transmitting stations [cm] (default 55.0)
-        """
-        sdr.center_freq = np.mean(self.get_freq())
-        x_min = -10.0
-        x_max = dist_tx+10.0
-        y_min = -100.0
-        y_max = 100.0
-        plt.axis([x_min, x_max, y_min, y_max])
-        plt.ion()
-        plt.grid()
-        plt.xlabel('x-Axis [cm]')
-        plt.ylabel('y-Axis [cm]')
-        drawing = True
-        pos_est = []
-        while drawing:
-            try:
-                rss = self.get_rss()
-                pos_est.append(self.lambertloc(rss))
-                if len(pos_est[-1]) == 1:
-                    plt.plot(pos_est[-1], 0, 'bo')
-                elif len(pos_est[-1]) == 2:
-                    x_est = (pos_est[-1][0]**2-pos_est[-1][1]**2+dist_tx**2)/(2*dist_tx)
-                    y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
-                    plt.plot(x_est, y_est, 'bo')
-                plt.show()
-                plt.pause(0.001)
-            except KeyboardInterrupt:
-                print ('Localization interrupted by user')
-                drawing = False
-        return pos_est
 
     def rfear_type(self):
         """Return a string representing the type of RfEar this is."""
