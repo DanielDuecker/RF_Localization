@@ -132,7 +132,7 @@ class GantryControl(object):
                             print('START Measurement for ' + str(meastime) + 's')
                             plt.plot(new_target_wp[0], new_target_wp[1], 'go')
                             plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + 'way-points')
-                            # Cal.take_measurement(meastime, outputmode='fft')
+                            self.__oCal.take_measurement(meastime, outputmode='fft')
 
                     else:
                         print ('Error: Failed to move gantry to new way-point!')
@@ -148,12 +148,12 @@ class GantryControl(object):
             measfile.close()
         return True
 
-    def start_CalEar(self, centerfreq=433.9e6):
-        self.__oCal = rf.CalEar(centerfreq)
+    def start_CalEar(self, freqtx=433.9e6, centerfreq=433.9e6, freqspan=2e4):
+        self.__oCal = rf.CalEar(freqtx, centerfreq, freqspan)
         return True
 
-    def start_LocEar(self, centerfreq=433.9e6):
-        #rf.CalEar(centerfreq)
+    def start_LocEar(self, freqtx, centerfreq, alpha, xi, freqspan=2e4):
+        self.__oLoc = rf.LocEar(centerfreq, alpha, xi, freqtx, freqspan)
         return True
 
 
@@ -168,7 +168,7 @@ def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1000, 1000], steps=[11
     :param x0: [x0,y0] - start position of the grid
     :param xn: [xn,yn] - end position of the grid
     :param steps: [numX, numY] - step size
-    :param timestep: - time [s] to wait at each position for measurements
+    :param timemeas: - time [s] to wait at each position for measurements
     :return: wp_mat [x, y, t]
     """
     startx = x0[0]
