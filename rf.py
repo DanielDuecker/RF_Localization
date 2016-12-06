@@ -28,14 +28,17 @@ class RfEar(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, *args):
+    def __init__(self, freqtx=433.9e6, freqspan=2e4):
         """Keyword-arguments:
         :param *args -- list of frequencies (must be in a range of __sdr.sample_rate)
         """
-        self.__freq = []
-        self.set_freq(self, *args)
+        self.__freqtx = []
+        self.set_freq(np.asarray(freqtx))
+        self.__numoftx = len(self.__freqtx)
+        self.__freqspan = freqspan
         self.__size = 0
         self.set_size(256)
+
 
     def set_size(self, size):
         """Set number of samples to be read by sdr [*1024].
@@ -53,23 +56,18 @@ class RfEar(object):
         samples = sdr.read_samples(self.__size * 1024)
         return samples
 
-    def set_freq(self, *args):
+    def set_freq(self, freqtx):
         """Defines frequencies where to listen (between 27MHz and 1.7GHz).
         The range must be in the __sdr.sample_rate bandwidth.
 
         Keyword arguments:
-        :param *args -- single frequency or array of frequencies (default none)
+        :param freqtx -- single frequency or array of frequencies (default none)
         """
-        self.__freq[:] = []
-        for arg in args:
-            self.__freq.append(arg)
-        if not isinstance(self.__freq[0], float):
-            self.__freq = self.__freq[1:]
-        sdr.center_freq = np.mean(self.__freq)
+        sdr.center_freq = np.mean(freqtx)
 
     def get_freq(self):
         """Returns list of frequencies assigned to the object."""
-        return self.__freq
+        return self.__freqtx
 
     def set_srate(self, srate=2.4e6):
         """Defines the sampling rate.
@@ -197,7 +195,7 @@ class RfEar(object):
         freq_sorted = np.concatenate((freq[len(freq) / 2:], freq[:len(freq) / 2]), axis=1)
         pxx_den_sorted = np.concatenate((pxx_den[len(pxx_den) / 2:], pxx_den[:len(pxx_den) / 2]), axis=1)
 
-        freq_sorted = freq_sorted + sdr.center_freq # add centerfreq to get absolut frequency values
+        freq_sorted = freq_sorted + sdr.center_freq  # add centerfreq to get absolut frequency values
 
         return freq_sorted, pxx_den_sorted
 
@@ -246,14 +244,17 @@ class RfEar(object):
 
         return freq_den_max, pdb_den_max
 
-    def plot_txrss_live(self, freq, freqspan=2e4, numofplottedsamples=250):
+    def plot_txrss_live(self, numofplottedsamples=250):
         """ Live plot for the measured rss from each tx
 
         :param freqspan: width of the frequencyspan around the tracked frq
         :param numofplottedsamples: number of displayed samples (default= 250)
         :return: 0
         """
-        numoftx = len(freq)
+        freq = self.__freqtx
+        numoftx = self.__numoftx
+        freqspan = self.__freqspan
+
         if numoftx > 7:
             print('Number of tracked tx needs to be <=7!')  # see length of colorvec
             print('Terminate method!')
@@ -306,8 +307,11 @@ class RfEar(object):
 
 class CalEar(RfEar):
     """Subclass of Superclass RfEar for modelling and testing purpose."""
-    def __init__(self, *args):
-        RfEar.__init__(self, *args)
+    #def __init__(self, freqtx, freqspan=2e4, *args):
+    #    RfEar.__init__(self, *args)
+    #    self.__freqtx = freqtx
+    #    self.__freqspan = freqspan
+    #    self.__numoftx = len(freqtx)
 
     def measure_rss_var(self, freqtx, freqrange=2e4, time=10.0):
         """
@@ -475,13 +479,20 @@ class CalEar(RfEar):
 
 class LocEar(RfEar):
     """Subclass of Superclass RfEar for 2D dynamic object localization."""
-    def __init__(self, alpha, xi, freqtx, freqspan, *args):
-        RfEar.__init__(self, *args)
+    def __init__(self, alpha, xi, freqtx, freqspan, txpos):
+        RfEar.__init__(self,  freqtx, freqspan)
         self.__alpha = alpha
         self.__xi = xi
-        self.__freqtx = freqtx
-        self.__freqspan = freqspan
-        self.__numoftx = len(freqtx)
+        self.__txpos = []
+        self.set_txpos(txpos)
+
+    def set_txpos(self, txpos):
+        """
+
+        :param txpos:
+        :return:
+        """
+        self.__txpos = txpos  # @todo: implement a dimension check
 
     def calibrate(self, numtx=0, time=20.0):
         """Adjust RSM in line with measurement.
@@ -539,7 +550,7 @@ class LocEar(RfEar):
         """Returns the calibrated RSM params."""
         return self.__alpha[numtx], self.__xi[numtx]
 
-    def map_path_ekf(self, x0, txpos, bplot=True, blog=False, bprintdata=False):
+    def map_path_ekf(self, x0, bplot=True, blog=False, bprintdata=False):
         """ map/track the position of the mobile node using an EKF
 
         Keyword arguments:
@@ -564,6 +575,7 @@ class LocEar(RfEar):
             h_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
             return h_jac
 
+        txpos = self.__txpos
         """ setup figure """
         if bplot:
             plt.ion()

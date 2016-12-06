@@ -1,6 +1,8 @@
 import rf
 import numpy as np
-cal = rf.CalEar(433.9e6)
+
+freqtx = [433.7e6, 433.9e6, 434.16e6]
+cal = rf.CalEar(freqtx)
 
 #cal.print_pxx_density()
 
@@ -11,8 +13,8 @@ cal = rf.CalEar(433.9e6)
 
 #cal.get_performance()
 
-freqtx = [433.7e6, 433.9e6, 434.16e6]
-cal.plot_txrss_live(freqtx)
+
+cal.plot_txrss_live()
 
 #rss, var = cal.measure_rss_var(freqtx, 2e4, 10.0)
 #alpha, xi = cal.get_model(rss, var)
@@ -74,7 +76,7 @@ freqspan = 2e4
 freqcenter = 434.0e6
 
 
-#loc = rf.LocEar(alpha, xi, freqtx, freqspan, freqcenter)
+loc = rf.LocEar(alpha, xi, freqtx, freqspan, freqcenter)
 
 #loc.plot_txdist_live()
 # loc.calibrate(2)
@@ -85,4 +87,4 @@ txpos = np.array([[0.0, 0.0],     # 433,91MHz
                   [40.0, 62.0]])  # 433,70MHz
 
 x0 = np.array([30, 40])  # initial estimate
-#loc.map_path_ekf(x0, txpos, False, False, True)
+#loc.map_path_ekf(x0, False, False, True)
