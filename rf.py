@@ -28,12 +28,13 @@ class RfEar(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, freqtx=433.9e6, freqspan=2e4):
+    def __init__(self, freqtx, freqspan=2e4):
         """Keyword-arguments:
         :param *args -- list of frequencies (must be in a range of __sdr.sample_rate)
         """
-        self.__freqtx = []
-        self.set_freq(np.asarray(freqtx))
+
+        self.__freqtx = freqtx
+        self.set_freq(self.__freqtx)
         self.__numoftx = len(self.__freqtx)
         self.__freqspan = freqspan
         self.__size = 0
@@ -122,20 +123,21 @@ class RfEar(object):
                 calc_time = t.time() - start_calctime
                 elapsed_time = elapsed_time + calc_time
                 t.sleep(0.01)
-            return dataseq
+            dataseq_mat = np.asarray(dataseq)
+            return dataseq_mat
         elif outputmode == 'fft':
-            print('FFT not implemented yet')
+            # print('FFT not implemented yet')
             while elapsed_time < meastime:
                 start_calctime = t.time()
-
                 freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
 
-                np.append(dataseq, pxx_den_max, axis=1)
+                dataseq.append(pxx_den_max)
 
                 calc_time = t.time() - start_calctime
                 elapsed_time = elapsed_time + calc_time
                 t.sleep(0.001)
-            return dataseq
+                dataseq_mat = np.asarray(dataseq)
+            return dataseq_mat
         else:
             print('ERROR: -take_measurement- outputmode has to be "sampleseq" or "fft" !')
 
@@ -307,8 +309,8 @@ class RfEar(object):
 
 class CalEar(RfEar):
     """Subclass of Superclass RfEar for modelling and testing purpose."""
-    #def __init__(self, freqtx, freqspan=2e4, *args):
-    #    RfEar.__init__(self, *args)
+    def __init__(self, freqtx=433.9e6, freqspan=2e4):
+        RfEar.__init__(self, freqtx, freqspan)
     #    self.__freqtx = freqtx
     #    self.__freqspan = freqspan
     #    self.__numoftx = len(freqtx)
@@ -479,7 +481,7 @@ class CalEar(RfEar):
 
 class LocEar(RfEar):
     """Subclass of Superclass RfEar for 2D dynamic object localization."""
-    def __init__(self, alpha, xi, freqtx, freqspan, txpos):
+    def __init__(self, alpha, xi, txpos, freqtx, freqspan=2e4):
         RfEar.__init__(self,  freqtx, freqspan)
         self.__alpha = alpha
         self.__xi = xi
@@ -780,3 +782,29 @@ class LocEar(RfEar):
         print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
+
+
+def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.0e6]):
+    # write header to measurement file
+    with open(measdata_filename, 'r') as measfile:
+        wp_meas_lis = []
+        for i, line in enumerate(measfile):
+            if i >= 3:  # ignore header (first 3 lines)
+
+                meas_data_list = map(float, line[0:-3].split(', '))
+                meas_data_mat_line = np.asarray(meas_data_list)
+
+
+                print ('x = ' + str(meas_data_mat_line[0]) + ' y= ' + str(meas_data_mat_line[1]))
+
+                wp_meas_lis.append([meas_data_mat_line[0], meas_data_mat_line[1], meas_data_mat_line[2]])
+
+                # @todo add numtx to data file
+                # freq_vec = [meas_data_mat_line[3:3+numtx]]
+                freq_vec = [meas_data_mat_line[4], meas_data_mat_line[1], meas_data_mat_line[2]]
+
+
+
+        wp_meas = np.asarray(wp_meas_lis)
+        print (str(wp_meas))
+        measfile.close()

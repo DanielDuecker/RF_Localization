@@ -100,7 +100,7 @@ class GantryControl(object):
             # write header to measurement file
 
             measfile.write(t.ctime() + '\n')
-            measfile.write('some describtion' + '\n')
+            measfile.write('some description' + '\n')
             measfile.write('\n')
 
             # setup plot
@@ -132,7 +132,25 @@ class GantryControl(object):
                             print('START Measurement for ' + str(meastime) + 's')
                             plt.plot(new_target_wp[0], new_target_wp[1], 'go')
                             plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + 'way-points')
-                            self.__oCal.take_measurement(meastime, outputmode='fft')
+                            dataseq = self.__oCal.take_measurement(meastime, outputmode='fft')
+
+                            [nummeas, numtx] = np.shape(dataseq)
+
+                            # way point data
+                            str_base_data = str(new_target_wp[0]) + ', ' + str(new_target_wp[1]) + ', ' +\
+                                            str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
+                            # freq data
+                            freqs = self.__oCal.get_freq()
+                            str_freqs = ', '.join(map(str, freqs)) + ', '
+
+                            # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
+                            #print('data ' + str(dataseq))
+                            str_rss = ''
+                            for i in range(numtx):
+                                str_rss = str_rss + ', '.join(map(str, dataseq[:, i])) + ', '
+
+                            measfile.write(str_base_data + str_freqs + str_rss + '\n')
+                            # print(str_base_data + str_freqs + str_rss)
 
                     else:
                         print ('Error: Failed to move gantry to new way-point!')
@@ -141,21 +159,20 @@ class GantryControl(object):
 
                 else:
                     print ('Error: Failed to transmit new way-point to gantry!')
-                    print ('point#' + str(numwp) + ' @ position x= ' +
+                    print ('point# ' + str(numwp) + ' @ position x= ' +
                            str(new_target_wp[0]) + ', y = ' + str(new_target_wp[1]))
                 plt.pause(0.001)
                 print
             measfile.close()
         return True
 
-    def start_CalEar(self, freqtx=433.9e6, centerfreq=433.9e6, freqspan=2e4):
-        self.__oCal = rf.CalEar(freqtx, centerfreq, freqspan)
+    def start_CalEar(self, freqtx=433.9e6, freqspan=2e4):
+        self.__oCal = rf.CalEar(freqtx, freqspan)
         return True
 
-    def start_LocEar(self, freqtx, centerfreq, alpha, xi, freqspan=2e4):
-        self.__oLoc = rf.LocEar(centerfreq, alpha, xi, freqtx, freqspan)
+    def start_LocEar(self, alpha, xi, txpos, freqtx, freqspan=2e4):
+        self.__oLoc = rf.LocEar(alpha, xi, txpos, freqtx, freqspan)
         return True
-
 
 """
 independent methods related to the gantry
