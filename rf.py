@@ -788,23 +788,37 @@ def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.0e6]):
     # write header to measurement file
     with open(measdata_filename, 'r') as measfile:
         wp_meas_lis = []
+
         for i, line in enumerate(measfile):
             if i >= 3:  # ignore header (first 3 lines)
 
                 meas_data_list = map(float, line[0:-3].split(', '))
+                print(meas_data_list)
+
                 meas_data_mat_line = np.asarray(meas_data_list)
+                print(meas_data_mat_line)
 
-
-                print ('x = ' + str(meas_data_mat_line[0]) + ' y= ' + str(meas_data_mat_line[1]))
+                # print ('x = ' + str(meas_data_mat_line[0]) + ' y= ' + str(meas_data_mat_line[1]))
 
                 wp_meas_lis.append([meas_data_mat_line[0], meas_data_mat_line[1], meas_data_mat_line[2]])
 
+                num_tx = int(meas_data_mat_line[3])
+                num_meas = int(meas_data_mat_line[4])
+                freq_vec = []
                 # @todo add numtx to data file
-                # freq_vec = [meas_data_mat_line[3:3+numtx]]
-                freq_vec = [meas_data_mat_line[4], meas_data_mat_line[1], meas_data_mat_line[2]]
+                first_rss = 5 + num_tx - 1
+                for tx in range(num_tx):
+                    freq_vec.append(meas_data_mat_line[5+tx])
+                    #for i_rss in range(num_meas):
+                    #    rss_data.append(meas_data_mat_line(first_rss + tx * num_meas - 1 + i_rss))
+
+                    # ftx1.1, ftx1.2, [..], ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
+
+                print ('freq_vec' + str(freq_vec))
+                # freq_vec = [meas_data_mat_line[4], meas_data_mat_line[1], meas_data_mat_line[2]]
 
 
 
-        wp_meas = np.asarray(wp_meas_lis)
-        print (str(wp_meas))
+        # wp_meas = np.asarray(wp_meas_lis)
+        # print (str(wp_meas))
         measfile.close()

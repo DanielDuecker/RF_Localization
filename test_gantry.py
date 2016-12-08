@@ -5,10 +5,9 @@ import numpy as np
 gt = gantry_control.GantryControl()
 
 # gantry_control.wp_generator('wp_list.txt')
-<<<<<<< HEAD
+
 gt.start_LocEar(freqtx=[433.7e6, 433.9e6])
 gt.process_measurement_sequence('wp_list.txt', 'measdata.txt')
-=======
 
 gt.start_CalEar(freqtx=[433.9e6, 434e6])
 gt.process_measurement_sequence('wp_list.txt', 'measdata2.txt')
@@ -29,4 +28,3 @@ txpos = np.array([[0.0, 0.0],     # 433,91MHz
 # gt.start_LocEar(alpha, xi, txpos, freqtx)
 
 # gt.process_measurement_sequence('wp_list.txt', 'measdata.txt')
->>>>>>> ffbc88d7c430060b55910338103e2afe42914d28

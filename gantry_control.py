@@ -136,7 +136,7 @@ class GantryControl(object):
 
                             [nummeas, numtx] = np.shape(dataseq)
 
-                            # way point data
+                            # way point data - structure 'wp_x, wp_y, num_wp, num_tx, num_meas'
                             str_base_data = str(new_target_wp[0]) + ', ' + str(new_target_wp[1]) + ', ' +\
                                             str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
                             # freq data
