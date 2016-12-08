@@ -8,11 +8,11 @@ freqtx = [433.7e6, 433.9e6, 434.16e6]
 
 
 
-#cal = rf.CalEar(freqtx)
+cal = rf.CalEar(freqtx)
 
 #cal.print_pxx_density()
 
-#cal.plot_psd()
+cal.plot_psd()
 
 #cal.wp_generator('test_wp_list.txt')
 #cal.measure_at_waypoint('test_wp_list.txt', 'meas_test.txt')
@@ -98,6 +98,6 @@ x0 = np.array([30, 40])  # initial estimate
 
 txpos = np.array([[0.0, 0.0],     # 433,91MHz
                   [80.0, 0.0]])  # 433,70MHz
-rf.get_measdata_from_file('measdata.txt', txpos)
+#rf.get_measdata_from_file('measdata.txt', txpos)
 
 #loc.map_path_ekf(x0, False, False, True)

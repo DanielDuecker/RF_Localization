@@ -144,7 +144,7 @@ class RfEar(object):
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
 
-        sdr.center_freq = np.mean(self.__freq)
+        sdr.center_freq = np.mean(self.__freqtx)
         plt.ion()      # turn interactive mode on
         fig = plt.figure()
         ax = fig.add_subplot(111)
