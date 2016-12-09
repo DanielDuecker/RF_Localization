@@ -1,7 +1,7 @@
 import rf
 import numpy as np
 
-freqtx = [433.7e6, 433.9e6, 434.16e6]
+freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 
 
 
@@ -12,7 +12,7 @@ cal = rf.CalEar(freqtx)
 
 #cal.print_pxx_density()
 
-cal.plot_psd()
+# cal.plot_psd()
 
 #cal.wp_generator('test_wp_list.txt')
 #cal.measure_at_waypoint('test_wp_list.txt', 'meas_test.txt')
@@ -20,7 +20,7 @@ cal.plot_psd()
 #cal.get_performance()
 
 
-#cal.plot_txrss_live()
+cal.plot_txrss_live()
 
 #rss, var = cal.measure_rss_var(freqtx, 2e4, 10.0)
 #alpha, xi = cal.get_model(rss, var)
