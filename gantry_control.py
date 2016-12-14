@@ -59,13 +59,16 @@ class GantryControl(object):
     def move_gantry_to_target(self):
         target_wp = self.__target_wp
 
-        print ('move gantry to way-point x= ' + str(target_wp[0]) + ' y= ' + str(target_wp[1]))
+        print ('move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
+
 
         # some control stuff can be inserted here
         t.sleep(1.0)
         self.set_gantry_pos(target_wp)
         if self.get_gantry_pos() == target_wp:
             print ('arrived at new waypoint')
+            inc_pos = target_wp[0] * 1e6 / 310 + 1e6
+            raw_input(' confirm arrival at INC pos x [inc] = ' + str(inc_pos))
             bArrived = True
         else:
             print ('Gantry haven t arrived at target way-point')
@@ -108,12 +111,13 @@ class GantryControl(object):
             plt.plot(wp_data_mat[:, 1], wp_data_mat[:, 2], 'b.-')
             plt.xlabel('Distance in mm')
             plt.ylabel('Distance in mm')
-            plt.xlim(-10, 2600)
-            plt.ylim(-10, 4500)
+            plt.xlim(-10, 1800)
+            plt.ylim(-10, 2000)
             plt.grid()
             plt.show()
 
             totnumofwp = np.shape(wp_data_mat)
+
             totnumofwp = totnumofwp[0]
             print ('Number of waypoints = ' + str(totnumofwp) + '\n')
 
@@ -130,8 +134,9 @@ class GantryControl(object):
                     if self.move_gantry_to_target():
                         if self.confirm_arrived_at_wp():
                             print('START Measurement for ' + str(meastime) + 's')
+                            print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
                             plt.plot(new_target_wp[0], new_target_wp[1], 'go')
-                            plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + 'way-points')
+                            plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
                             dataseq = self.__oCal.take_measurement(meastime, outputmode='fft')
 
                             [nummeas, numtx] = np.shape(dataseq)
@@ -179,7 +184,7 @@ independent methods related to the gantry
 """
 
 
-def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1000, 1000], steps=[11, 11], timemeas=1.0):
+def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0):
     """
     :param wp_filename:
     :param x0: [x0,y0] - start position of the grid
@@ -207,7 +212,7 @@ def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1000, 1000], steps=[11
     wp_mat = np.append(wp_vecx, wp_vecy, axis=1)
     wp_mat = np.append(wp_mat, wp_time, axis=1)
 
-    with open(wp_filename, 'a') as wpfile:
+    with open(wp_filename, 'w') as wpfile:
         # wpfile.write(t.ctime() + '\n')
         # wpfile.write('some describtion' + '\n')
         for i in range(wp_mat.shape[0]):
