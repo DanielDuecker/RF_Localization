@@ -4,11 +4,13 @@ import numpy as np
 freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 
 
+txpos = [[0, 0], [800, 0], [50, 1270], [750, 1270]]
+rf.get_measdata_from_file('measdata_2016_12_14.txt', txpos, freqtx)
 
 
 
 
-cal = rf.CalEar(freqtx)
+#cal = rf.CalEar(freqtx)
 
 #cal.print_pxx_density()
 
@@ -20,7 +22,7 @@ cal = rf.CalEar(freqtx)
 #cal.get_performance()
 
 
-cal.plot_txrss_live()
+#cal.plot_txrss_live()
 
 #rss, var = cal.measure_rss_var(freqtx, 2e4, 10.0)
 #alpha, xi = cal.get_model(rss, var)

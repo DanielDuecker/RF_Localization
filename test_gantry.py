@@ -11,8 +11,8 @@ freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 #gt.start_LocEar(freqtx)
 #gt.process_measurement_sequence('wp_list_2016_12_14.txt', 'measdata_2016_12_14.txt')
 
-gt.start_CalEar(freqtx)
-gt.process_measurement_sequence('wp_list_2016_12_14.txt', 'measdata_2016_12_14.txt')
+#gt.start_CalEar(freqtx)
+#gt.process_measurement_sequence('wp_list_2016_12_15.txt', 'measdata_2016_12_15.txt')
 
 
 
