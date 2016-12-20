@@ -883,29 +883,30 @@ def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.0e6]):
         rdist_temp = np.reshape(rdist,[num_tx, totnumwp])
 
 
-        for itx in range(num_tx):
-            plt.figure()
-            plt.grid()
 
+        fig = plt.figure()
+        for itx in range(num_tx):
             rss_mean = plotdata_mat[:, 2+itx]
             rss_var = plotdata_mat[:, 2+num_tx+itx]
 
             rdist = np.array(rdist_temp[itx,:], dtype=float)
             rss_mean = np.array(rss_mean, dtype=float)
             rss_var = np.array(rss_var, dtype=float)
-
-            plt.errorbar(rdist, rss_mean, yerr=rss_var,
+            pos = 221 + itx
+            ax = fig.add_subplot(pos)
+            ax.errorbar(rdist, rss_mean, yerr=rss_var,
                          fmt='ro', ecolor='g', label='Original Data')
 
             #print ('alpha = %s , xi = %s' % (alpha, xi))
 
             rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
-            plt.plot(rdata, rsm_model(rdata, alpha[itx], xi[itx]), label='Fitted Curve')
-            plt.legend(loc='upper right')
-            plt.xlabel('Distance [mm]')
-            plt.ylabel('RSS [dB]')
-            plt.title('RSM for TX# ' + str(itx+1))
-            plt.show()
+            ax.plot(rdata, rsm_model(rdata, alpha[itx], xi[itx]), label='Fitted Curve')
+            ax.legend(loc='upper right')
+            ax.grid()
+            ax.set_xlabel('Distance [mm]')
+            ax.set_ylabel('RSS [dB]')
+            ax.set_title('RSM for TX# ' + str(itx+1))
+        plt.show()
 
 
 
@@ -917,16 +918,14 @@ def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.0e6]):
 
         fig = plt.figure()
 
-        ax = fig.add_subplot(221, projection='3d')
-        ax.plot_trisurf(x, y, plotdata_mat[:, 2], cmap=plt.cm.Spectral)
+        for itx in range(num_tx):
+            pos =221 + itx
 
-        ax = fig.add_subplot(222, projection='3d')
-        ax.plot_trisurf(x, y, plotdata_mat[:, 3], cmap=plt.cm.Spectral)
-
-        ax = fig.add_subplot(223, projection='3d')
-        ax.plot_trisurf(x, y, plotdata_mat[:, 4], cmap=plt.cm.Spectral)
-
-        ax = fig.add_subplot(224, projection='3d')
-        ax.plot_trisurf(x, y, plotdata_mat[:, 5], cmap=plt.cm.Spectral)
-
+            ax = fig.add_subplot(pos, projection='3d')
+            ax.plot_trisurf(x, y, plotdata_mat[:, 2 + itx], cmap=plt.cm.Spectral)
+            ax.grid()
+            ax.set_xlabel('x [mm]')
+            ax.set_ylabel('y [mm]')
+            ax.set_zlabel('rss [dB]')
+            ax.set_title('RSS field for TX# ' + str(itx+1))
         plt.show()
