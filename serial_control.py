@@ -24,7 +24,23 @@ def test_serial():
                 return isnumber, out
             else:
                 out += new_data  # pure number string
-        return isnumber, out  # pure number string
+        return isnumber, out.split('\r\n')  # pure number string
+
+    def found_arrival_mark(out):
+        barrived = False
+        if out == 'p':
+            print('arrived at target position')
+            barrived = True
+        elif out == 'h':
+            print('arrived at home position')
+            barrived = True
+        elif out == 'f':
+            print('arrived at fault position')
+            barrived = True
+        else:
+            print('ERROR in "found_arrival_mark": this must not happen!')
+            barrived = False
+        return barrived  # has stopped moving
 
 
     def get_rpm(serport):
@@ -50,6 +66,7 @@ def test_serial():
         readyforinput = True
 
         commands = [
+            'V0'
             'LA'+str(wp_inc),
             'NP',
             'M']
@@ -92,7 +109,11 @@ def test_serial():
                             print('gantry is moving')
                             readyforinput = False
                             bmoving = True
+                    else:
+                        bmoving = found_arrival_mark(str_rpm)  # arrival marker = stop mark
         return bmoving
+
+
 
     def check_arrival(serport):
         # let's wait 0.2 second before reading output (let's give device time to answer)
