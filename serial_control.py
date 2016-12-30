@@ -2,6 +2,189 @@ import time
 import serial
 
 
+class motor_communication(object):
+
+    def __init__(self, portname, name):  #
+        self.__oserial = []
+        self.__portname = portname
+        self.__name = name
+        self.__isopen = False
+        self.__timewritewait = 0.2
+        self.__timereadwait = 0.2
+        self.__signal = []
+        self.__signallist = ['p', 'h', 'f']
+        self.__ismoving = False
+        self.__tempval = []
+        self.__posinc = []
+        self.__tposinc = []
+        self.__posmm = []
+        self.__tposmm = []
+        self.__rpm = []
+
+        self.reset_signal()
+
+    def open_port(self):
+        """
+        :return:
+        """
+        # configure the serial connections (the parameters differs on the device you are connecting to)
+        self.__oserial = serial.Serial(
+            port=self.__portname,
+            baudrate=9600,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS
+        )
+        self.__oserial.isOpen()  # open serial port
+        self.__isopen = True
+        print('Serial port ' + self.__portname + ' is open!')
+        return True
+
+    def close_port(self):
+        self.__oserial.close()
+        self.__isopen = False
+        print('Serial port ' + self.__portname + ' is open!')
+        return True
+
+    def reset_signal(self):
+        self.__signal = 0
+
+    def listen_to_port(self, waitingfortype='rpm'):
+
+        out = ''
+        time.sleep(self.__timereadwait)
+
+        #while self.__oserial.inWaiting() > 0:
+        #    new_data = self.__oserial.read(1)
+        #    out += new_data  # pure number string
+
+        teststring = '-2000\r\np\r\nf\r\nOK\r\n'
+
+        out = teststring
+        out_split = out.rstrip().split('\r\n')
+        for item in out_split:
+            try:
+                self.__tempval = int(item)
+                print ('numberfound')
+            except ValueError:
+                if item == 'p':
+                    self.__signal = item
+                    print ('p found')
+                elif item == 'h':
+                    self.__signal = item
+                    print ('h found')
+                elif item == 'f':
+                    self.__signal = item
+                    print ('f found')
+                else:
+                    print('Unknown signal found on serial port: "' + item + '"')
+        print(out_split)
+        return True  # pure number string
+
+    def write_on_port(self, strcommand):
+        self.__oserial.write(strcommand + '\r\n')
+        time.sleep(self.__timewritewait)
+        return True
+
+    def get_rpm(self):
+        self.write_on_port('GN')
+        self.listen_to_port('rpm')
+        if abs(self.__tempval) < 10000:  # max motor speed = 7000rpm
+            self.__rpm = self.__tempval
+        return self.__rpm
+
+    def get_pos(self):
+        self.__oserial.write('POS' + '\r\n')
+        time.sleep(0.2)
+        self.listen_to_port('pos')
+        self.__posinc = self.__tempval
+        return self.__posinc
+
+    def check_moving(self):
+        if abs(self.get_rpm()) < 10:
+            self.__ismoving = False
+            return False
+        else:
+            self.__ismoving = True
+            return True
+
+    def check_arrival(self):
+        if self.__signal == 'p':
+            return True
+        elif self.__signal in 'fh':
+            self.get_pos()
+            print('ERROR: ' + self.__name + ' reached limit of travel at pos ' + str(self.__posinc) + ' !')
+        self.reset_signal()
+
+    def get_status(self):
+        print('Portname: ' + self.__portname)
+        print('Name: ' + self.__name)
+        print('Port open: ' + str(self.__isopen))
+        print('Time wait after writing: ' + str(self.__timewritewait))
+        print('Time wait before reading: ' + str(self.__timereadwait))
+        print('Signal' + str(self.__signal))
+        print('Signallist' + str(self.__signallist))
+        print('IsMoving: ' + str(self.__ismoving))
+        print('TempVal = ' + str(self.__tempval))
+        print('PosInc = ' + str(self.__posinc))
+        print('TPosInc = ' + str(self.__tposinc))
+        print('RPM = ' + str(self.__rpm))
+
+    def go_to_posinc(self, tposinc):
+        moving_seq = ['LA'+str(tposinc),  # set absolute target position in [inc]
+                      'NP',  # activate 'NotifyPosition' --> sends 'p' if position is reached
+                      'M']  # start motion
+        trying = True
+        counter = 0
+        maxtrys = 10
+        while trying:
+            counter += 1
+            self.check_moving()
+            if self.__ismoving is False:
+                for command in moving_seq:
+                    self.write_on_port(command)
+
+                trying = False
+                self.check_moving()
+                print ('Start moving to Position: ' + str(tposinc))
+            else:
+                time_wait = 1.0
+                print(self.__name + ' cannot move to new target position, still moving to old target position!')
+                print('Waiting for ' + str(time_wait) + 's')
+                print('Try ' + str(counter) + '/' + str(maxtrys))
+                time.sleep(time_wait)
+            if counter >= maxtrys:
+                trying = False  # give up trying
+
+        return True
+
+
+    def initialize_home_pos(self):
+
+        if self.check_moving() is False:
+            self.write_on_port('GOHOSEQ')
+            if self.check_moving() is True:
+                cominghome = True
+                while cominghome:
+                    # give position
+                    # check arrival
+                    time.sleep(1.0)
+                    # display speed
+            else:
+                # find out some sequence v1000 / -v1000 etc...
+        else:
+            print('Cannot start homing sequence ' + self.__name + ' is moving!')
+
+
+
+
+
+
+
+
+
+
+
 def test_serial():
 
     def listen_port(serport):
