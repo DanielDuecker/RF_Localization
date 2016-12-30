@@ -54,13 +54,13 @@ class motor_communication(object):
         out = ''
         time.sleep(self.__timereadwait)
 
-        #while self.__oserial.inWaiting() > 0:
-        #    new_data = self.__oserial.read(1)
-        #    out += new_data  # pure number string
+        while self.__oserial.inWaiting() > 0:
+            new_data = self.__oserial.read(1)
+            out += new_data  # pure number string
 
-        teststring = '-2000\r\np\r\nf\r\nOK\r\n'
+        # teststring = '-2000\r\np\r\nf\r\nOK\r\n'
+        # out = teststring
 
-        out = teststring
         out_split = out.rstrip().split('\r\n')
         for item in out_split:
             try:
@@ -131,6 +131,11 @@ class motor_communication(object):
         print('RPM = ' + str(self.__rpm))
 
     def go_to_posinc(self, tposinc):
+        """
+
+        :param tposinc: absolute target position in [inc]
+        :return:
+        """
         moving_seq = ['LA'+str(tposinc),  # set absolute target position in [inc]
                       'NP',  # activate 'NotifyPosition' --> sends 'p' if position is reached
                       'M']  # start motion
@@ -158,22 +163,55 @@ class motor_communication(object):
 
         return True
 
-
     def initialize_home_pos(self):
+        """
 
+        :return:
+        """
         if self.check_moving() is False:
-            self.write_on_port('GOHOSEQ')
-            if self.check_moving() is True:
-                cominghome = True
-                while cominghome:
-                    # give position
-                    # check arrival
+            try_coming_home = 0
+            while try_coming_home < 3:
+                self.write_on_port('GOHOSEQ')
+                self.check_moving()
+                if self.__ismoving is True:
+                    cominghome = True
+                    while cominghome:
+                        # give position
+
+                        time.sleep(1.0)
+
+                        print(self.__name + ' - actual speed: ' + str(self.get_rpm()))
+
+                        # check arrival at extreme position
+                        if self.__signal in 'hf':
+                            print(self.__name + ' reached home position!')
+                            time.sleep(0.2)
+                            print(self.__name + ' at position: ' + str(self.get_pos()))
+                            cominghome = False
+
+                # handling the situation when motor is already in end position I/II
+                elif self.__ismoving is False and try_coming_home == 0:
+                    self.write_on_port('V-1000')
                     time.sleep(1.0)
-                    # display speed
-            else:
-                # find out some sequence v1000 / -v1000 etc...
+                    self.write_on_port('V0')
+                    time.sleep(0.5)
+                    try_coming_home += 1  # next try
+
+                # handling the situation when motor is already in end position II/II
+                elif self.__ismoving is False and try_coming_home == 1:
+                    self.write_on_port('V1000')
+                    time.sleep(1.0)
+                    self.write_on_port('V0')
+                    time.sleep(0.5)
+                    try_coming_home += 1  # next try
+                else:
+                    print('Failed to start "go home sequence"! ')
+                    print('Leaving >>AUTO_MODE<< ...')
+                    print('Entering >>MANUAL_MODE<< ...')
         else:
             print('Cannot start homing sequence ' + self.__name + ' is moving!')
+
+
 
 
 
