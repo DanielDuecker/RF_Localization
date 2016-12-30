@@ -2,15 +2,38 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time as t
 import rf
-
+import serial_control as sc
 
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0, 2500, 0, 4500]):  # [x0 ,x1, y0, y1]
+    def __init__(self, gantry_dimensions=[0, 1580, 0, 2940]):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0]  # initial position after start
         self.__target_wp = []
         self.__oCal = []
         self.__oLoc = []
+        self.__oScX = []  # spindle-drive
+        self.__oScY = []  # belt-drive
+
+        self.__oScX = sc.motor_communication('/dev/ttyS5', 'spindle_drive', 'spindle', 1580)
+        self.__oScY = sc.motor_communication('/dev/ttyS4', 'belt_drive', 'belt', 2940)
+        self.setup_serial_motor_control()
+
+    def setup_serial_motor_control(self):
+        # spindle-drive
+        self.__oScX.open_port()
+        self.__oScX.start_manual_mode()
+        self.__oScX.initialize_home_pos()
+        self.__oScX.initialize_extreme_pos()
+        print('Spindle-Drive: Setup DONE!')
+
+        # belt-drive
+        self.__oScY.open_port()
+        self.__oScY.start_manual_mode()
+        self.__oScY.initialize_home_pos()
+        self.__oScY.initialize_extreme_pos()
+        print('Belt-Drive: Setup DONE!')
+
+        return True
 
     def get_gantry_dimensions(self):
         return self.__dimensions
@@ -57,6 +80,30 @@ class GantryControl(object):
         return btransmission
 
     def move_gantry_to_target(self):
+        target_wp = self.__target_wp
+
+        print ('move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
+        self.__oScX.go_to_pos_mm(target_wp[0])
+        self.__oScY.go_to_pos_mm(target_wp[1])
+
+        bArrived_both = False
+        while bArrived_both is False:
+            t.sleep(0.5)
+            barrived_X = self.__oScX.check_arrival()
+            barrived_Y = self.__oScY.check_arrival()
+            print('Actual position: ')
+            if barrived_X and barrived_Y:
+                bArrived_both = True
+
+        # @todo: position feedback from motor --> .get_pos_mm
+        self.set_gantry_pos(target_wp)
+        if self.get_gantry_pos() == target_wp:
+            print ('arrived at new waypoint')
+
+        return bArrived_both
+
+
+    def move_gantry_to_target_manual(self):
         target_wp = self.__target_wp
 
         print ('move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
@@ -130,6 +177,7 @@ class GantryControl(object):
                 new_target_wp = [new_target_wpx, new_target_wpy]  # find a solution for this uggly workaround...
                 meastime = row[3]
 
+
                 if self.transmit_wp_to_gantry(new_target_wp):
                     if self.move_gantry_to_target():
                         if self.confirm_arrived_at_wp():
@@ -169,6 +217,10 @@ class GantryControl(object):
                 plt.pause(0.001)
                 print
             measfile.close()
+
+            self.__oScX.close_port()
+            self.__oScY.close_port()
+
         return True
 
     def start_CalEar(self, freqtx=433.9e6, freqspan=2e4):
