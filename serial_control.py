@@ -4,24 +4,33 @@ import serial
 
 class motor_communication(object):
 
-    def __init__(self, portname, name):  #
+    def __init__(self, portname, name, drivetype, travelling_distance_mm):  #
         self.__oserial = []
         self.__portname = portname
         self.__name = name
+        self.__drivetype = drivetype
+        self.__travelling_distance_mm = float(travelling_distance_mm)
         self.__isopen = False
         self.__timewritewait = 0.2
         self.__timereadwait = 0.2
         self.__signal = []
         self.__signallist = ['p', 'h', 'f']
+        self.__homeknown = False
+        self.__extremeknown = False
         self.__ismoving = False
         self.__tempval = []
+        self.__posincmax = []
         self.__posinc = []
         self.__tposinc = []
         self.__posmm = []
         self.__tposmm = []
         self.__rpm = []
 
+        self.__rpmmax = []
+        self.__findingspeed = []
+
         self.reset_signal()
+        self.load_drive_data(drivetype)
 
     def open_port(self):
         """
@@ -43,7 +52,7 @@ class motor_communication(object):
     def close_port(self):
         self.__oserial.close()
         self.__isopen = False
-        print('Serial port ' + self.__portname + ' is open!')
+        print('Serial port ' + self.__portname + ' closed!')
         return True
 
     def reset_signal(self):
@@ -65,21 +74,51 @@ class motor_communication(object):
         for item in out_split:
             try:
                 self.__tempval = int(item)
-                print ('numberfound')
+                #print ('numberfound')
             except ValueError:
                 if item == 'p':
                     self.__signal = item
-                    print ('p found')
+                    print ('Arrived at target position -> p-flag')
                 elif item == 'h':
                     self.__signal = item
                     print ('h found')
                 elif item == 'f':
                     self.__signal = item
                     print ('f found')
+                elif item == 'OK':
+                    dummy = 1
+                    #print('Debugmessage: Ignore "OK"')
                 else:
                     print('Unknown signal found on serial port: "' + item + '"')
-        print(out_split)
+        # print(out_split) # just for debugging
         return True  # pure number string
+
+    def update_data(self):
+        self.get_posinc()
+        self.get_rpm()
+
+    def load_drive_data(self, drivetype):
+        if drivetype == 'belt':
+            self.__rpmmax = 3000
+            self.__findingspeed = 1000
+        elif drivetype == 'spindle':
+            self.__rpmmax = 7000
+            self.__findingspeed = 2500
+        else:
+            print('Unknown drive type!')
+            print('drive types known "belt" and "spindle"')
+            print('exiting application')
+            exit()
+
+    def convert_mm2inc(self, pos_mm):
+        pos_inc = int(pos_mm * (self.__posincmax/self.__travelling_distance_mm))
+        return pos_inc
+
+    def convert_inc2mm(self, pos_inc):
+        travel_dist_mm = self.__travelling_distance_mm
+        posmaxinc = self.__posincmax
+        pos_mm = pos_inc * ()
+        return pos_mm
 
     def write_on_port(self, strcommand):
         self.__oserial.write(strcommand + '\r\n')
@@ -93,12 +132,55 @@ class motor_communication(object):
             self.__rpm = self.__tempval
         return self.__rpm
 
-    def get_pos(self):
-        self.__oserial.write('POS' + '\r\n')
-        time.sleep(0.2)
+    def set_posincmax(self, posincmax):
+        self.__posincmax = posincmax
+
+    def get_posinc(self):
+        """
+        gets the actual position and updates the member variables for position (both [inc] and [mm])
+        :return: pos_inc [inc]
+        """
+        self.write_on_port('POS')
         self.listen_to_port('pos')
         self.__posinc = self.__tempval
+        self.__posmm = self.convert_inc2mm(self.__posinc)
         return self.__posinc
+
+    def get_posmm(self):
+        """
+        gets the actual position and updates the member variables for position (both [inc] and [mm])
+        :return: pos_mm [mm]
+        """
+        self.write_on_port('POS')
+        self.listen_to_port('pos')
+        self.__posinc = self.__tempval
+        self.__posmm = self.convert_inc2mm(self.__posinc)
+        return self.__posmm
+
+    def set_target_posinc(self, target_posinc):
+        self.__tposinc = target_posinc
+
+
+    def is_home_pos_known(self):
+        return self.__homeknown
+
+    def is_extreme_pos_known(self):
+        return self.__extremeknown
+
+    def check_initialization_status(self, extreme_pos_mode=False):
+        """
+        Checks if home position is known and closes application otherwise
+        :return:
+        """
+        if self.is_home_pos_known() is False:
+            print('Home position is unknown!')
+            print('exiting method')
+            return False
+        if self.is_extreme_pos_known() is False and extreme_pos_mode is False:
+            print('Extreme position is unknown!')
+            print('exiting method')
+            return False
+        return True
 
     def check_moving(self):
         if abs(self.get_rpm()) < 10:
@@ -109,33 +191,98 @@ class motor_communication(object):
             return True
 
     def check_arrival(self):
+        self.update_data()
         if self.__signal == 'p':
+            self.reset_signal()
             return True
-        elif self.__signal in 'fh':
-            self.get_pos()
-            print('ERROR: ' + self.__name + ' reached limit of travel at pos ' + str(self.__posinc) + ' !')
+
+        elif self.__signal == 'h' or self.__signal == 'f':
+            self.reset_signal()
+            return True
+
+            #print('ERROR: ' + self.__name + ' reached limit of travel at pos ' + str(self.get_posmm()) + ' !')
         self.reset_signal()
+        return False
 
     def get_status(self):
+        self.update_data()
+
+        print('\n  ### Status Report for ' + self.__name + ' ###')
+        print('Drive type: ' + str(self.__drivetype))
         print('Portname: ' + self.__portname)
         print('Name: ' + self.__name)
         print('Port open: ' + str(self.__isopen))
         print('Time wait after writing: ' + str(self.__timewritewait))
         print('Time wait before reading: ' + str(self.__timereadwait))
-        print('Signal' + str(self.__signal))
-        print('Signallist' + str(self.__signallist))
+        print('Signal: ' + str(self.__signal))
         print('IsMoving: ' + str(self.__ismoving))
-        print('TempVal = ' + str(self.__tempval))
-        print('PosInc = ' + str(self.__posinc))
-        print('TPosInc = ' + str(self.__tposinc))
-        print('RPM = ' + str(self.__rpm))
+        print('TempVal: ' + str(self.__tempval))
+        print('PosIncMax: ' + str(self.__posincmax))
+        print('TPosInc: ' + str(self.__tposinc))
+        print('PosInc: ' + str(self.__posinc))
+        print('PosMM: ' + str(self.__posmm))
+        print('RPM: ' + str(self.__rpm))
 
-    def go_to_posinc(self, tposinc):
+    def start_manual_mode(self, safetycheck=True):
+        print ('Enter your commands below.')
+        print ('Type "AUTO_MODE" for switching to AUTO_MODE')
+        print ('Type "status" for a status report')
+        print ('Type "exitall" to close the application')
+        running = True
+        input = 1
+        while running:
+            # get keyboard input
+            input = raw_input(">> ")
+            # Python 3 users
+            # input = input(">> ")
+
+            if input == 'AUTO_MODE':
+                if safetycheck:
+                    print('\n  ###  SAFETY_CHECK for ' + self.__name + ' ###  ')
+                    print('Is everything ready to start? (yes/no)')
+                    safety_input = raw_input(">> ")
+                    if safety_input == 'yes':
+                        return True
+                    else:
+                        print ('Safetycheck: FAILED!')
+                        print ('Switching to "MANUAL_MODE"\n')
+                        print ('Enter your commands below.')
+                        print ('Type "AUTO_MODE" for switching to AUTO_MODE')
+                        print ('Type "status" for a status report')
+                        print ('Type "exitall" to close the application')
+
+            elif input == 'exitall':
+                self.__oserial.close()
+                exit()
+
+            elif input == 'status':
+                self.get_status()
+
+            else:
+                # send the character to the device
+                # (note that I happend a \r\n carriage return and line feed to the characters - this is requested by my device)
+                self.__oserial.write(input + '\r\n')
+                out = ''
+                # let's wait 0.2 second before reading output (let's give device time to answer)
+                time.sleep(.2)
+                while self.__oserial.inWaiting() > 0:
+                    out += self.__oserial.read(1)
+
+                if out != '':
+                    print "<<" + out
+
+    def go_to_pos_mm(self, tposmm):
         """
 
         :param tposinc: absolute target position in [inc]
         :return:
         """
+        if self.check_initialization_status() is False:
+            return False
+
+        tposinc = self.convert_mm2inc(tposmm)
+        self.set_target_posinc(tposinc)
+
         moving_seq = ['LA'+str(tposinc),  # set absolute target position in [inc]
                       'NP',  # activate 'NotifyPosition' --> sends 'p' if position is reached
                       'M']  # start motion
@@ -152,6 +299,7 @@ class motor_communication(object):
                 trying = False
                 self.check_moving()
                 print ('Start moving to Position: ' + str(tposinc))
+                return True
             else:
                 time_wait = 1.0
                 print(self.__name + ' cannot move to new target position, still moving to old target position!')
@@ -168,320 +316,106 @@ class motor_communication(object):
 
         :return:
         """
+        print('Start initialization sequence --> going home')
         if self.check_moving() is False:
-            try_coming_home = 0
-            while try_coming_home < 3:
-                self.write_on_port('GOHOSEQ')
-                self.check_moving()
-                if self.__ismoving is True:
-                    cominghome = True
-                    while cominghome:
-                        # give position
 
-                        time.sleep(1.0)
+            self.write_on_port('GOHOSEQ')
 
-                        print(self.__name + ' - actual speed: ' + str(self.get_rpm()))
+            if self.check_moving() is True:
+                cominghome = True
+                while cominghome:
+                    # give position
 
-                        # check arrival at extreme position
-                        if self.__signal in 'hf':
-                            print(self.__name + ' reached home position!')
-                            time.sleep(0.2)
-                            print(self.__name + ' at position: ' + str(self.get_pos()))
-                            cominghome = False
+                    time.sleep(2.0)
 
-                # handling the situation when motor is already in end position I/II
-                elif self.__ismoving is False and try_coming_home == 0:
-                    self.write_on_port('V-1000')
-                    time.sleep(1.0)
-                    self.write_on_port('V0')
-                    time.sleep(0.5)
-                    try_coming_home += 1  # next try
+                    print(self.__name + ' Coming-Home actual speed: ' + str(self.get_rpm()) + 'rpm')
 
-                # handling the situation when motor is already in end position II/II
-                elif self.__ismoving is False and try_coming_home == 1:
-                    self.write_on_port('V1000')
-                    time.sleep(1.0)
-                    self.write_on_port('V0')
-                    time.sleep(0.5)
-                    try_coming_home += 1  # next try
-                else:
-                    print('Failed to start "go home sequence"! ')
-                    print('Leaving >>AUTO_MODE<< ...')
-                    print('Entering >>MANUAL_MODE<< ...')
+                    # check arrival at extreme position
+                    if self.__signal == 'h' or self.__signal == 'f':
+                        self.__homeknown = True
+                        print(self.__name + ' reached home position!\n')
+                        time.sleep(0.2)
+                        cominghome = False
+                    self.reset_signal()
+
+            # elif self.__ismoving is False and try_coming_home == 0:
+            # todo: switch t0 manual mode
+
+            else:
+                print('Failed to start "go home sequence"! ')
+                print('Leaving >>AUTO_MODE<< ...')
+                print('Entering >>MANUAL_MODE<< ...')
         else:
             print('Cannot start homing sequence ' + self.__name + ' is moving!')
 
+        print('Finished initialization sequence!')
 
-
-
-
-
-
-
-
-
-
-
-
-def test_serial():
-
-    def listen_port(serport):
-        out = ''
-        isnumber = True
-        while serport.inWaiting() > 0:
-            new_data = serport.read(1)
-
-            if new_data == 'p':
-                isnumber = False
-                out = new_data
-                return isnumber, out
-            elif new_data == 'h':
-                isnumber = False
-                out = new_data
-                return isnumber, out
-            elif new_data == 'f':
-                isnumber = False
-                out = new_data
-                return isnumber, out
-            else:
-                out += new_data  # pure number string
-        return isnumber, out.split('\r\n')  # pure number string
-
-    def found_arrival_mark(out):
-        barrived = False
-        if out == 'p':
-            print('arrived at target position')
-            barrived = True
-        elif out == 'h':
-            print('arrived at home position')
-            barrived = True
-        elif out == 'f':
-            print('arrived at fault position')
-            barrived = True
-        else:
-            print('ERROR in "found_arrival_mark": this must not happen!')
-            barrived = False
-        return barrived  # has stopped moving
-
-
-    def get_rpm(serport):
-        input = 'GN'
-        serport.write(input + '\r\n')
-        time.sleep(0.5)
-
-        [isnumber, out] = listen_port(serport)
-
-        return isnumber, out
-
-    def get_pos(serport):
-        input = 'POS'
-        serport.write(input + '\r\n')
-        time.sleep(0.5)
-
-        [isnumber, out] = listen_port(serport)
-
-        return isnumber, out
-
-    def go_to_wp(serport, wp_inc):
-        bmoving = False
-        readyforinput = True
-
-        commands = [
-            'V0'
-            'LA'+str(wp_inc),
-            'NP',
-            'M']
-        step = 0
-        running = True
-        while running:
-            if readyforinput:
-
-                if step >= len(commands):
-                    print('reached end of command list')
-                    running = False  # leave loop
-
-                else:
-                    print('commline: ' + str(step))
-                    input = commands[step]
-                    step += 1  # next line
-
-                    print('Execute command: >>' + input)
-                    # send the character to the device
-                    # (note that I happend a \r\n carriage return and line feed to the characters - this is requested by my device)
-                    serport.write(input + '\r\n')
-
-            out = ''
-            # let's wait 0.2 second before reading output (let's give device time to answer)
-            time.sleep(0.2)
-
-            while serport.inWaiting() > 0:
-                out += serport.read(1)
-
-            if out != '':
-                print ("<<" + out)
-                if out == 'OK\r\n':
-                    print ('confirmed command')
-                    time.sleep(0.5)
-                    isnumber, str_rpm = get_rpm(serport)
-                    if isnumber:
-                        print('rpm: ' + str_rpm)
-                        int_rpm = int(str_rpm)
-                        if abs(int_rpm) > 10:
-                            print('gantry is moving')
-                            readyforinput = False
-                            bmoving = True
-                    else:
-                        bmoving = found_arrival_mark(str_rpm)  # arrival marker = stop mark
-        return bmoving
-
-
-
-    def check_arrival(serport):
-        # let's wait 0.2 second before reading output (let's give device time to answer)
-        time.sleep(0.2)
-
-        isnumber, out = listen_port(serport)
-        if isnumber is False and out != '':
-            print ("<<" + out)
-            if out == 'p':
-                print('arrived at target position')
-            elif out == 'h':
-                print('arrived at home position')
-            elif out == 'f':
-                print('arrived at fault position')
-            return True  # has stopped moving
-        else:
+    def initialize_extreme_pos(self):
+        if self.check_initialization_status(True) is False:
             return False
 
+        print('Start finding extreme position sequence')
+        if self.check_moving() is False:
+            self.write_on_port('V'+str(self.__findingspeed))
 
+            if self.check_moving() is True:
+                findingextreme = True
+                while findingextreme:
+                    # give position
 
-    def test_mod():
-        running = True
-        commline = 0
+                    time.sleep(2.0)
 
-        tpos1 = 1500000
-        tpos2 = 1000000
+                    print(self.__name + ' Init.Extreme position actual speed: ' + str(self.get_rpm()) + 'rpm')
 
-        commands = [
-            'LA' + str(tpos1),  # position 1
-            'NP',
-            'M',
-            'LA' + str(tpos2),  # position 2
-            'NP',
-            'M',
-            'LA' + str(tpos1),  # position 1
-            'NP',
-            'M']
-        print ('Enter your commands below.\r\n'
-               'chose gantry mode by inserting "auto" or "manual".')
-        rawinput = raw_input(">> ")
-        if rawinput == 'auto':
-            gantry_mode = 'auto'
-        elif rawinput == 'manual':
-            gantry_mode = 'manual'
+                    # check arrival at extreme position
+                    if self.__signal == 'h' or self.__signal == 'f':
+                        self.__extremeknown = True
+                        print(self.__name + ' reached extreme position!')
+                        time.sleep(0.2)
+                        self.set_posincmax(self.get_posinc())
+                        print('Extreme position at ' + str(self.__posincmax) + ' inc.\n')
 
-        readyforinput = True
-        while running:
-            if readyforinput:
-                # get keyboard input
+                        findingextreme = False
+                    self.reset_signal()
 
-                # Python 3 users
-                # input = input(">> ")
-                if gantry_mode == 'auto':
-                    if commline >= len(commands):
-                        print('reached end of command list')
-                        running = False  # leave loop
+            # elif self.__ismoving is False and try_coming_home == 0:
+            # todo: switch t0 manual mode
 
-                    else:
-                        print('commline: ' + str(commline))
-                        input = commands[commline]
-                        commline += 1  # next line
-
-                        print('Execute command: >>' + input)
-                        # send the character to the device
-                        # (note that I happend a \r\n carriage return and line feed to the characters - this is requested by my device)
-                        ser3.write(input + '\r\n')
-                elif gantry_mode == 'manual':
-                    rawinput = raw_input(">> ")
-                    if rawinput == 'exit':
-                        running = False
-
-            out = ''
-            # let's wait 0.2 second before reading output (let's give device time to answer)
-            time.sleep(0.2)
-
-            while ser3.inWaiting() > 0:
-                out += ser3.read(1)
-
-            if out != '':
-                print ("<<" + out)
-                if out == 'OK\r\n':
-                    print ('confirmed command')
-                    time.sleep(0.5)
-                    str_rpm = get_rpm(ser3)
-                    print('rpm: ' + str_rpm)
-                    if abs(int(str_rpm)) > 10:
-                        print('gantry is moving')
-                        readyforinput = False
-
-                elif out == 'p\r\n':
-                    print('arrived at position')
-                    readyforinput = True
-                elif out == 'h\r\n':
-                    print('arrived at home position')
-                    readyforinput = True
-                elif out == 'f\r\n':
-                    print('arrived at fault position')
-                    readyforinput = True
-
-                    # str_pos = get_pos(ser3)
-                    # print ('act_pos: ' + str_pos)
-
-
-                    # act_pos = get_actual_pos(ser3)
-                    # print('Actual position: ' + act_pos)
-
-
-
-
-
-    # configure the serial connections (the parameters differs on the device you are connecting to)
-    ser3 = serial.Serial(
-        port='/dev/ttyS4',   # s4 -> laengs = com3  # s5 -> quer = com4
-        baudrate=9600,
-        parity=serial.PARITY_NONE,
-        stopbits=serial.STOPBITS_ONE,
-        bytesize=serial.EIGHTBITS
-    )
-
-    ser3.isOpen()
-
-    wp_list = [
-        10000,
-        100000,
-        200000,
-        300000,
-        400000,
-        500000,
-        600000,
-        700000,
-        800000]
-
-    for i in range(len(wp_list)):
-        print('wp: ' + str(wp_list[i]))
-        bgantry_moving = go_to_wp(ser3, wp_list[i])
-
-        while bgantry_moving:
-            time.sleep(0.5)
-            arrival_type = check_arrival(ser3)
-            if arrival_type == 'p\r\n':
-                bgantry_moving = False
             else:
-                print('Gantry has not arrived yet')
+                print('Failed to start "finding extreme sequence"! ')
+                #print('Leaving >>AUTO_MODE<< ...')
+                #print('Entering >>MANUAL_MODE<< ...')
+                print('This is still a todo... =(')
 
-    print('exit and close serial')
-    ser3.close()
-    exit()
+            if self.__homeknown and self.__extremeknown:
+                print('Finished initialization sequence!')
+                print('Home and extreme positions are known!\n')
+                print('Go back to home position')
+
+                time.sleep(1.5)
+
+                self.go_to_pos_mm(0)
+
+                barrived = False
+                while barrived is False:
+                    time.sleep(0.5)
+                    barrived = self.check_arrival()
+
+                print('Good to be home:')
+                print('Arrived at home position')
+                time.sleep(2)
+
+
+        else:
+            print('Cannot start finding extreme position sequence ' + self.__name + ' is moving!')
+
+
+
+
+
+
+
+
 
 
 
