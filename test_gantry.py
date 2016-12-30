@@ -4,15 +4,15 @@ import numpy as np
 
 gt = gantry_control.GantryControl()
 
-gantry_control.wp_generator('wp_list_2016_12_14.txt', [0, 0], [1200, 1200], [7, 7], 10.0)
+gantry_control.wp_generator('wp_list_2016_12_31.txt', [200, 1200], [1400, 2400], [13, 13], 10.0)
 
 freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 
 #gt.start_LocEar(freqtx)
-#gt.process_measurement_sequence('wp_list_2016_12_14.txt', 'measdata_2016_12_14.txt')
+#gt.process_measurement_sequence('wp_list_2016_12_14.txt', 'measdata_2016_12_30.txt')
 
-#gt.start_CalEar(freqtx)
-#gt.process_measurement_sequence('wp_list_2016_12_15.txt', 'measdata_2016_12_15.txt')
+gt.start_CalEar(freqtx)
+gt.process_measurement_sequence('wp_list_2016_12_31.txt', 'measdata_2016_12_31.txt')
 
 
 

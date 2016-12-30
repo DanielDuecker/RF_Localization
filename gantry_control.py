@@ -13,12 +13,21 @@ class GantryControl(object):
         self.__oLoc = []
         self.__oScX = []  # spindle-drive
         self.__oScY = []  # belt-drive
+        self.__maxposdeviation = 2  # [mm] max position deviation per axis
 
         self.__oScX = sc.motor_communication('/dev/ttyS5', 'spindle_drive', 'spindle', 1580)
         self.__oScY = sc.motor_communication('/dev/ttyS4', 'belt_drive', 'belt', 2940)
         self.setup_serial_motor_control()
 
+
     def setup_serial_motor_control(self):
+        # belt-drive
+        self.__oScY.open_port()
+        self.__oScY.start_manual_mode()
+        self.__oScY.initialize_home_pos()
+        self.__oScY.initialize_extreme_pos()
+        print('Belt-Drive: Setup DONE!')
+
         # spindle-drive
         self.__oScX.open_port()
         self.__oScX.start_manual_mode()
@@ -26,12 +35,7 @@ class GantryControl(object):
         self.__oScX.initialize_extreme_pos()
         print('Spindle-Drive: Setup DONE!')
 
-        # belt-drive
-        self.__oScY.open_port()
-        self.__oScY.start_manual_mode()
-        self.__oScY.initialize_home_pos()
-        self.__oScY.initialize_extreme_pos()
-        print('Belt-Drive: Setup DONE!')
+
 
         return True
 
@@ -89,19 +93,23 @@ class GantryControl(object):
         bArrived_both = False
         while bArrived_both is False:
             t.sleep(0.5)
-            barrived_X = self.__oScX.check_arrival()
-            barrived_Y = self.__oScY.check_arrival()
-            print('Actual position: ')
-            if barrived_X and barrived_Y:
+            #barrived_X = self.__oScX.check_arrival()
+            #barrived_Y = self.__oScY.check_arrival()
+            actpos_X = self.__oScX.get_posmm()
+            actpos_Y = self.__oScY.get_posmm()
+            actpos = [actpos_X, actpos_Y]
+            print('Actual position: x=' + str(actpos[0]) + 'mm y=' + str(actpos[1]))
+            self.set_gantry_pos(actpos)
+            #if barrived_X and barrived_Y:
+            dist_x = abs(self.get_gantry_pos()[0] - target_wp[0])
+            dist_y = abs(self.get_gantry_pos()[1] - target_wp[1])
+            if dist_x < self.__maxposdeviation and dist_y < self.__maxposdeviation:
+                print ('arrived at new waypoint')
                 bArrived_both = True
 
-        # @todo: position feedback from motor --> .get_pos_mm
-        self.set_gantry_pos(target_wp)
-        if self.get_gantry_pos() == target_wp:
-            print ('arrived at new waypoint')
+        # @todo: position feedback from motor  check whether position is within a suitable range
 
         return bArrived_both
-
 
     def move_gantry_to_target_manual(self):
         target_wp = self.__target_wp
@@ -128,7 +136,10 @@ class GantryControl(object):
 
     def confirm_arrived_at_wp(self):
         barrivalconfirmed = False
-        if self.__target_wp == self.__gantry_pos:
+
+        dist_x = abs(self.get_gantry_pos()[0] - self.__target_wp[0])
+        dist_y = abs(self.get_gantry_pos()[1] - self.__target_wp[1])
+        if dist_x < self.__maxposdeviation and dist_y < self.__maxposdeviation:
             barrivalconfirmed = True
 
         return barrivalconfirmed
@@ -177,10 +188,11 @@ class GantryControl(object):
                 new_target_wp = [new_target_wpx, new_target_wpy]  # find a solution for this uggly workaround...
                 meastime = row[3]
 
-
                 if self.transmit_wp_to_gantry(new_target_wp):
                     if self.move_gantry_to_target():
                         if self.confirm_arrived_at_wp():
+                            t.sleep(1.5)  # wait to damp motion/oscillation of antenna etc
+
                             print('START Measurement for ' + str(meastime) + 's')
                             print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
                             plt.plot(new_target_wp[0], new_target_wp[1], 'go')
@@ -236,7 +248,7 @@ independent methods related to the gantry
 """
 
 
-def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0):
+def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0, show_plot=False):
     """
     :param wp_filename:
     :param x0: [x0,y0] - start position of the grid
@@ -270,9 +282,9 @@ def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7,
         for i in range(wp_mat.shape[0]):
             wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + '\n')
         wpfile.close()
-
-    plt.figure()
-    plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
-    plt.show()
+    if show_plot:
+        plt.figure()
+        plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
+        plt.show()
 
     return wp_filename  # file output [line#, x, y, time]

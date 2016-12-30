@@ -115,9 +115,7 @@ class motor_communication(object):
         return pos_inc
 
     def convert_inc2mm(self, pos_inc):
-        travel_dist_mm = self.__travelling_distance_mm
-        posmaxinc = self.__posincmax
-        pos_mm = pos_inc * ()
+        pos_mm = pos_inc * (self.__travelling_distance_mm/self.__posincmax)
         return pos_mm
 
     def write_on_port(self, strcommand):
@@ -143,7 +141,8 @@ class motor_communication(object):
         self.write_on_port('POS')
         self.listen_to_port('pos')
         self.__posinc = self.__tempval
-        self.__posmm = self.convert_inc2mm(self.__posinc)
+        if self.__posincmax != []:
+            self.__posmm = self.convert_inc2mm(self.__posinc)
         return self.__posinc
 
     def get_posmm(self):
@@ -328,8 +327,8 @@ class motor_communication(object):
 
                     time.sleep(2.0)
 
-                    print(self.__name + ' Coming-Home actual speed: ' + str(self.get_rpm()) + 'rpm')
-
+                    print(self.__name + ' Coming-Home position ' + str(self.get_posinc()) +
+                          'inc @ ' + str(self.get_rpm()) + 'rpm')
                     # check arrival at extreme position
                     if self.__signal == 'h' or self.__signal == 'f':
                         self.__homeknown = True
@@ -348,7 +347,7 @@ class motor_communication(object):
         else:
             print('Cannot start homing sequence ' + self.__name + ' is moving!')
 
-        print('Finished initialization sequence!')
+        print('Finished coming home sequence!')
 
     def initialize_extreme_pos(self):
         if self.check_initialization_status(True) is False:
@@ -365,7 +364,8 @@ class motor_communication(object):
 
                     time.sleep(2.0)
 
-                    print(self.__name + ' Init.Extreme position actual speed: ' + str(self.get_rpm()) + 'rpm')
+                    print(self.__name + ' Init.Extreme position ' + str(self.get_posinc()) +
+                          'inc @ ' + str(self.get_rpm()) + 'rpm')
 
                     # check arrival at extreme position
                     if self.__signal == 'h' or self.__signal == 'f':
@@ -400,7 +400,6 @@ class motor_communication(object):
                 while barrived is False:
                     time.sleep(0.5)
                     barrived = self.check_arrival()
-
                 print('Good to be home:')
                 print('Arrived at home position')
                 time.sleep(2)
