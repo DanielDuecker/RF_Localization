@@ -4,7 +4,8 @@ import numpy as np
 
 gt = gantry_control.GantryControl()
 
-gantry_control.wp_generator('wp_list_2016_12_31.txt', [200, 1200], [1400, 2400], [13, 13], 10.0)
+
+gantry_control.wp_generator('wp_list_2016_12_31.txt', [1200, 200], [2400, 1400], [13, 13], 10.0, True) # x-axis is along belt-drive
 
 freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 

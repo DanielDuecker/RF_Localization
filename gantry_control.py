@@ -4,8 +4,9 @@ import time as t
 import rf
 import serial_control as sc
 
+
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0, 1580, 0, 2940]):  # [x0 ,x1, y0, y1]
+    def __init__(self, gantry_dimensions=[0, 2940, 0, 1580]):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0]  # initial position after start
         self.__target_wp = []
@@ -15,27 +16,30 @@ class GantryControl(object):
         self.__oScY = []  # belt-drive
         self.__maxposdeviation = 2  # [mm] max position deviation per axis
 
-        self.__oScX = sc.motor_communication('/dev/ttyS5', 'spindle_drive', 'spindle', 1580)
-        self.__oScY = sc.motor_communication('/dev/ttyS4', 'belt_drive', 'belt', 2940)
+        self.__oScX = sc.motor_communication('/dev/ttyS4', 'belt_drive', 'belt', 2940)
+        self.__oScY = sc.motor_communication('/dev/ttyS5', 'spindle_drive', 'spindle', 1580)
         self.setup_serial_motor_control()
-
 
     def setup_serial_motor_control(self):
         # belt-drive
-        self.__oScY.open_port()
-        self.__oScY.start_manual_mode()
-        self.__oScY.initialize_home_pos()
-        self.__oScY.initialize_extreme_pos()
+        self.__oScX.open_port()
+        self.__oScX.start_manual_mode()
+        self.__oScX.enter_manual_init_data()
+        if self.__oScX.get_manual_init() is False:
+            self.__oScX.initialize_home_pos()
+            self.__oScX.initialize_extreme_pos()
+
         print('Belt-Drive: Setup DONE!')
 
         # spindle-drive
-        self.__oScX.open_port()
-        self.__oScX.start_manual_mode()
-        self.__oScX.initialize_home_pos()
-        self.__oScX.initialize_extreme_pos()
+        self.__oScY.open_port()
+        self.__oScY.start_manual_mode()
+        self.__oScY.enter_manual_init_data()
+        if self.__oScY.get_manual_init is False:
+            self.__oScY.initialize_home_pos()
+            self.__oScY.initialize_extreme_pos()
+
         print('Spindle-Drive: Setup DONE!')
-
-
 
         return True
 
@@ -167,10 +171,10 @@ class GantryControl(object):
             # setup plot
             plt.ion()
             plt.plot(wp_data_mat[:, 1], wp_data_mat[:, 2], 'b.-')
-            plt.xlabel('Distance in mm')
-            plt.ylabel('Distance in mm')
-            plt.xlim(-10, 1800)
-            plt.ylim(-10, 2000)
+            plt.xlabel('Distance in mm (belt-drive)')
+            plt.ylabel('Distance in mm (spindle-drive)')
+            plt.xlim(-10, 2940)
+            plt.ylim(-10, 1700)
             plt.grid()
             plt.show()
 

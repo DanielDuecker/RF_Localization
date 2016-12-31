@@ -17,6 +17,7 @@ class motor_communication(object):
         self.__signallist = ['p', 'h', 'f']
         self.__homeknown = False
         self.__extremeknown = False
+        self.__manualinit = False
         self.__ismoving = False
         self.__tempval = []
         self.__posincmax = []
@@ -57,6 +58,12 @@ class motor_communication(object):
 
     def reset_signal(self):
         self.__signal = 0
+
+    def set_manual_init(self,bmanualinit):
+        self.__manualinit = bmanualinit
+
+    def get_manual_init(self):
+        return self.__manualinit
 
     def listen_to_port(self, waitingfortype='rpm'):
 
@@ -221,6 +228,18 @@ class motor_communication(object):
         print('PosInc: ' + str(self.__posinc))
         print('PosMM: ' + str(self.__posmm))
         print('RPM: ' + str(self.__rpm))
+
+    def enter_manual_init_data(self):
+        print('Do you want to enter extreme position manually? (yes/no)')
+        input = raw_input("")
+        if input == 'yes':
+            print('Enter extreme position in [inc]-units:')
+            input = raw_input("")
+            self.__posincmax = int(input)
+            self.__homeknown = True
+            self.__extremeknown = True
+            self.set_manual_init(True)
+        return True
 
     def start_manual_mode(self, safetycheck=True):
         print ('Enter your commands below.')
