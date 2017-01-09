@@ -785,7 +785,7 @@ class LocEar(RfEar):
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
 
 
-def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.0e6]):
+def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.1e6]):
     # write header to measurement file
     with open(measdata_filename, 'r') as measfile:
         plotdata_mat_lis = []
@@ -840,7 +840,7 @@ def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.0e6]):
         totnumwp = num_wp + 1  # counting starts with zero
 
         plotdata_mat = np.asarray(plotdata_mat_lis)
-        print('plot_mat_shape: ' + str(plotdata_mat.shape))
+        print('Number of gridpoints: ' + str(plotdata_mat.shape[0]))
         # print (plotdata_mat)
 
 
@@ -853,11 +853,11 @@ def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.0e6]):
             return -20 * np.log10(dist) - alpha * dist - xi # rss in db
 
         txpos = np.array([[0.0, 0.0],  # 433,9 MHz
-                          [800.0, 0.0],  # 434,1MHz
-                          [50.0, 1270.0],  # 434,3 MHz
-                          [750.0, 1270.0]])  # 434,50 MHz
+                          [0.0, 800.0],  # 434,1MHz
+                          [1270.0, 50.0],  # 434,3 MHz
+                          [1270.0, 750.0]])  # 434,50 MHz
 
-        coordframe_offset = [-100, 150]  # position of the tx-origin in the coodinates of the gantry frame
+        coordframe_offset = [1205, 405]  # position of the tx-origin in the coodinates of the gantry frame
         txpos = txpos + coordframe_offset  # necessary since gantry frame and the tx-frame are shifted
 
         alpha = []
@@ -866,14 +866,20 @@ def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.0e6]):
         #print (rdist.shape)
 
         for itx in range(num_tx):
-            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]
+            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # r_wp -r_txpos
 
-            rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance between tx and wp
+            rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  #  distance norm: |r_wp -r_txpos|
 
             rssdata = plotdata_mat[:, 2+itx]  # rss-mean for each wp
 
-            #print(rdist_temp)
+            #print('itx ' + str(itx) + ' rdist ' + str(rdist_temp))
+            #plt.figure(itx)
+            #plt.plot(rdist_temp, rssdata,'.')
+            #plt.xlabel('dist')
+            #plt.ylabel('rss')
+            #print('itx ' + str(itx) + ' rss ' + str(rssdata))
             popt, pcov = curve_fit(rsm_model, rdist_temp, rssdata)
+            #print('itx = ' + str(itx) + ' popt = ' + str(popt))
             del pcov
             alpha.append(popt[0])
             xi.append(popt[1])

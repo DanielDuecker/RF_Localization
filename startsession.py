@@ -10,7 +10,7 @@ txpos = [[0, 0], [800, 0], [50, 1270], [750, 1270]]
 
 
 
-cal = rf.CalEar(freqtx)
+#cal = rf.CalEar(freqtx)
 
 # cal.print_pxx_density()
 
@@ -22,7 +22,7 @@ cal = rf.CalEar(freqtx)
 #cal.get_performance()
 
 
-cal.plot_txrss_live()
+#cal.plot_txrss_live()
 
 #rss, var = cal.measure_rss_var(freqtx, 2e4, 10.0)
 #alpha, xi = cal.get_model(rss, var)
@@ -100,6 +100,6 @@ x0 = np.array([30, 40])  # initial estimate
 
 txpos = np.array([[0.0, 0.0],     # 433,91MHz
                   [80.0, 0.0]])  # 433,70MHz
-#rf.get_measdata_from_file('measdata.txt', txpos)
+rf.get_measdata_from_file('measdata_2016_12_31.txt', txpos)
 
 #loc.map_path_ekf(x0, False, False, True)
