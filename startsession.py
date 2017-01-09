@@ -1,11 +1,15 @@
-import rf
+# import rf
+import rf_tools
 import numpy as np
 
 freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 
-
-txpos = [[0, 0], [800, 0], [50, 1270], [750, 1270]]
-# rf.get_measdata_from_file('measdata_2016_12_14.txt', txpos, freqtx)
+txpos_offset = np.array([1060, 385])
+txpos = [[0, 0],  # 433.9MHz
+         [800, 0],  # 434.1MHz
+         [50, 1270],  # 434.3MHz
+         [750, 1270]]  # 434.5MHz
+rf_tools.analyse_measdata_from_file('measdata_2017_01_09.txt', txpos, txpos_offset, freqtx)
 
 
 
@@ -16,7 +20,7 @@ txpos = [[0, 0], [800, 0], [50, 1270], [750, 1270]]
 
 #cal.plot_psd()
 
-#cal.wp_generator('test_wp_list.txt')
+#rf_tools.wp_generator('test_wp_list.txt')
 #cal.measure_at_waypoint('test_wp_list.txt', 'meas_test.txt')
 
 #cal.get_performance()
@@ -100,6 +104,7 @@ x0 = np.array([30, 40])  # initial estimate
 
 txpos = np.array([[0.0, 0.0],     # 433,91MHz
                   [80.0, 0.0]])  # 433,70MHz
-rf.get_measdata_from_file('measdata_2016_12_31.txt', txpos)
+#rf_tools.get_measdata_from_file('measdata_2016_12_31.txt', txpos)
+
 
 #loc.map_path_ekf(x0, False, False, True)

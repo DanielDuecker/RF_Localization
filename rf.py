@@ -12,7 +12,6 @@ from abc import ABCMeta, abstractmethod
 import time as t
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from rtlsdr import *
 from scipy import signal
 from scipy.optimize import curve_fit
@@ -103,44 +102,28 @@ class RfEar(object):
                 printing = False
         return True
 
-    def take_measurement(self, meastime, outputmode):
+    def take_measurement(self, meastime):
         """
 
         :param meastime:
-        :param outputmode:
+
         :return:
         """
-
         print ('... measuring for ' + str(meastime) + 's ...')
         elapsed_time = 0.0
         dataseq = []
 
-        if outputmode == 'sampleseq':
-            while elapsed_time < meastime:
-                start_calctime = t.time()
+        while elapsed_time < meastime:
+            start_calctime = t.time()
+            freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
 
-                dataseq.append(self.get_iq())
+            dataseq.append(pxx_den_max)
 
-                calc_time = t.time() - start_calctime
-                elapsed_time = elapsed_time + calc_time
-                t.sleep(0.01)
+            calc_time = t.time() - start_calctime
+            elapsed_time = elapsed_time + calc_time
+            t.sleep(0.001)
             dataseq_mat = np.asarray(dataseq)
-            return dataseq_mat
-        elif outputmode == 'fft':
-            # print('FFT not implemented yet')
-            while elapsed_time < meastime:
-                start_calctime = t.time()
-                freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
-
-                dataseq.append(pxx_den_max)
-
-                calc_time = t.time() - start_calctime
-                elapsed_time = elapsed_time + calc_time
-                t.sleep(0.001)
-                dataseq_mat = np.asarray(dataseq)
-            return dataseq_mat
-        else:
-            print('ERROR: -take_measurement- outputmode has to be "sampleseq" or "fft" !')
+        return dataseq_mat
 
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
@@ -784,154 +767,3 @@ class LocEar(RfEar):
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
 
-
-def get_measdata_from_file(measdata_filename, txpos, freqtx=[433.9e6,434.1e6]):
-    # write header to measurement file
-    with open(measdata_filename, 'r') as measfile:
-        plotdata_mat_lis = []
-
-        for i, line in enumerate(measfile):
-            if i >= 3:  # ignore header (first 3 lines)
-
-                meas_data_list = map(float, line[0:-3].split(', '))
-                #print(meas_data_list)
-
-                meas_data_mat_line = np.asarray(meas_data_list)
-                #print(meas_data_mat_line)
-
-                # print ('x = ' + str(meas_data_mat_line[0]) + ' y= ' + str(meas_data_mat_line[1]))
-
-                #wp_meas_lis.append([meas_data_mat_line[0], meas_data_mat_line[1], meas_data_mat_line[2]])
-                #print ('wp_lis ' + str(wp_meas_lis))
-                #print ('wp_lis_shape ' + str(wp_meas_lis.shape))
-                num_wp = int(meas_data_mat_line[2])
-                num_tx = int(meas_data_mat_line[3])
-                num_meas = int(meas_data_mat_line[4])
-                freq_vec = []
-                # @todo add numtx to data file
-                first_rss = 5 + num_tx
-
-                meas_data_mat_rss = meas_data_mat_line[first_rss:]
-                #meas_data_mat_rss = meas_data_mat_line[first_rss:-1]  # select only rss data
-
-                #print('num_tx ' + str(num_tx))
-                #print('num_meas ' + str(num_meas))
-
-                #print('rss_mat.shape: ' + str(meas_data_mat_rss.shape))
-                rss_mat = meas_data_mat_rss.reshape([num_tx, num_meas])
-
-                # print(meas_data_mat_line)
-
-                #print (rss_mat)
-                #print (rss_mat.shape)
-
-                mean = np.mean(rss_mat, axis=1)
-                var = np.var(rss_mat, axis=1)
-                #print ('mean: ' + str(mean))
-                #print ('var: ' + str(var))
-                wp = [meas_data_mat_line[0], meas_data_mat_line[1]]
-
-                plotdata_line = np.concatenate((wp, mean, var), axis=1)
-                #print (plotdata_line)
-                plotdata_mat_lis.append(plotdata_line)
-                #plotdata_mat = np.append(plotdata_mat, plotdata_line,axis=1)
-
-        measfile.close()
-        totnumwp = num_wp + 1  # counting starts with zero
-
-        plotdata_mat = np.asarray(plotdata_mat_lis)
-        print('Number of gridpoints: ' + str(plotdata_mat.shape[0]))
-        # print (plotdata_mat)
-
-
-        """
-        Model fit
-        """
-
-        def rsm_model(dist, alpha, xi):
-            """Range Sensor Model (RSM) structure."""
-            return -20 * np.log10(dist) - alpha * dist - xi # rss in db
-
-        txpos = np.array([[0.0, 0.0],  # 433,9 MHz
-                          [0.0, 800.0],  # 434,1MHz
-                          [1270.0, 50.0],  # 434,3 MHz
-                          [1270.0, 750.0]])  # 434,50 MHz
-
-        coordframe_offset = [1205, 405]  # position of the tx-origin in the coodinates of the gantry frame
-        txpos = txpos + coordframe_offset  # necessary since gantry frame and the tx-frame are shifted
-
-        alpha = []
-        xi = []
-        rdist = []#np.ones([totnumwp, num_tx])
-        #print (rdist.shape)
-
-        for itx in range(num_tx):
-            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # r_wp -r_txpos
-
-            rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  #  distance norm: |r_wp -r_txpos|
-
-            rssdata = plotdata_mat[:, 2+itx]  # rss-mean for each wp
-
-            #print('itx ' + str(itx) + ' rdist ' + str(rdist_temp))
-            #plt.figure(itx)
-            #plt.plot(rdist_temp, rssdata,'.')
-            #plt.xlabel('dist')
-            #plt.ylabel('rss')
-            #print('itx ' + str(itx) + ' rss ' + str(rssdata))
-            popt, pcov = curve_fit(rsm_model, rdist_temp, rssdata)
-            #print('itx = ' + str(itx) + ' popt = ' + str(popt))
-            del pcov
-            alpha.append(popt[0])
-            xi.append(popt[1])
-            print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' xi= ' + str(xi[itx]))
-            rdist.append(rdist_temp)
-
-        rdist_temp = np.reshape(rdist,[num_tx, totnumwp])
-
-
-
-        fig = plt.figure()
-        for itx in range(num_tx):
-            rss_mean = plotdata_mat[:, 2+itx]
-            rss_var = plotdata_mat[:, 2+num_tx+itx]
-
-            rdist = np.array(rdist_temp[itx,:], dtype=float)
-            rss_mean = np.array(rss_mean, dtype=float)
-            rss_var = np.array(rss_var, dtype=float)
-            pos = 221 + itx
-            ax = fig.add_subplot(pos)
-            ax.errorbar(rdist, rss_mean, yerr=rss_var,
-                         fmt='ro', ecolor='g', label='Original Data')
-
-            #print ('alpha = %s , xi = %s' % (alpha, xi))
-
-            rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
-            ax.plot(rdata, rsm_model(rdata, alpha[itx], xi[itx]), label='Fitted Curve')
-            ax.legend(loc='upper right')
-            ax.grid()
-            ax.set_xlabel('Distance [mm]')
-            ax.set_ylabel('RSS [dB]')
-            ax.set_title('RSM for TX# ' + str(itx+1))
-        plt.show()
-
-
-
-        """
-        Plots
-        """
-        x = plotdata_mat[:, 0]
-        y = plotdata_mat[:, 1]
-
-        fig = plt.figure()
-
-        for itx in range(num_tx):
-            pos =221 + itx
-
-            ax = fig.add_subplot(pos, projection='3d')
-            ax.plot_trisurf(x, y, plotdata_mat[:, 2 + itx], cmap=plt.cm.Spectral)
-            ax.grid()
-            ax.set_xlabel('x [mm]')
-            ax.set_ylabel('y [mm]')
-            ax.set_zlabel('rss [dB]')
-            ax.set_title('RSS field for TX# ' + str(itx+1))
-        plt.show()

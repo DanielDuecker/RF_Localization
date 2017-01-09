@@ -19,6 +19,7 @@ class GantryControl(object):
         self.__oScX = sc.motor_communication('/dev/ttyS4', 'belt_drive', 'belt', 2940)
         self.__oScY = sc.motor_communication('/dev/ttyS5', 'spindle_drive', 'spindle', 1580)
         self.setup_serial_motor_control()
+        self.__starttime = []
 
     def setup_serial_motor_control(self):
         # belt-drive
@@ -48,6 +49,12 @@ class GantryControl(object):
 
     def get_gantry_pos(self):
         return self.__gantry_pos
+
+    def set_starttime(self):
+        self.__starttime = t.ctime()
+
+    def get_starttime(self):
+        return self.__starttime
 
     def set_gantry_pos(self, new_pos):
         self.__gantry_pos = new_pos
@@ -90,25 +97,23 @@ class GantryControl(object):
     def move_gantry_to_target(self):
         target_wp = self.__target_wp
 
-        print ('move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
+        print ('Move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
         self.__oScX.go_to_pos_mm(target_wp[0])
         self.__oScY.go_to_pos_mm(target_wp[1])
 
         bArrived_both = False
         while bArrived_both is False:
-            t.sleep(0.5)
-            #barrived_X = self.__oScX.check_arrival()
-            #barrived_Y = self.__oScY.check_arrival()
+            t.sleep(0.1)
             actpos_X = self.__oScX.get_posmm()
             actpos_Y = self.__oScY.get_posmm()
             actpos = [actpos_X, actpos_Y]
-            print('Actual position: x=' + str(actpos[0]) + 'mm y=' + str(actpos[1]))
+            print('Actual position: x=' + str(actpos[0]) + 'mm y=' + str(actpos[1]) + 'mm')
             self.set_gantry_pos(actpos)
-            #if barrived_X and barrived_Y:
+
             dist_x = abs(self.get_gantry_pos()[0] - target_wp[0])
             dist_y = abs(self.get_gantry_pos()[1] - target_wp[1])
             if dist_x < self.__maxposdeviation and dist_y < self.__maxposdeviation:
-                print ('arrived at new waypoint')
+                print ('Arrived at way-point')
                 bArrived_both = True
 
         # @todo: position feedback from motor  check whether position is within a suitable range
@@ -195,13 +200,14 @@ class GantryControl(object):
                 if self.transmit_wp_to_gantry(new_target_wp):
                     if self.move_gantry_to_target():
                         if self.confirm_arrived_at_wp():
-                            t.sleep(1.5)  # wait to damp motion/oscillation of antenna etc
+                            t.sleep(1)  # wait to damp motion/oscillation of antenna etc
 
                             print('START Measurement for ' + str(meastime) + 's')
                             print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
                             plt.plot(new_target_wp[0], new_target_wp[1], 'go')
-                            plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
-                            dataseq = self.__oCal.take_measurement(meastime, outputmode='fft')
+                            plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +
+                                      '- measurement sequence was started at ' + str(self.get_starttime()))
+                            dataseq = self.__oCal.take_measurement(meastime)
 
                             [nummeas, numtx] = np.shape(dataseq)
 
@@ -247,48 +253,4 @@ class GantryControl(object):
         self.__oLoc = rf.LocEar(alpha, xi, txpos, freqtx, freqspan)
         return True
 
-"""
-independent methods related to the gantry
-"""
 
-
-def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0, show_plot=False):
-    """
-    :param wp_filename:
-    :param x0: [x0,y0] - start position of the grid
-    :param xn: [xn,yn] - end position of the grid
-    :param steps: [numX, numY] - step size
-    :param timemeas: - time [s] to wait at each position for measurements
-    :return: wp_mat [x, y, t]
-    """
-    startx = x0[0]
-    endx = xn[0]
-    stepx = steps[0]
-
-    starty = x0[1]
-    endy = xn[1]
-    stepy = steps[1]
-
-    xpos = np.linspace(startx, endx, stepx)
-    ypos = np.linspace(starty, endy, stepy)
-
-    wp_matx, wp_maty = np.meshgrid(xpos, ypos)
-    wp_vecx = np.reshape(wp_matx, (len(xpos)*len(ypos), 1))
-    wp_vecy = np.reshape(wp_maty, (len(ypos)*len(xpos), 1))
-    wp_time = np.ones((len(xpos)*len(ypos), 1)) * timemeas
-
-    wp_mat = np.append(wp_vecx, wp_vecy, axis=1)
-    wp_mat = np.append(wp_mat, wp_time, axis=1)
-
-    with open(wp_filename, 'w') as wpfile:
-        # wpfile.write(t.ctime() + '\n')
-        # wpfile.write('some describtion' + '\n')
-        for i in range(wp_mat.shape[0]):
-            wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + '\n')
-        wpfile.close()
-    if show_plot:
-        plt.figure()
-        plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
-        plt.show()
-
-    return wp_filename  # file output [line#, x, y, time]

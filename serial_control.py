@@ -11,8 +11,8 @@ class motor_communication(object):
         self.__drivetype = drivetype
         self.__travelling_distance_mm = float(travelling_distance_mm)
         self.__isopen = False
-        self.__timewritewait = 0.2
-        self.__timereadwait = 0.2
+        self.__timewritewait = 0.1
+        self.__timereadwait = 0.1
         self.__signal = []
         self.__signallist = ['p', 'h', 'f']
         self.__homeknown = False
@@ -85,7 +85,7 @@ class motor_communication(object):
             except ValueError:
                 if item == 'p':
                     self.__signal = item
-                    print ('Arrived at target position -> p-flag')
+                    # print ('Arrived at target position -> p-flag')
                 elif item == 'h':
                     self.__signal = item
                     print ('h found')
@@ -281,8 +281,8 @@ class motor_communication(object):
                 # (note that I happend a \r\n carriage return and line feed to the characters - this is requested by my device)
                 self.__oserial.write(input + '\r\n')
                 out = ''
-                # let's wait 0.2 second before reading output (let's give device time to answer)
-                time.sleep(.2)
+                # let's wait 0.1 second before reading output (let's give device time to answer)
+                time.sleep(0.1)
                 while self.__oserial.inWaiting() > 0:
                     out += self.__oserial.read(1)
 
@@ -316,7 +316,7 @@ class motor_communication(object):
 
                 trying = False
                 self.check_moving()
-                print ('Start moving to Position: ' + str(tposinc))
+                # print ('Start moving to Position: ' + str(tposinc))
                 return True
             else:
                 time_wait = 1.0
@@ -411,7 +411,7 @@ class motor_communication(object):
                 print('Home and extreme positions are known!\n')
                 print('Go back to home position')
 
-                time.sleep(1.5)
+                time.sleep(1)
 
                 self.go_to_pos_mm(0)
 
