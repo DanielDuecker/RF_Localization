@@ -153,6 +153,55 @@ class GantryControl(object):
 
         return barrivalconfirmed
 
+    def follow_wp_trajectory(self, vdes_x, vdes_y, dist_threshhold):
+        """
+
+        :param vdes_x:
+        :param vdes_y:
+        :param dist_threshhold: [mm]
+        :return:
+        """
+
+        wp_list = [[0, 0],
+                   [500, 0],
+                   [500, 500],
+                   [0, 500],
+                   [0, 0]]
+
+        num_wp = len(wp_list)
+
+        """
+        insert a sequence to move to starting point
+        """
+
+        for i_wp in range(num_wp):
+
+            target_wp = wp_list[i_wp]
+            self.set_target_wp(target_wp)
+            bdrive_x_arrived = False
+            bdrive_y_arrived = False
+
+            v_x = vdes_x
+            v_y = vdes_y
+
+            self.__oScX.set_drive_speed(v_x)
+            self.__oScY.set_drive_speed(v_y)
+            target_pos_reached = False
+            while target_pos_reached is False:
+
+                if abs(self.__oScX.get_dist_to_target()) < dist_threshhold:
+                    v_x = 0
+                    self.__oScX.set_drive_speed(v_x)
+                    bdrive_x_arrived = True
+                if abs(self.__oScY.get_dist_to_target()) < dist_threshhold:
+                    v_y = 0
+                    self.__oScY.set_drive_speed(v_y)
+                    bdrive_y_arrived = True
+
+                if bdrive_x_arrived and bdrive_y_arrived:
+                    target_pos_reached = False
+        return True
+
     def process_measurement_sequence(self, wplist_filename, measdata_filename):
         """
         #

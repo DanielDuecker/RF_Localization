@@ -166,7 +166,6 @@ class motor_communication(object):
     def set_target_posinc(self, target_posinc):
         self.__tposinc = target_posinc
 
-
     def is_home_pos_known(self):
         return self.__homeknown
 
@@ -196,7 +195,16 @@ class motor_communication(object):
             self.__ismoving = True
             return True
 
-    def check_arrival(self):
+    def get_dist_to_target(self, target_pos_mm):
+        """
+        Calculates the distance [mm] from the actual position to the target position
+        :param target_pos_mm
+        :return: target_pos_mm - drive_pos_mm
+        """
+        drive_pos_mm = self.get_posmm()
+        return target_pos_mm - drive_pos_mm
+
+    def check_arrival_signal(self):
         self.update_data()
         if self.__signal == 'p':
             self.reset_signal()
@@ -206,7 +214,6 @@ class motor_communication(object):
             self.reset_signal()
             return True
 
-            #print('ERROR: ' + self.__name + ' reached limit of travel at pos ' + str(self.get_posmm()) + ' !')
         self.reset_signal()
         return False
 
@@ -288,6 +295,14 @@ class motor_communication(object):
 
                 if out != '':
                     print "<<" + out
+
+    def set_drive_speed(self, v_inc):
+
+        command = ['V'+str(v_inc)]  # start moving with v_inc speed
+        self.write_on_port(command)
+        self.check_moving()
+
+        return True
 
     def go_to_pos_mm(self, tposmm):
         """
@@ -418,7 +433,7 @@ class motor_communication(object):
                 barrived = False
                 while barrived is False:
                     time.sleep(0.5)
-                    barrived = self.check_arrival()
+                    barrived = self.check_arrival_signal()
                 print('Good to be home:')
                 print('Arrived at home position')
                 time.sleep(2)
