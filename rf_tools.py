@@ -52,7 +52,7 @@ def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7,
     return wp_filename  # file output [line#, x, y, time]
 
 
-def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], freqtx=[433.9e6, 434.1e6],meantype='db_mean'):
+def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], meantype='db_mean'):
     # write header to measurement file
     with open(measdata_filename, 'r') as measfile:
         plotdata_mat_lis = []
@@ -146,7 +146,7 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], fr
         fig = plt.figure(1)
 
         for itx in range(num_tx):
-            pos =221 + itx
+            pos = 221 + itx
 
             ax = fig.add_subplot(pos, projection='3d')
             ax.plot_trisurf(x, y, plotdata_mat[:, 2 + itx], cmap=plt.cm.Spectral)
@@ -178,3 +178,5 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], fr
             ax.set_title('RSM for TX# ' + str(itx + 1))
 
         plt.show()
+
+    return alpha, xi

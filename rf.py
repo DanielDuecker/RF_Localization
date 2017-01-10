@@ -23,6 +23,8 @@ sdr.gain = 1
 sdr.sample_rate = 2.048e6
 
 # define classes
+
+
 class RfEar(object):
     """A simple class to compute PSD with a DVBT-dongle."""
 
@@ -39,7 +41,6 @@ class RfEar(object):
         self.__freqspan = freqspan
         self.__size = 0
         self.set_size(256)
-
 
     def set_size(self, size):
         """Set number of samples to be read by sdr [*1024].
@@ -465,11 +466,14 @@ class CalEar(RfEar):
 
 class LocEar(RfEar):
     """Subclass of Superclass RfEar for 2D dynamic object localization."""
-    def __init__(self, alpha, xi, txpos, freqtx, freqspan=2e4):
+    def __init__(self, freqtx, freqspan, alpha, xi, txpos):
         RfEar.__init__(self,  freqtx, freqspan)
+        self.__freqtx = freqtx
+        self.__freqspan = freqspan
+        self.__numoftx = len(freqtx)
         self.__alpha = alpha
         self.__xi = xi
-        self.__txpos = []
+        self.__txpos = txpos
         self.set_txpos(txpos)
 
     def set_txpos(self, txpos):
@@ -549,14 +553,14 @@ class LocEar(RfEar):
 
         # measurement function
         def h_meas(x, txposition, numtx):
-            tx_pos = txposition[numtx, :]  # position of the transceiver
+            tx_pos = txposition[numtx]  # position of the transceiver
             # r = sqrt((x-x_tx)^2+(y-y_tx)^2)
             r_dist = np.sqrt((x[0]-tx_pos[0])**2+(x[1]-tx_pos[1])**2)
             return r_dist
 
         # jacobian of the measurement function
         def h_jacobian(x_est, txpos, numtx):
-            tx_pos = txpos[numtx, :]  # position of the transceiver
+            tx_pos = txpos[numtx]  # position of the transceiver
             factor = 0.5/np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
             h_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
             return h_jac
@@ -611,8 +615,8 @@ class LocEar(RfEar):
 
         i_mat = np.eye(2)
 
-        z_meas = [0, 0, 0]
-        y_est = [0, 0, 0]
+        z_meas = np.zeros(self.__numoftx)
+        y_est = np.zeros(self.__numoftx)
 
         """ Start EKF-loop"""
         tracking = True
@@ -622,7 +626,7 @@ class LocEar(RfEar):
                 freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
                 x_est[:, 0] = x_log[:, -1]
 
-                for i in range(self.__numoftx):
+                for itx in range(self.__numoftx):
 
                     """ prediction """
                     x_est[:, 0] = x_est[:, 0] + np.random.randn(1, 2) * 1  # = I * x_est
@@ -633,13 +637,13 @@ class LocEar(RfEar):
 
                     """ update """
                     # get new measurement / get distance from rss-measurement
-                    z_meas[i] = self.lambertloc(rss[i], i)
+                    z_meas[itx] = self.lambertloc(rss[itx], itx)
                     # estimate measurement from x_est
-                    y_est[i] = h_meas(x_est[:, 0], txpos, i)
-                    y_tild = z_meas[i] - y_est[i]
+                    y_est[itx] = h_meas(x_est[:, 0], txpos, itx)
+                    y_tild = z_meas[itx] - y_est[itx]
 
                     # calc K-gain
-                    h_jac_mat = h_jacobian(x_est[:, 0], txpos, i)
+                    h_jac_mat = h_jacobian(x_est[:, 0], txpos, itx)
                     s_mat = np.dot(h_jac_mat.transpose(), np.dot(p_mat, h_jac_mat)) + r_mat  # = H^t * P * H + R
                     k_mat = np.dot(p_mat, h_jac_mat.transpose() / s_mat)  # 1/s_scal since s_mat is dim = 1x1
 
@@ -699,7 +703,7 @@ class LocEar(RfEar):
         """
         z = 20 / (np.log(10) * self.__alpha[numtx]) * lambertw(
             np.log(10) * self.__alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + self.__xi[numtx])))
-        return z.real # [mm]
+        return z.real  # [mm]
 
     def plot_txdist_live(self,freqspan=2e4, numofplottedsamples=250):
         """ Live plot for the measured distances from each tx using rss

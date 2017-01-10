@@ -1,4 +1,4 @@
-# import rf
+import rf
 import rf_tools
 import numpy as np
 
@@ -9,7 +9,7 @@ txpos = [[0, 0],  # 433.9MHz
          [0, 800],  # 434.1MHz
          [1270, 50],  # 434.3MHz
          [1270, 750]]  # 434.5MHz
-rf_tools.analyse_measdata_from_file('measdata_2017_01_09.txt', txpos, txpos_offset, freqtx)
+#rf_tools.analyse_measdata_from_file('measdata_2017_01_09.txt', txpos, txpos_offset, freqtx)
 
 
 
@@ -19,9 +19,10 @@ tx #1 alpha= 0.0134497413559 xi= -10.8274256871
 tx #2 alpha= 0.0129485499082 xi= -8.05984834452
 tx #3 alpha= 0.0137674277788 xi= -9.1403814896
 tx #4 alpha= 0.012530150337 xi= -8.06862854932
+"""
 alpha = [0.0134497413559, 0.0129485499082, 0.0137674277788, 0.012530150337]
 xi = [-10.8274256871, -8.05984834452, -9.1403814896, -8.06862854932]
-"""
+
 
 """
 # calibration data from measdata_2017_01_10
@@ -44,9 +45,9 @@ freqspan = 2e4
 freqcenter = np.mean(freqtx)
 
 
-#loc = rf.LocEar(alpha, xi, freqtx, freqspan, freqcenter)
+loc = rf.LocEar(freqtx, freqspan, alpha, xi, txpos)
 #loc.plot_txdist_live()
 
 x0 = np.array([300, 400])  # initial estimate
 
-#loc.map_path_ekf(x0, False, False, True)
+loc.map_path_ekf(x0, False, False, True)
