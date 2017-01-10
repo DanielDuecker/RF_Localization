@@ -79,18 +79,9 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], fr
                 first_rss = 5 + num_tx
 
                 meas_data_mat_rss = meas_data_mat_line[first_rss:]
-                #meas_data_mat_rss = meas_data_mat_line[first_rss:-1]  # select only rss data
 
-                #print('num_tx ' + str(num_tx))
-                #print('num_meas ' + str(num_meas))
-
-                #print('rss_mat.shape: ' + str(meas_data_mat_rss.shape))
                 rss_mat = meas_data_mat_rss.reshape([num_tx, num_meas])
 
-                # print(meas_data_mat_line)
-
-                #print (rss_mat)
-                #print (rss_mat.shape)
                 if meantype is 'lin':
                     rss_mat_lin = 10**(rss_mat/10)
                     mean_lin = np.mean(rss_mat_lin, axis=1)
@@ -100,21 +91,18 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], fr
                 else:
                     mean = np.mean(rss_mat, axis=1)
                     var = np.var(rss_mat, axis=1)
-                #print ('mean: ' + str(mean))
-                #print ('var: ' + str(var))
                 wp = [meas_data_mat_line[0], meas_data_mat_line[1]]
 
                 plotdata_line = np.concatenate((wp, mean, var), axis=1)
-                #print (plotdata_line)
+
                 plotdata_mat_lis.append(plotdata_line)
-                #plotdata_mat = np.append(plotdata_mat, plotdata_line,axis=1)
 
         measfile.close()
         totnumwp = num_wp + 1  # counting starts with zero
 
         plotdata_mat = np.asarray(plotdata_mat_lis)
         print('Number of gridpoints: ' + str(plotdata_mat.shape[0]))
-        # print (plotdata_mat)
+
 
 
         """
@@ -129,56 +117,24 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], fr
 
         alpha = []
         xi = []
-        rdist = []#np.ones([totnumwp, num_tx])
-        #print (rdist.shape)
+        rdist = []
 
         for itx in range(num_tx):
             rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # r_wp -r_txpos
 
-            rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  #  distance norm: |r_wp -r_txpos|
+            rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos|
 
             rssdata = plotdata_mat[:, 2+itx]  # rss-mean for each wp
 
-            #print('itx ' + str(itx) + ' rdist ' + str(rdist_temp))
-            #plt.figure(itx)
-            #plt.plot(rdist_temp, rssdata,'.')
-            #plt.xlabel('dist')
-            #plt.ylabel('rss')
-            #print('itx ' + str(itx) + ' rss ' + str(rssdata))
             popt, pcov = curve_fit(rsm_model, rdist_temp, rssdata)
-            #print('itx = ' + str(itx) + ' popt = ' + str(popt))
             del pcov
+
             alpha.append(popt[0])
             xi.append(popt[1])
             print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' xi= ' + str(xi[itx]))
             rdist.append(rdist_temp)
 
-        rdist_temp = np.reshape(rdist,[num_tx, totnumwp])
-
-        fig = plt.figure(1)
-        for itx in range(num_tx):
-            rss_mean = plotdata_mat[:, 2+itx]
-            rss_var = plotdata_mat[:, 2+num_tx+itx]
-
-            rdist = np.array(rdist_temp[itx,:], dtype=float)
-            rss_mean = np.array(rss_mean, dtype=float)
-            rss_var = np.array(rss_var, dtype=float)
-            pos = 221 + itx
-            ax = fig.add_subplot(pos)
-            ax.errorbar(rdist, rss_mean, yerr=rss_var,
-                         fmt='ro', ecolor='g', label='Original Data')
-
-            #print ('alpha = %s , xi = %s' % (alpha, xi))
-
-            rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
-            ax.plot(rdata, rsm_model(rdata, alpha[itx], xi[itx]), label='Fitted Curve')
-            ax.legend(loc='upper right')
-            ax.grid()
-            ax.set_xlabel('Distance [mm]')
-            ax.set_ylabel('RSS [dB]')
-            ax.set_title('RSM for TX# ' + str(itx+1))
-
-
+        rdist_temp = np.reshape(rdist, [num_tx, totnumwp])
 
 
         """
@@ -187,7 +143,7 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], fr
         x = plotdata_mat[:, 0]
         y = plotdata_mat[:, 1]
 
-        fig = plt.figure(2)
+        fig = plt.figure(1)
 
         for itx in range(num_tx):
             pos =221 + itx
@@ -199,4 +155,26 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], fr
             ax.set_ylabel('y [mm]')
             ax.set_zlabel('rss [dB]')
             ax.set_title('RSS field for TX# ' + str(itx+1))
+
+        fig = plt.figure(2)
+        for itx in range(num_tx):
+            rss_mean = plotdata_mat[:, 2 + itx]
+            rss_var = plotdata_mat[:, 2 + num_tx + itx]
+
+            rdist = np.array(rdist_temp[itx, :], dtype=float)
+            rss_mean = np.array(rss_mean, dtype=float)
+            rss_var = np.array(rss_var, dtype=float)
+            pos = 221 + itx
+            ax = fig.add_subplot(pos)
+            ax.errorbar(rdist, rss_mean, yerr=rss_var,
+                        fmt='ro', ecolor='g', label='Original Data')
+
+            rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
+            ax.plot(rdata, rsm_model(rdata, alpha[itx], xi[itx]), label='Fitted Curve')
+            ax.legend(loc='upper right')
+            ax.grid()
+            ax.set_xlabel('Distance [mm]')
+            ax.set_ylabel('RSS [dB]')
+            ax.set_title('RSM for TX# ' + str(itx + 1))
+
         plt.show()
