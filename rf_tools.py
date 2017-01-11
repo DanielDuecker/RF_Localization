@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import curve_fit
-#from scipy.special import lambertw
+from scipy.special import lambertw
 
 
 """
@@ -134,8 +134,12 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], me
             print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' xi= ' + str(xi[itx]))
             rdist.append(rdist_temp)
 
+
         rdist_temp = np.reshape(rdist, [num_tx, totnumwp])
 
+        print('\nVectors for convenient copy/paste')
+        print('alpha = ' + str(alpha))
+        print('xi = ' + str(xi))
 
         """
         Plots
@@ -144,12 +148,13 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], me
         y = plotdata_mat[:, 1]
 
         fig = plt.figure(1)
-
         for itx in range(num_tx):
             pos = 221 + itx
 
             ax = fig.add_subplot(pos, projection='3d')
-            ax.plot_trisurf(x, y, plotdata_mat[:, 2 + itx], cmap=plt.cm.Spectral)
+            rss_mean = plotdata_mat[:, 2 + itx]
+            rss_var = plotdata_mat[:, 2 + num_tx + itx]
+            ax.plot_trisurf(x, y, rss_mean, cmap=plt.cm.Spectral)
             ax.grid()
             ax.set_xlabel('x [mm]')
             ax.set_ylabel('y [mm]')
@@ -157,6 +162,20 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], me
             ax.set_title('RSS field for TX# ' + str(itx+1))
 
         fig = plt.figure(2)
+        for itx in range(num_tx):
+            pos = 221 + itx
+
+            ax = fig.add_subplot(pos, projection='3d')
+            rss_mean = plotdata_mat[:, 2 + itx]
+            rss_var = plotdata_mat[:, 2 + num_tx + itx]
+            ax.plot_trisurf(x, y, rss_var, cmap=plt.cm.Spectral)
+            ax.grid()
+            ax.set_xlabel('x [mm]')
+            ax.set_ylabel('y [mm]')
+            ax.set_zlabel('rss_var [dB]')
+            ax.set_title('RSS field variance for TX# ' + str(itx + 1))
+            
+        fig = plt.figure(3)
         for itx in range(num_tx):
             rss_mean = plotdata_mat[:, 2 + itx]
             rss_var = plotdata_mat[:, 2 + num_tx + itx]
@@ -177,6 +196,87 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], me
             ax.set_ylabel('RSS [dB]')
             ax.set_title('RSM for TX# ' + str(itx + 1))
 
-        plt.show()
+        fig = plt.figure(4)
+        for itx in range(num_tx):
+            rss_mean = plotdata_mat[:, 2 + itx]
+            rss_var = plotdata_mat[:, 2 + num_tx + itx]
+
+            rdist = np.array(rdist_temp[itx, :], dtype=float)
+            rss_mean = np.array(rss_mean, dtype=float)
+            rss_var = np.array(rss_var, dtype=float)
+
+            pos = 221 + itx
+            ax = fig.add_subplot(pos)
+            rssdata = np.linspace(-10, -110, num=1000)
+            ax.plot(rssdata, lambertloc(rssdata, alpha[itx], xi[itx]), label='Fitted Curve')
+            ax.plot(rss_mean, rdist, 'r.')
+            ax.grid()
+            ax.set_xlabel('RSS [dB]')
+            ax.set_ylabel('Distance [mm]')
+
+        fig = plt.figure(5)
+        for itx in range(num_tx):
+            rss_mean = plotdata_mat[:, 2 + itx]
+            rss_var = plotdata_mat[:, 2 + num_tx + itx]
+
+            rdist = np.array(rdist_temp[itx, :], dtype=float)
+            rss_mean = np.array(rss_mean, dtype=float)
+            rss_var = np.array(rss_var, dtype=float)
+
+            r_dist_est = lambertloc(rss_mean, alpha[itx], xi[itx])
+            sorted_indices = np.argsort(rdist)
+            r_dist_sort = rdist[sorted_indices]
+            r_dist_est_sort = r_dist_est[sorted_indices]
+            dist_error = r_dist_sort - r_dist_est_sort
+            data_temp = []
+            bin = np.linspace(0, 2000, 21)
+
+            ibin = 1
+            bin_mean = []
+            bin_var = []
+            for i in range(len(r_dist_sort)):
+                if r_dist_sort[i] >= bin[-1]:
+                    break
+                elif bin[ibin-1] <= r_dist_sort[i] < bin[ibin]:
+                    data_temp.append(dist_error[i])
+                else:
+                    bin_mean_temp = np.mean(data_temp)
+                    bin_var_temp = np.var(data_temp)
+                    bin_mean.append(bin_mean_temp)
+                    bin_var.append(bin_var_temp)
+                    #print('bin_high_bound :' + str(bin[ibin]) + ' bin_mean:' + str(bin_mean_temp))
+                    data_temp = []  # reset bin
+                    data_temp.append(dist_error[i])
+                    ibin += 1
+                    #print('ibin ' + str(ibin))
+
+            pos = 221 + itx
+            ax = fig.add_subplot(pos)
+            #rssdata = np.linspace(-10, -110, num=1000)
+            #ax.plot(rssdata, lambertloc(rssdata, alpha[itx], xi[itx]), label='Fitted Curve')
+
+
+            #ax.errorbar(bin[1:-1], bin_mean, yerr=bin_var, fmt='ro', ecolor='g', label='Original Data')
+            ax.plot(bin[1:-1], bin_mean, '.')
+            #print('bin_means = ' + str(bin_mean))
+            #print('bin_var = ' + str(bin_var))
+            #ax.plot(r_dist_sort, dist_error, '.')
+            ax.grid()
+            ax.set_xlabel('Distance to tx [mm]')
+            ax.set_ylabel('Error [mm]')
+
+    plt.show()
 
     return alpha, xi
+
+
+def lambertloc(rss, alpha, xi):
+    """Inverse function of the RSM. Returns estimated range in [cm].
+
+    Keyword arguments:
+    :param rss -- received power values [dB]
+    :param alpha
+    :param xi
+    """
+    z = 20 / (np.log(10) * alpha) * lambertw(np.log(10) * alpha / 20 * np.exp(-np.log(10) / 20 * (rss + xi)))
+    return z.real  # [mm]
