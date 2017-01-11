@@ -162,14 +162,14 @@ class GantryControl(object):
         :return:
         """
 
-        wp_list = [[0, 0],
-                   [500, 0],
-                   [500, 500],
-                   [0, 500],
-                   [0, 0]]
+        wp_list = [[500, 500],
+                   [1000, 500],
+                   [1000, 1000],
+                   [500, 1000],
+                   [500, 500]]
 
         num_wp = len(wp_list)
-
+        print('Number of way points: ' + str(num_wp))
         """
         insert a sequence to move to starting point
         """
@@ -177,29 +177,43 @@ class GantryControl(object):
         for i_wp in range(num_wp):
 
             target_wp = wp_list[i_wp]
+            print('Target_wp = ' + str(target_wp))
             self.set_target_wp(target_wp)
             bdrive_x_arrived = False
             bdrive_y_arrived = False
 
-            v_x = vdes_x
-            v_y = vdes_y
+            if self.__oScX.get_dist_to(target_wp[0]) >= 0:
+                v_x = vdes_x
+            elif self.__oScX.get_dist_to(target_wp[0]) < 0:  # move backwards
+                v_x = -vdes_x
+
+            if self.__oScY.get_dist_to(target_wp[1]) >= 0:
+                v_y = vdes_y
+            elif self.__oScY.get_dist_to(target_wp[1]) < 0:  # move backwards
+                v_y = -vdes_y
 
             self.__oScX.set_drive_speed(v_x)
             self.__oScY.set_drive_speed(v_y)
+
             target_pos_reached = False
             while target_pos_reached is False:
+                print('X-dist = ' + str(self.__oScX.get_dist_to(target_wp[0])) + ' speed: ' + str(v_x))
+                print('Y-dist = ' + str(self.__oScY.get_dist_to(target_wp[1])) + ' speed: ' + str(v_y))
 
-                if abs(self.__oScX.get_dist_to_target()) < dist_threshhold:
+                if abs(self.__oScX.get_dist_to(target_wp[0])) < dist_threshhold:
                     v_x = 0
                     self.__oScX.set_drive_speed(v_x)
                     bdrive_x_arrived = True
-                if abs(self.__oScY.get_dist_to_target()) < dist_threshhold:
+                if abs(self.__oScY.get_dist_to(target_wp[1])) < dist_threshhold:
                     v_y = 0
                     self.__oScY.set_drive_speed(v_y)
                     bdrive_y_arrived = True
 
                 if bdrive_x_arrived and bdrive_y_arrived:
-                    target_pos_reached = False
+                    print('Arrived!')
+                    target_pos_reached = True
+            print('Go to next WP')
+
         return True
 
     def process_measurement_sequence(self, wplist_filename, measdata_filename):

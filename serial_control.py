@@ -166,6 +166,12 @@ class motor_communication(object):
     def set_target_posinc(self, target_posinc):
         self.__tposinc = target_posinc
 
+    def set_target_posmm(self, target_posmm):
+        self.__tposmm = target_posmm
+
+    def get_target_posmm(self):
+        return self.__tposmmp
+
     def is_home_pos_known(self):
         return self.__homeknown
 
@@ -195,7 +201,7 @@ class motor_communication(object):
             self.__ismoving = True
             return True
 
-    def get_dist_to_target(self, target_pos_mm):
+    def get_dist_to(self, target_pos_mm):
         """
         Calculates the distance [mm] from the actual position to the target position
         :param target_pos_mm
@@ -298,7 +304,7 @@ class motor_communication(object):
 
     def set_drive_speed(self, v_inc):
 
-        command = ['V'+str(v_inc)]  # start moving with v_inc speed
+        command = 'V'+str(v_inc)  # start moving with v_inc speed
         self.write_on_port(command)
         self.check_moving()
 
@@ -315,6 +321,7 @@ class motor_communication(object):
 
         tposinc = self.convert_mm2inc(tposmm)
         self.set_target_posinc(tposinc)
+        self.set_target_posmm(tposmm)
 
         moving_seq = ['LA'+str(tposinc),  # set absolute target position in [inc]
                       'NP',  # activate 'NotifyPosition' --> sends 'p' if position is reached
