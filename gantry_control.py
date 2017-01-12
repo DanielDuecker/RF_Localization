@@ -162,11 +162,11 @@ class GantryControl(object):
         :return:
         """
 
-        wp_list = [[500, 500],
-                   [1000, 500],
-                   [1000, 1000],
-                   [500, 1000],
-                   [500, 500]]
+        wp_list = [[1500, 600],
+                   [2200, 600],
+                   [2200, 1000],
+                   [1500, 1000],
+                   [1500, 600]]
 
         num_wp = len(wp_list)
         print('Number of way points: ' + str(num_wp))
