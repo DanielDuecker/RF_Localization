@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import time as t
 import rf
 import serial_control as sc
+import hippocampus_toolbox as hc_tools
 
 
 class GantryControl(object):
@@ -216,19 +217,18 @@ class GantryControl(object):
 
         return True
 
-    def process_measurement_sequence(self, wplist_filename, measdata_filename):
+    def process_measurement_sequence(self):
         """
-        #
-        :param wplist_filename:
-        :param measdata_filename:
         :return:
         """
         # read data from waypoint file
+        wplist_filename = hc_tools.select_file()
         with open(wplist_filename, 'r') as wpfile:
             wp_data_list = [map(float, line.split(',')) for line in wpfile]
             wp_data_mat = np.asarray(wp_data_list)
             wpfile.close()
 
+        measdata_filename = hc_tools.save_as_dialog('Save measurement data as...')
         with open(measdata_filename, 'w') as measfile:
             # write header to measurement file
 
