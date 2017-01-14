@@ -49,7 +49,7 @@ def wp_generator(x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0, show_p
         plt.figure()
         plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
         plt.show()
-
+    print('Way point generator terminated!')
     return wp_filename  # file output [line#, x, y, time]
 
 
