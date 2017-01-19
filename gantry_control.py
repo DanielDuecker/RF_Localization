@@ -224,14 +224,14 @@ class GantryControl(object):
         print('Process Measurement Sequence started')
         # read data from waypoint file
         #wplist_filename = hc_tools.select_file()
-        wplist_filename = 'wp_list_2017_01_14b.txt'
+        wplist_filename = 'wp_list_2017_01_17.txt'
         with open(wplist_filename, 'r') as wpfile:
             wp_data_list = [map(float, line.split(',')) for line in wpfile]
             wp_data_mat = np.asarray(wp_data_list)
             wpfile.close()
 
         #measdata_filename = hc_tools.save_as_dialog('Save measurement data as...')
-        measdata_filename = 'measdata_2017_01_14b.txt'
+        measdata_filename = 'measdata_2017_01_18.txt'
         with open(measdata_filename, 'w') as measfile:
             # write header to measurement file
 
