@@ -10,7 +10,7 @@ independent methods related to the gantry
 """
 
 
-def wp_generator(x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0, show_plot=False):
+def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0, show_plot=False):
     """
     :param wp_filename:
     :param x0: [x0,y0] - start position of the grid
@@ -38,7 +38,7 @@ def wp_generator(x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0, show_p
     wp_mat = np.append(wp_vecx, wp_vecy, axis=1)
     wp_mat = np.append(wp_mat, wp_time, axis=1)
 
-    wp_filename = hc_tools.save_as_dialog('Save way point list as...')
+    # wp_filename = hc_tools.save_as_dialog('Save way point list as...')
     with open(wp_filename, 'w') as wpfile:
         # wpfile.write(t.ctime() + '\n')
         # wpfile.write('some describtion' + '\n')
