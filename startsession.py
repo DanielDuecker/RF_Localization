@@ -7,7 +7,8 @@ import numpy as np
 
 freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 
-txpos_offset = np.array([1060, 385])
+#txpos_offset = np.array([1060, 385])
+txpos_offset = np.array([1060, 450])
 txpos = [[0, 0],  # 433.9MHz
          [0, 800],  # 434.1MHz
          [1270, 50],  # 434.3MHz
