@@ -1,4 +1,6 @@
-import Tkinter, tkFileDialog
+import Tkinter
+import tkFileDialog
+
 
 # ======== "Save as" dialog:
 def save_as_dialog(windowtitle='Save as...', myFormats=[('Text file', '*.txt')]):
@@ -16,7 +18,7 @@ def select_directory():
     root = Tkinter.Tk()
     root.withdraw()  # get rid of the tk-app window in the background
     dirname = tkFileDialog.askdirectory(parent=root,initialdir="/",title='Please select a directory')
-    if len(dirname ) > 0:
+    if len(dirname) > 0:
         print ('You chose ' + dirname)
     return dirname
 
