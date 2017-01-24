@@ -106,6 +106,7 @@ def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype=
                 else:
                     mean = np.mean(rss_mat, axis=1)
                     var = np.var(rss_mat, axis=1)
+                    # print('var = ' + str(var))
                 wp = [meas_data_mat_line[0], meas_data_mat_line[1]]
 
                 plotdata_line = np.concatenate((wp, mean, var), axis=1)
