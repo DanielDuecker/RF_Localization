@@ -35,6 +35,7 @@ class GantryGui(Tk.Tk):
 
 
 class StartPage(Tk.Frame):
+
     def __init__(self, parent, controller):
         Tk.Frame.__init__(self, parent)
         label = ttk.Label(self, text='Start Page', font=LARGE_FONT)
@@ -74,6 +75,17 @@ class StartPage(Tk.Frame):
         label_v_spindle.grid(row=3, column=0)
         entry_v_spindle.grid(row=3, column=1)
         button_set_spindle_speed.grid(row=3, column=2)
+        """
+        button_gohoseq_spindle = ttk.Button(self, text='GoHomeSeq')
+        button_set_max_inc_pos_spindle = ttk.Button(self, text='Set max position [inc]')
+        entry_max_pos_inc_spindle = ttk.Entry(self, color='r')
+        label_inc_unit_spindle = ttk.Label(self, text='[inc]')
+        button_set_max_mm_pos_spindle = ttk.Button(self, text='Set max position [mm]')
+        entry_max_pos_mm_spindle = ttk.Entry(self, color='r')
+        label_mm_unit_spindle = ttk.Label(self, text='[mm]')
+        """
+
+
 
         """
         Belt-Drive
