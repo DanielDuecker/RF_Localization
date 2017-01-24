@@ -4,13 +4,13 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import curve_fit
 from scipy.special import lambertw
 
-
+import hippocampus_toolbox as hc_tools
 """
 independent methods related to the gantry
 """
 
 
-def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0, show_plot=False):
+def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas=10.0, show_plot=False):
     """
     :param wp_filename:
     :param x0: [x0,y0] - start position of the grid
@@ -38,6 +38,7 @@ def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7,
     wp_mat = np.append(wp_vecx, wp_vecy, axis=1)
     wp_mat = np.append(wp_mat, wp_time, axis=1)
 
+    # wp_filename = hc_tools.save_as_dialog('Save way point list as...')
     with open(wp_filename, 'w') as wpfile:
         # wpfile.write(t.ctime() + '\n')
         # wpfile.write('some describtion' + '\n')
@@ -48,12 +49,26 @@ def wp_generator(wp_filename='wplist.txt', x0=[0, 0], xn=[1200, 1200], steps=[7,
         plt.figure()
         plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
         plt.show()
-
+    print('Way point generator terminated!')
     return wp_filename  # file output [line#, x, y, time]
 
 
-def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], meantype='db_mean'):
-    # write header to measurement file
+def analyse_measdata_from_file(measdata_filename, analyze_tx, txpos, txpos_offset=[0, 0], meantype='db_mean'):
+    """
+
+    :param measdata_filename:
+    :param analyze_tx:
+    :param txpos:
+    :param txpos_offset:
+    :param meantype:
+    :return:
+    """
+
+    analyze_tx[:] = [x - 1 for x in analyze_tx]  # substract -1 as arrays begin with index 0
+
+    # measdata_filename = hc_tools.select_file()
+    # print(measdata_filename)
+
     with open(measdata_filename, 'r') as measfile:
         plotdata_mat_lis = []
 
@@ -119,7 +134,7 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], me
         xi = []
         rdist = []
 
-        for itx in range(num_tx):
+        for itx in analyze_tx:
             rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # r_wp -r_txpos
 
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos|
@@ -134,7 +149,6 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], me
             print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' xi= ' + str(xi[itx]))
             rdist.append(rdist_temp)
 
-
         rdist_temp = np.reshape(rdist, [num_tx, totnumwp])
 
         print('\nVectors for convenient copy/paste')
@@ -147,123 +161,144 @@ def analyse_measdata_from_file(measdata_filename, txpos, txpos_offset=[0, 0], me
         x = plotdata_mat[:, 0]
         y = plotdata_mat[:, 1]
 
-        fig = plt.figure(1)
-        for itx in range(num_tx):
-            pos = 221 + itx
+        plot_fig1 = True
+        if plot_fig1:
+            fig = plt.figure(1)
+            for itx in analyze_tx:
+                pos = 221 + itx
+                if len(analyze_tx) == 1:
+                    pos = 111
 
-            ax = fig.add_subplot(pos, projection='3d')
-            rss_mean = plotdata_mat[:, 2 + itx]
-            rss_var = plotdata_mat[:, 2 + num_tx + itx]
-            ax.plot_trisurf(x, y, rss_mean, cmap=plt.cm.Spectral)
-            ax.grid()
-            ax.set_xlabel('x [mm]')
-            ax.set_ylabel('y [mm]')
-            ax.set_zlabel('rss [dB]')
-            ax.set_title('RSS field for TX# ' + str(itx+1))
+                ax = fig.add_subplot(pos, projection='3d')
+                rss_mean = plotdata_mat[:, 2 + itx]
+                rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                ax.plot_trisurf(x, y, rss_mean, cmap=plt.cm.Spectral)
+                ax.grid()
+                ax.set_xlabel('x [mm]')
+                ax.set_ylabel('y [mm]')
+                ax.set_zlabel('rss [dB]')
+                ax.set_title('RSS field for TX# ' + str(itx+1))
 
-        fig = plt.figure(2)
-        for itx in range(num_tx):
-            pos = 221 + itx
+        plot_fig2 = True
+        if plot_fig2:
+            fig = plt.figure(2)
+            for itx in analyze_tx:
+                pos = 221 + itx
+                if len(analyze_tx) == 1:
+                    pos = 111
 
-            ax = fig.add_subplot(pos, projection='3d')
-            rss_mean = plotdata_mat[:, 2 + itx]
-            rss_var = plotdata_mat[:, 2 + num_tx + itx]
-            ax.plot_trisurf(x, y, rss_var, cmap=plt.cm.Spectral)
-            ax.grid()
-            ax.set_xlabel('x [mm]')
-            ax.set_ylabel('y [mm]')
-            ax.set_zlabel('rss_var [dB]')
-            ax.set_title('RSS field variance for TX# ' + str(itx + 1))
-            
-        fig = plt.figure(3)
-        for itx in range(num_tx):
-            rss_mean = plotdata_mat[:, 2 + itx]
-            rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                ax = fig.add_subplot(pos, projection='3d')
+                rss_mean = plotdata_mat[:, 2 + itx]
+                rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                ax.plot_trisurf(x, y, rss_var, cmap=plt.cm.Spectral)
+                ax.grid()
+                ax.set_xlabel('x [mm]')
+                ax.set_ylabel('y [mm]')
+                ax.set_zlabel('rss_var [dB]')
+                ax.set_title('RSS field variance for TX# ' + str(itx + 1))
 
-            rdist = np.array(rdist_temp[itx, :], dtype=float)
-            rss_mean = np.array(rss_mean, dtype=float)
-            rss_var = np.array(rss_var, dtype=float)
-            pos = 221 + itx
-            ax = fig.add_subplot(pos)
-            ax.errorbar(rdist, rss_mean, yerr=rss_var,
-                        fmt='ro', ecolor='g', label='Original Data')
+        plot_fig3 = True
+        if plot_fig3:
+            fig = plt.figure(3)
+            for itx in analyze_tx:
+                rss_mean = plotdata_mat[:, 2 + itx]
+                rss_var = plotdata_mat[:, 2 + num_tx + itx]
 
-            rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
-            ax.plot(rdata, rsm_model(rdata, alpha[itx], xi[itx]), label='Fitted Curve')
-            ax.legend(loc='upper right')
-            ax.grid()
-            ax.set_xlabel('Distance [mm]')
-            ax.set_ylabel('RSS [dB]')
-            ax.set_title('RSM for TX# ' + str(itx + 1))
+                rdist = np.array(rdist_temp[itx, :], dtype=float)
+                rss_mean = np.array(rss_mean, dtype=float)
+                rss_var = np.array(rss_var, dtype=float)
+                pos = 221 + itx
+                if len(analyze_tx) == 1:
+                    pos = 111
+                ax = fig.add_subplot(pos)
+                ax.errorbar(rdist, rss_mean, yerr=rss_var,
+                            fmt='ro', ecolor='g', label='Original Data')
 
-        fig = plt.figure(4)
-        for itx in range(num_tx):
-            rss_mean = plotdata_mat[:, 2 + itx]
-            rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
+                ax.plot(rdata, rsm_model(rdata, alpha[itx], xi[itx]), label='Fitted Curve')
+                ax.legend(loc='upper right')
+                ax.grid()
+                ax.set_xlabel('Distance [mm]')
+                ax.set_ylabel('RSS [dB]')
+                ax.set_title('RSM for TX# ' + str(itx + 1))
 
-            rdist = np.array(rdist_temp[itx, :], dtype=float)
-            rss_mean = np.array(rss_mean, dtype=float)
-            rss_var = np.array(rss_var, dtype=float)
+        plot_fig4 = False
+        if plot_fig4:
+            fig = plt.figure(4)
+            for itx in analyze_tx:
+                rss_mean = plotdata_mat[:, 2 + itx]
+                rss_var = plotdata_mat[:, 2 + num_tx + itx]
 
-            pos = 221 + itx
-            ax = fig.add_subplot(pos)
-            rssdata = np.linspace(-10, -110, num=1000)
-            ax.plot(rssdata, lambertloc(rssdata, alpha[itx], xi[itx]), label='Fitted Curve')
-            ax.plot(rss_mean, rdist, 'r.')
-            ax.grid()
-            ax.set_xlabel('RSS [dB]')
-            ax.set_ylabel('Distance [mm]')
+                rdist = np.array(rdist_temp[itx, :], dtype=float)
+                rss_mean = np.array(rss_mean, dtype=float)
+                rss_var = np.array(rss_var, dtype=float)
 
-        fig = plt.figure(5)
-        for itx in range(num_tx):
-            rss_mean = plotdata_mat[:, 2 + itx]
-            rss_var = plotdata_mat[:, 2 + num_tx + itx]
-
-            rdist = np.array(rdist_temp[itx, :], dtype=float)
-            rss_mean = np.array(rss_mean, dtype=float)
-            rss_var = np.array(rss_var, dtype=float)
-
-            r_dist_est = lambertloc(rss_mean, alpha[itx], xi[itx])
-            sorted_indices = np.argsort(rdist)
-            r_dist_sort = rdist[sorted_indices]
-            r_dist_est_sort = r_dist_est[sorted_indices]
-            dist_error = r_dist_sort - r_dist_est_sort
-            data_temp = []
-            bin = np.linspace(0, 2000, 21)
-
-            ibin = 1
-            bin_mean = []
-            bin_var = []
-            for i in range(len(r_dist_sort)):
-                if r_dist_sort[i] >= bin[-1]:
-                    break
-                elif bin[ibin-1] <= r_dist_sort[i] < bin[ibin]:
-                    data_temp.append(dist_error[i])
-                else:
-                    bin_mean_temp = np.mean(data_temp)
-                    bin_var_temp = np.var(data_temp)
-                    bin_mean.append(bin_mean_temp)
-                    bin_var.append(bin_var_temp)
-                    #print('bin_high_bound :' + str(bin[ibin]) + ' bin_mean:' + str(bin_mean_temp))
-                    data_temp = []  # reset bin
-                    data_temp.append(dist_error[i])
-                    ibin += 1
-                    #print('ibin ' + str(ibin))
-
-            pos = 221 + itx
-            ax = fig.add_subplot(pos)
-            #rssdata = np.linspace(-10, -110, num=1000)
-            #ax.plot(rssdata, lambertloc(rssdata, alpha[itx], xi[itx]), label='Fitted Curve')
+                pos = 221 + itx
+                if len(analyze_tx) == 1:
+                    pos = 111
+                ax = fig.add_subplot(pos)
+                rssdata = np.linspace(-10, -110, num=1000)
+                ax.plot(rssdata, lambertloc(rssdata, alpha[itx], xi[itx]), label='Fitted Curve')
+                ax.plot(rss_mean, rdist, 'r.')
+                ax.grid()
+                ax.set_xlabel('RSS [dB]')
+                ax.set_ylabel('Distance [mm]')
 
 
-            #ax.errorbar(bin[1:-1], bin_mean, yerr=bin_var, fmt='ro', ecolor='g', label='Original Data')
-            ax.plot(bin[1:-1], bin_mean, '.')
-            #print('bin_means = ' + str(bin_mean))
-            #print('bin_var = ' + str(bin_var))
-            #ax.plot(r_dist_sort, dist_error, '.')
-            ax.grid()
-            ax.set_xlabel('Distance to tx [mm]')
-            ax.set_ylabel('Error [mm]')
+        plot_fig5 = True
+        if plot_fig5:
+            fig = plt.figure(5)
+            for itx in analyze_tx:
+                rss_mean = plotdata_mat[:, 2 + itx]
+                rss_var = plotdata_mat[:, 2 + num_tx + itx]
+
+                rdist = np.array(rdist_temp[itx, :], dtype=float)
+                rss_mean = np.array(rss_mean, dtype=float)
+                rss_var = np.array(rss_var, dtype=float)
+
+                r_dist_est = lambertloc(rss_mean, alpha[itx], xi[itx])
+                sorted_indices = np.argsort(rdist)
+                r_dist_sort = rdist[sorted_indices]
+                r_dist_est_sort = r_dist_est[sorted_indices]
+                dist_error = r_dist_sort - r_dist_est_sort
+                data_temp = []
+                bin = np.linspace(0, 2000, 21)
+
+                ibin = 1
+                bin_mean = []
+                bin_var = []
+                for i in range(len(r_dist_sort)):
+                    if r_dist_sort[i] >= bin[-1]:
+                        break
+                    elif bin[ibin-1] <= r_dist_sort[i] < bin[ibin]:
+                        data_temp.append(dist_error[i])
+                    else:
+                        bin_mean_temp = np.mean(data_temp)
+                        bin_var_temp = np.var(data_temp)
+                        bin_mean.append(bin_mean_temp)
+                        bin_var.append(bin_var_temp)
+                        #print('bin_high_bound :' + str(bin[ibin]) + ' bin_mean:' + str(bin_mean_temp))
+                        data_temp = []  # reset bin
+                        data_temp.append(dist_error[i])
+                        ibin += 1
+                        #print('ibin ' + str(ibin))
+
+                pos = 221 + itx
+                if len(analyze_tx) == 1:
+                    pos = 111
+                ax = fig.add_subplot(pos)
+                #rssdata = np.linspace(-10, -110, num=1000)
+                #ax.plot(rssdata, lambertloc(rssdata, alpha[itx], xi[itx]), label='Fitted Curve')
+
+
+                #ax.errorbar(bin[1:-1], bin_mean, yerr=bin_var, fmt='ro', ecolor='g', label='Original Data')
+                ax.plot(bin[1:-1], bin_mean, '.')
+                #print('bin_means = ' + str(bin_mean))
+                #print('bin_var = ' + str(bin_var))
+                #ax.plot(r_dist_sort, dist_error, '.')
+                ax.grid()
+                ax.set_xlabel('Distance to tx [mm]')
+                ax.set_ylabel('Error [mm]')
 
     plt.show()
 
