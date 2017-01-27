@@ -26,6 +26,7 @@ class motor_communication(object):
         self.__posmm = []
         self.__tposmm = []
         self.__rpm = []
+        self.__target_speed_rpm = 0
 
         self.__rpmmax = []
         self.__findingspeed = []
@@ -162,6 +163,12 @@ class motor_communication(object):
         self.__posinc = self.__tempval
         self.__posmm = self.convert_inc2mm(self.__posinc)
         return self.__posmm
+
+    def set_target_speed_rpm(self, target_speed_rpm):
+        self.__target_speed_rpm = target_speed_rpm
+
+    def get_target_speed_rpm(self):
+        return self.__target_speed_rpm
 
     def set_target_posinc(self, target_posinc):
         self.__tposinc = target_posinc
@@ -309,6 +316,7 @@ class motor_communication(object):
         self.check_moving()
 
         return True
+
 
     def go_to_pos_mm(self, tposmm):
         """

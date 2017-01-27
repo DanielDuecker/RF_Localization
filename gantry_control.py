@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time as t
-import rf
 import serial_control as sc
 import hippocampus_toolbox as hc_tools
 
@@ -44,6 +43,12 @@ class GantryControl(object):
         print('Spindle-Drive: Setup DONE!')
 
         return True
+
+    def get_serial_x_handle(self):
+        return self.__oScX
+
+    def get_serial_y_hanle(self):
+        return self.__oScY
 
     def get_gantry_dimensions(self):
         return self.__dimensions
@@ -221,6 +226,8 @@ class GantryControl(object):
         """
         :return:
         """
+
+
         print('Process Measurement Sequence started')
         # read data from waypoint file
         #wplist_filename = hc_tools.select_file()
@@ -311,10 +318,12 @@ class GantryControl(object):
         return True
 
     def start_CalEar(self, freqtx=433.9e6, freqspan=2e4):
+        import rf
         self.__oCal = rf.CalEar(freqtx, freqspan)
         return True
 
     def start_LocEar(self, alpha, xi, txpos, freqtx, freqspan=2e4):
+        import rf
         self.__oLoc = rf.LocEar(alpha, xi, txpos, freqtx, freqspan)
         return True
 

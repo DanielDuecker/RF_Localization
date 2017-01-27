@@ -378,14 +378,16 @@ class CalEar(RfEar):
         plt.grid()
         plt.errorbar(xdata, pdata, yerr=vdata,
                      fmt='ro', ecolor='g', label='Original Data')
-        def func(dist, alpha, xi):
+
+        def rsm_func(dist, alpha, xi):
             """Range Sensor Model (RSM) structure."""
             return -20*np.log10(dist)-alpha*dist-xi
-        popt, pcov = curve_fit(func, xdata, pdata)
+
+        popt, pcov = curve_fit(rsm_func, xdata, pdata)
         del pcov
         print ('alpha = %s , xi = %s' % (popt[0], popt[1]))
         xdata = np.linspace(xdata[0], xdata[-1], num=1000)
-        plt.plot(xdata, func(xdata, *popt), label='Fitted Curve')
+        plt.plot(xdata, rsm_func(xdata, *popt), label='Fitted Curve')
         plt.legend(loc='upper right')
         plt.xlabel('Distance [mm]')
         plt.ylabel('RSS [dB]')
