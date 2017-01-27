@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import curve_fit
@@ -162,6 +163,43 @@ def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype=
         x = plotdata_mat[:, 0]
         y = plotdata_mat[:, 1]
 
+
+
+        fig = plt.figure(6)
+        for itx in analyze_tx:
+            pos = 221 + itx
+            if len(analyze_tx) == 1:
+                pos = 111
+
+
+
+            ax = fig.add_subplot(pos)
+            rss_mean = plotdata_mat[:, 2 + itx]
+            rss_var = plotdata_mat[:, 2 + num_tx + itx]
+
+            #data_shape = [16,30]
+            data_shape = [31, 59]
+            xx = np.reshape(x, data_shape)
+            yy = np.reshape(y, data_shape)
+            rss = np.reshape(rss_mean, data_shape)
+
+            val_sequence = np.linspace(-100,-20, 80/5+1)
+            CS = ax.contour(xx, yy, rss, val_sequence)
+            ax.clabel(CS, inline=0, fontsize=10)
+            for itx_plot in analyze_tx:
+                ax.plot(txpos[itx_plot-1, 0], txpos[itx_plot-1, 1], 'or')
+
+            ax.grid()
+            ax.set_xlabel('x [mm]')
+            ax.set_ylabel('y [mm]')
+            # ax.axis('equal')
+
+            ax.set_title('RSS field for TX# ' + str(itx + 1))
+
+
+
+
+
         plot_fig1 = True
         if plot_fig1:
             fig = plt.figure(1)
@@ -178,6 +216,7 @@ def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype=
                 ax.set_xlabel('x [mm]')
                 ax.set_ylabel('y [mm]')
                 ax.set_zlabel('rss [dB]')
+                ax.set_zlim([-110, -20])
                 ax.set_title('RSS field for TX# ' + str(itx+1))
 
         plot_fig2 = True
@@ -219,6 +258,7 @@ def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype=
                 ax.plot(rdata, rsm_model(rdata, alpha[itx], xi[itx]), label='Fitted Curve')
                 ax.legend(loc='upper right')
                 ax.grid()
+                ax.set_ylim([-110, -10])
                 ax.set_xlabel('Distance [mm]')
                 ax.set_ylabel('RSS [dB]')
                 ax.set_title('RSM for TX# ' + str(itx + 1))
