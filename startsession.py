@@ -16,7 +16,7 @@ txpos = [[0, 0],  # 433.9MHz
          [1270, 750]]  # 434.5MHz
 
 analyze_tx = [1,2,3,4]
-rf_tools.analyse_measdata_from_file(analyze_tx, txpos, txpos_offset, freqtx)
+#rf_tools.analyse_measdata_from_file(analyze_tx, txpos, txpos_offset, freqtx)
 
 
 """
@@ -41,9 +41,6 @@ alpha = [0.0133680937013, 0.0129727376314, 0.0139948951361, 0.0124357921976]
 xi = [-10.9915388063, -8.40605996688, -9.67729971289, -8.34912917588]
 """
 
-<<<<<<< HEAD
-cal = rf.CalEar(freqtx)
-=======
 """
 # calibration data from measdata_2017_01_11
 Number of gridpoints: 1829
@@ -110,8 +107,7 @@ alpha = [0.012381473336446973, 0.012020435213791609, 0.011684952891692585, 0.012
 xi = [-10.919717821111632, -7.6105614655357741, -8.5610583035501779, -8.1666782017252384]
 """
 
-#cal = rf.CalEar(freqtx)
->>>>>>> 28bdd8ef6c4975a87ff97fe486b241929e11e198
+cal = rf.CalEar(freqtx)
 
 #cal.plot_psd()
 #cal.get_performance()
