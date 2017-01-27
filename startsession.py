@@ -1,20 +1,55 @@
 import rf
 import rf_tools
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
 
+"""
+delta = 0.025
+x = np.arange(-3.0, 3.0, delta)
+y = np.arange(-2.0, 2.0, delta)
+X, Y = np.meshgrid(x, y)
+Z1 = mlab.bivariate_normal(X, Y, 1.0, 1.0, 0.0, 0.0)
+Z2 = mlab.bivariate_normal(X, Y, 1.5, 0.5, 1, 1)
+# difference of Gaussians
+Z = 10.0 * (Z2 - Z1)
+
+
+print('xshape' + str(X.shape))
+print('xshape' + str(Z.shape))
+# Create a simple contour plot with labels using default colors.  The
+# inline argument to clabel will control whether the labels are draw
+# over the line segments of the contour, removing the lines beneath
+# the label
+plt.figure()
+CS = plt.contour(X, Y, Z)
+plt.clabel(CS, inline=1, fontsize=10)
+plt.title('Simplest default with labels')
+
+plt.show()
+
+"""
 
 #rf_tools.wp_generator([0, 0], [2900, 1500], [59, 31], 10.0, True) # x-axis is along belt-drive
 
 freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 
 
-txpos_offset = np.array([1060, 450])
+#txpos_offset = np.array([1060, 450])
+txpos_offset = np.array([1040, 450])
 
 txpos = [[0, 0],  # 433.9MHz
          [0, 800],  # 434.1MHz
          [1270, 50],  # 434.3MHz
          [1270, 750]]  # 434.5MHz
 
+"""
+# turned by 180deg
+txpos = [[1270, 750],  # 433.9MHz
+         [1270, -50],  # 434.1MHz
+         [0, 700],  # 434.3MHz
+         [0, 0]]  # 434.5MHz
+"""
 analyze_tx = [1,2,3,4]
 #rf_tools.analyse_measdata_from_file(analyze_tx, txpos, txpos_offset, freqtx)
 
