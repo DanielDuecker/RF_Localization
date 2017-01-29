@@ -361,7 +361,7 @@ class CalEar(RfEar):
 
     def get_model(self, pdata, vdata):
         """Create a function to fit with measured data.
-        alpha and xi are the coefficients that curve_fit will calculate.
+        alpha and gamma are the coefficients that curve_fit will calculate.
         The function structure is known.
 
         Keyword arguments:
@@ -379,13 +379,13 @@ class CalEar(RfEar):
         plt.errorbar(xdata, pdata, yerr=vdata,
                      fmt='ro', ecolor='g', label='Original Data')
 
-        def rsm_func(dist, alpha, xi):
+        def rsm_func(dist, alpha, gamma):
             """Range Sensor Model (RSM) structure."""
-            return -20*np.log10(dist)-alpha*dist-xi
+            return -20*np.log10(dist)-alpha*dist-gamma
 
         popt, pcov = curve_fit(rsm_func, xdata, pdata)
         del pcov
-        print ('alpha = %s , xi = %s' % (popt[0], popt[1]))
+        print ('alpha = %s , gamma = %s' % (popt[0], popt[1]))
         xdata = np.linspace(xdata[0], xdata[-1], num=1000)
         plt.plot(xdata, rsm_func(xdata, *popt), label='Fitted Curve')
         plt.legend(loc='upper right')
@@ -468,13 +468,13 @@ class CalEar(RfEar):
 
 class LocEar(RfEar):
     """Subclass of Superclass RfEar for 2D dynamic object localization."""
-    def __init__(self, freqtx, freqspan, alpha, xi, txpos):
+    def __init__(self, freqtx, freqspan, alpha, gamma, txpos):
         RfEar.__init__(self,  freqtx, freqspan)
         self.__freqtx = freqtx
         self.__freqspan = freqspan
         self.__numoftx = len(freqtx)
         self.__alpha = alpha
-        self.__xi = xi
+        self.__gamma = gamma
         self.__txpos = txpos
         self.set_txpos(txpos)
 
@@ -495,9 +495,9 @@ class LocEar(RfEar):
         dist_ref = raw_input('Please enter distance '
                              'from transmitter to receiver [mm]: ')
 
-        def rsm_func(ref, xi_diff_cal):
-            """RSM structure with correction param xi_diff_cal."""
-            return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] - xi_diff_cal  # ... -xi -xi_diff
+        def rsm_func(ref, gamma_diff_cal):
+            """RSM structure with correction param gamma_diff_cal."""
+            return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] - gamma_diff_cal  # ... -gamma -gamma_diff
 
         elapsed_time = 0.0
         powerstack = []
@@ -530,19 +530,19 @@ class LocEar(RfEar):
         dist_ref = np.array(dist_ref, dtype=float)
         p_ref = p_mean
 
-        # curve fit with calibrated value - dist_ref, alpha, xi are fixed -> xi_diff_opt is the change in xi by new meas
-        xi_diff_opt, pcov = curve_fit(rsm_func, [dist_ref, self.__alpha[numtx], self.__xi[numtx]], p_ref)
+        # curve fit with calibrated value - dist_ref, alpha, gamma are fixed -> gamma_diff_opt is the change in gamma by new meas
+        gamma_diff_opt, pcov = curve_fit(rsm_func, [dist_ref, self.__alpha[numtx], self.__gamma[numtx]], p_ref)
         del pcov
-        print ('Xi alt: ' + str(self.__xi[numtx]))
-        self.__xi[numtx] = self.__xi[numtx] + xi_diff_opt[0]  # update xi with calibration
-        print ('Xi_diff: ' + str(xi_diff_opt[0]))
-        print ('Xi neu: ' + str(self.__xi[numtx]))
+        print ('gamma alt: ' + str(self.__gamma[numtx]))
+        self.__gamma[numtx] = self.__gamma[numtx] + gamma_diff_opt[0]  # update gamma with calibration
+        print ('gamma_diff: ' + str(gamma_diff_opt[0]))
+        print ('gamma neu: ' + str(self.__gamma[numtx]))
 
     def get_caldata(self, numtx=0):
         """Returns the calibrated RSM params."""
-        return self.__alpha[numtx], self.__xi[numtx]
+        return self.__alpha[numtx], self.__gamma[numtx]
 
-    def map_path_ekf(self, x0, bplot=True, blog=False, bprintdata=False):
+    def map_path_ekf(self, x0, h_func_select, bplot=True, blog=False, bprintdata=False):
         """ map/track the position of the mobile node using an EKF
 
         Keyword arguments:
@@ -554,18 +554,46 @@ class LocEar(RfEar):
         """
 
         # measurement function
-        def h_meas(x, txposition, numtx):
-            tx_pos = txposition[numtx]  # position of the transceiver
+        def h_dist(x, txpos, numtx):
+            tx_pos = txpos[numtx]  # position of the transceiver
             # r = sqrt((x-x_tx)^2+(y-y_tx)^2)
-            r_dist = np.sqrt((x[0]-tx_pos[0])**2+(x[1]-tx_pos[1])**2)
-            return r_dist
+            y_dist = np.sqrt((x[0]-tx_pos[0])**2+(x[1]-tx_pos[1])**2)
+            return y_dist
 
         # jacobian of the measurement function
-        def h_jacobian(x_est, txpos, numtx):
+        def h_dist_jacobian(x_est, txpos, numtx):
             tx_pos = txpos[numtx]  # position of the transceiver
             factor = 0.5/np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
-            h_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
-            return h_jac
+            h_dist_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
+            return h_dist_jac
+
+        def h_rss(x, tx_param, numtx):
+            tx_pos = tx_param[numtx, 0:2]  # position of the transceiver
+            alpha = tx_param[numtx, 2]
+            gamma = tx_param[numtx, 3]
+
+            r_dist = np.sqrt((x[0] - tx_pos[0]) ** 2 + (x[1] - tx_pos[1]) ** 2) # r = sqrt((x-x_tx)^2+(y-y_tx)^2)
+            y_rss = -20 * np.log10(r_dist) - alpha * r_dist - gamma
+            return y_rss
+
+        def h_rss_jacobian(x_est, txpos, numtx):
+            tx_pos = txpos[numtx]  # position of the transceiver
+            factor = 0.5/np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
+            #h_rss_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
+            h_rss_jac = 0
+            return h_rss_jac
+
+        if h_func_select == 'h_dist':
+            h = h_dist
+            h_jacobian = h_dist_jacobian
+        elif h_func_select == 'h_rss':
+            h = h_rss
+            h_jacobian = h_rss_jacobian
+        else:
+            print ('You need to select to a measurement function "h" like "h_rss" or "h_dist"!')
+            print ('exit...')
+            return True
+
 
         txpos = self.__txpos
         """ setup figure """
@@ -641,7 +669,7 @@ class LocEar(RfEar):
                     # get new measurement / get distance from rss-measurement
                     z_meas[itx] = self.lambertloc(rss[itx], itx)
                     # estimate measurement from x_est
-                    y_est[itx] = h_meas(x_est[:, 0], txpos, itx)
+                    y_est[itx] = h(x_est[:, 0], txpos, itx)
                     y_tild = z_meas[itx] - y_est[itx]
 
                     # calc K-gain
@@ -701,10 +729,10 @@ class LocEar(RfEar):
 
         Keyword arguments:
         :param rss -- received power values [dB]
-        :param numtx  -- number of the tx which rss is processed. Required to use the corresponding alpha and xi-values.
+        :param numtx  -- number of the tx which rss is processed. Required to use the corresponding alpha and gamma-values.
         """
         z = 20 / (np.log(10) * self.__alpha[numtx]) * lambertw(
-            np.log(10) * self.__alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + self.__xi[numtx])))
+            np.log(10) * self.__alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + self.__gamma[numtx])))
         return z.real  # [mm]
 
     def plot_txdist_live(self,freqspan=2e4, numofplottedsamples=250):
@@ -768,7 +796,7 @@ class LocEar(RfEar):
         """Return a string representing the type of RfEar this is."""
         print ('LocEar,')
         print ('Number of TX: ' + str(self.__numoftx))
-        print ('Alpha: ' + str(self.__alpha) + ', Xi: ' + str(self.__xi))
+        print ('Alpha: ' + str(self.__alpha) + ', gamma: ' + str(self.__gamma))
         print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
         self.get_srate()
         print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
