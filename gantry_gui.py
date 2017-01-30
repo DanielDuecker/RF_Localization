@@ -44,37 +44,65 @@ class StartPage(Tk.Frame):
         button1 = ttk.Button(self, text='Visit Page 1', command=lambda: controller.show_frame(PageOne))
         button1.grid(row=0, column=1)
 
-        self.__gt = gantry_control.GantryControl()
+        use_gui = True
+        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580], use_gui)
 
-        oSpindle = self.__gt.get_serial_x_handle()
         oBelt = self.__gt.get_serial_x_handle()
+        oSpindle = self.__gt.get_serial_y_handle()
+
+        """
+        Belt-Drive
+        """
+        firstrow_belt = 1
+
+        label_spindle_name = ttk.Label(self, text='Belt-drive', font=LARGE_FONT)
+        label_spindle_name.grid(row=firstrow_belt + 0, column=1)
+
+        button3 = ttk.Button(self, text='v-- V [-]',
+                             command=lambda: oBelt.set_drive_speed(-1 * int(entry_v_belt.get())))
+        button3.grid(row=firstrow_belt + 1, column=0)
+
+        button4 = ttk.Button(self, text='STOP', command=lambda: oBelt.set_drive_speed(0))
+        button4.grid(row=firstrow_belt + 1, column=1)
+
+        button5 = ttk.Button(self, text='[+] V --^', command=lambda: oBelt.set_drive_speed(1 * int(entry_v_belt.get())))
+        button5.grid(row=firstrow_belt + 1, column=2)
+
+        label_v_belt = ttk.Label(self, text='Velocity:')
+        entry_v_belt = ttk.Entry(self)
+
+        label_v_belt.grid(row=firstrow_belt + 2, column=0)
+        entry_v_belt.grid(row=firstrow_belt + 2, column=1)
+
+        button_manual_mode_belt = ttk.Button(self, text=' Manual Mode Belt', command=lambda: oBelt.start_manual_mode())
+        button_manual_mode_belt.grid(row=firstrow_belt + 2, column=3)
 
         """
         Spindle-Drive
         """
-        def set_spindle_velocity():
-            oSpindle.set_target_speed_rpm(entry_v_spindle.get())
-            return True
+        firstrow_spindle = 4
 
         label_spindle_name = ttk.Label(self, text='Spindle-drive', font=LARGE_FONT)
-        label_spindle_name.grid(row=1, column=1)
+        label_spindle_name.grid(row=firstrow_spindle+0, column=1)
 
-        button2 = ttk.Button(self, text='<-- V [-]', command=lambda: oSpindle.set_drive_speed(-oSpindle.get_target_speed_rpm()))
-        button2.grid(row=2, column=0)
+        button2 = ttk.Button(self, text='<-- V [-]', command=lambda: oSpindle.set_drive_speed(-1*int(entry_v_spindle.get())))
+        button2.grid(row=firstrow_spindle+1, column=0)
 
         button3 = ttk.Button(self, text='STOP', command=lambda: oSpindle.set_drive_speed(0))
-        button3.grid(row=2, column=1)
+        button3.grid(row=firstrow_spindle+1, column=1)
 
-        button4 = ttk.Button(self, text='[+] V -->', command=lambda: oSpindle.set_drive_speed(oSpindle.get_target_speed_rpm()))
-        button4.grid(row=2, column=2)
+        button4 = ttk.Button(self, text='[+] V -->', command=lambda: oSpindle.set_drive_speed(1*int(entry_v_spindle.get())))
+        button4.grid(row=firstrow_spindle+1, column=2)
 
         label_v_spindle = ttk.Label(self, text='Velocity:')
         entry_v_spindle = ttk.Entry(self)
 
-        button_set_spindle_speed = ttk.Button(self, text='Set Speed', command=set_spindle_velocity)
-        label_v_spindle.grid(row=3, column=0)
-        entry_v_spindle.grid(row=3, column=1)
-        button_set_spindle_speed.grid(row=3, column=2)
+        label_v_spindle.grid(row=firstrow_spindle+2, column=0)
+        entry_v_spindle.grid(row=firstrow_spindle+2, column=1)
+
+        button_manual_mode_spindle = ttk.Button(self, text=' Manual Mode Spindle', command=lambda: oSpindle.start_manual_mode())
+        button_manual_mode_spindle.grid(row=firstrow_spindle+2, column=3)
+
         """
         button_gohoseq_spindle = ttk.Button(self, text='GoHomeSeq')
         button_set_max_inc_pos_spindle = ttk.Button(self, text='Set max position [inc]')
@@ -85,33 +113,6 @@ class StartPage(Tk.Frame):
         label_mm_unit_spindle = ttk.Label(self, text='[mm]')
         """
 
-
-
-        """
-        Belt-Drive
-        """
-        def set_belt_velocity():
-            oBelt.set_target_speed_rpm(entry_v_belt.get())
-            return True
-
-        label_spindle_name = ttk.Label(self, text='Belt-drive', font=LARGE_FONT)
-        label_spindle_name.grid(row=4, column=1)
-
-        button3 = ttk.Button(self, text='v-- V [-]', command=lambda: oBelt.set_drive_speed(-oBelt.get_target_speed_rpm()))
-        button3.grid(row=5, column=0)
-
-        button4 = ttk.Button(self, text='STOP', command=lambda: oBelt.set_drive_speed(0))
-        button4.grid(row=5, column=1)
-
-        button5 = ttk.Button(self, text='[+] V --^', command=lambda: oBelt.set_drive_speed(-oBelt.get_target_speed_rpm()))
-        button5.grid(row=5, column=2)
-
-        label_v_belt = ttk.Label(self, text='Velocity:')
-        entry_v_belt = ttk.Entry(self)
-        button_set_belt_speed = ttk.Button(self, text='Set Speed', command=set_belt_velocity)
-        label_v_belt.grid(row=6, column=0)
-        entry_v_belt.grid(row=6, column=1)
-        button_set_belt_speed.grid(row=6, column=2)
 
         """
         Quit-Button

@@ -6,7 +6,7 @@ import hippocampus_toolbox as hc_tools
 
 
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0, 2940, 0, 1580]):  # [x0 ,x1, y0, y1]
+    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580], use_gui=False):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0]  # initial position after start
         self.__target_wp = []
@@ -18,36 +18,36 @@ class GantryControl(object):
 
         self.__oScX = sc.motor_communication('/dev/ttyS4', 'belt_drive', 'belt', 2940)
         self.__oScY = sc.motor_communication('/dev/ttyS5', 'spindle_drive', 'spindle', 1580)
-        self.setup_serial_motor_control()
+
         self.__starttime = []
 
-    def setup_serial_motor_control(self):
-        # belt-drive
-        self.__oScX.open_port()
-        self.__oScX.start_manual_mode()
-        self.__oScX.enter_manual_init_data()
-        if self.__oScX.get_manual_init() is False:
-            self.__oScX.initialize_home_pos()
-            self.__oScX.initialize_extreme_pos()
+        if use_gui:
+            print('Gantry Control - gui mode')
+            self.__oScX.open_port()
+            self.__oScY.open_port()
+        else:
+            # belt-drive
+            self.__oScX.open_port()
+            self.__oScX.start_manual_mode()
+            self.__oScX.enter_manual_init_data()
+            if self.__oScX.get_manual_init() is False:
+                self.__oScX.initialize_home_pos()
+                #self.__oScX.initialize_extreme_pos()
+            print('Belt-Drive: Setup DONE!')
 
-        print('Belt-Drive: Setup DONE!')
-
-        # spindle-drive
-        self.__oScY.open_port()
-        self.__oScY.start_manual_mode()
-        self.__oScY.enter_manual_init_data()
-        if self.__oScY.get_manual_init is False:
-            self.__oScY.initialize_home_pos()
-            self.__oScY.initialize_extreme_pos()
-
-        print('Spindle-Drive: Setup DONE!')
-
-        return True
+            # spindle-drive
+            self.__oScY.open_port()
+            self.__oScY.start_manual_mode()
+            self.__oScY.enter_manual_init_data()
+            if self.__oScY.get_manual_init is False:
+                self.__oScY.initialize_home_pos()
+                #self.__oScY.initialize_extreme_pos()
+            print('Spindle-Drive: Setup DONE!')
 
     def get_serial_x_handle(self):
         return self.__oScX
 
-    def get_serial_y_hanle(self):
+    def get_serial_y_handle(self):
         return self.__oScY
 
     def get_gantry_dimensions(self):

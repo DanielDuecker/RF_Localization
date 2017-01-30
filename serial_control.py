@@ -265,6 +265,7 @@ class motor_communication(object):
         print ('Enter your commands below.')
         print ('Type "AUTO_MODE" for switching to AUTO_MODE')
         print ('Type "status" for a status report')
+        print ('Type "exit" to leave manual mode')
         print ('Type "exitall" to close the application')
         running = True
 
@@ -287,7 +288,11 @@ class motor_communication(object):
                         print ('Enter your commands below.')
                         print ('Type "AUTO_MODE" for switching to AUTO_MODE')
                         print ('Type "status" for a status report')
+                        print ('Type "exit" to leave manual mode')
                         print ('Type "exitall" to close the application')
+
+            elif input == 'exit':
+                break
 
             elif input == 'exitall':
                 self.__oserial.close()
