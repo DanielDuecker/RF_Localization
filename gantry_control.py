@@ -16,8 +16,8 @@ class GantryControl(object):
         self.__oScY = []  # belt-drive
         self.__maxposdeviation = 2  # [mm] max position deviation per axis
 
-        self.__oScX = sc.motor_communication('/dev/ttyS4', 'belt_drive', 'belt', 2940)
-        self.__oScY = sc.motor_communication('/dev/ttyS5', 'spindle_drive', 'spindle', 1580)
+        self.__oScX = sc.MotorCommunication('/dev/ttyS4', 'belt_drive', 'belt', 3100, 2000e3)
+        self.__oScY = sc.MotorCommunication('/dev/ttyS5', 'spindle_drive', 'spindle', 1600, 5150e3)
 
         self.__starttime = []
 
@@ -78,6 +78,15 @@ class GantryControl(object):
             print('len(target_wp) ='+str(len(target_wp))+' ~= len(self.__gantry_pos)  ='+str(len(self.__gantry_pos)))
             b_new_wp = False
         return b_new_wp
+
+    def get_gantry_pos_xy_mm(self):
+        pos_x_mm = self.__oScX.get_posmm()  # belt-drive
+        pos_y_mm = self.__oScY.get_posmm()  # spindle-drive
+        return pos_x_mm, pos_y_mm
+
+    def start_go_home_seq_xy(self):
+        self.__oScX.start_home_seq()  # belt-drive
+        self.__oScY.start_home_seq()  # spindle-drive
 
     def check_wp_in_workspace(self, wp):
         gantry_dim = self.get_gantry_dimensions()
