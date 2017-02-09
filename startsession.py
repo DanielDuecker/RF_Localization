@@ -32,7 +32,7 @@ plt.show()
 
 #rf_tools.wp_generator([0, 0], [2900, 1500], [59, 31], 10.0, True) # x-axis is along belt-drive
 
-freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
+# freqtx = [433.9e6, 434.1e6, 434.3e6, 434.5e6]
 
 
 #txpos_offset = np.array([1060, 450])
@@ -142,11 +142,13 @@ alpha = [0.012381473336446973, 0.012020435213791609, 0.011684952891692585, 0.012
 gamma = [-10.919717821111632, -7.6105614655357741, -8.5610583035501779, -8.1666782017252384]
 """
 
+
+freqtx = [434.1e6, 434.15e6, 434.4e6, 434.45e6]
 cal = rf.CalEar(freqtx)
 
-#cal.plot_psd()
+cal.plot_psd()
 #cal.get_performance()
-cal.plot_txrss_live()
+#cal.plot_txrss_live()
 
 
 freqspan = 2e4

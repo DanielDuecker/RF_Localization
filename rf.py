@@ -146,6 +146,7 @@ class RfEar(object):
         plt.xlabel('Frequency [MHz]')
         plt.ylabel('Power [dB]')
         drawing = True
+        line1.set_xdata(x)
         while drawing:
             try:
                 # Busy-wait for keyboard interrupt (Ctrl+C)
