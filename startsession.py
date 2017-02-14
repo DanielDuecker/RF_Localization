@@ -53,7 +53,7 @@ txpos = [[1270, 750],  # 433.9MHz
          [0, 0]]  # 434.5MHz
 """
 analyze_tx = [1,2,3,4]
-rf_tools.analyse_measdata_from_file(analyze_tx, txpos, txpos_offset, freqtx)
+#rf_tools.analyse_measdata_from_file(analyze_tx, txpos, txpos_offset, freqtx)
 
 
 

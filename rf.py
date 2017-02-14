@@ -42,6 +42,7 @@ class RfEar(object):
         self.__size = 0
         self.set_size(256)
 
+
     def set_size(self, size):
         """Set number of samples to be read by sdr [*1024].
         Keyword arguments:
@@ -125,6 +126,10 @@ class RfEar(object):
             t.sleep(0.001)
             dataseq_mat = np.asarray(dataseq)
         return dataseq_mat
+
+    def get_rss_peaks_from_single_sample(self):
+        freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+        return freq_den_max, pxx_den_max
 
     def plot_psd(self):
         """Get Power Spectral Density Live Plot."""
