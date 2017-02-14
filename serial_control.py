@@ -2,25 +2,28 @@ import time
 import serial
 
 
-class motor_communication(object):
+class MotorCommunication(object):
 
-    def __init__(self, portname, name, drivetype, travelling_distance_mm):  #
+    def __init__(self, portname, name, drivetype, travelling_distance_mm, extreme_pos_inc):  #
         self.__oserial = []
         self.__portname = portname
         self.__name = name
         self.__drivetype = drivetype
         self.__travelling_distance_mm = float(travelling_distance_mm)
         self.__isopen = False
-        self.__timewritewait = 0.1
-        self.__timereadwait = 0.1
+        self.__timewritewait = 0.05  # [s]
+        self.__timereadwait = 0.05  # [s]
         self.__signal = []
         self.__signallist = ['p', 'h', 'f']
         self.__homeknown = False
-        self.__extremeknown = False
+
+        self.__extremeknown = True
+        self.__posincmax = int(extreme_pos_inc)
+
         self.__manualinit = False
         self.__ismoving = False
         self.__tempval = []
-        self.__posincmax = []
+
         self.__posinc = []
         self.__tposinc = []
         self.__posmm = []
@@ -41,7 +44,7 @@ class motor_communication(object):
         # configure the serial connections (the parameters differs on the device you are connecting to)
         self.__oserial = serial.Serial(
             port=self.__portname,
-            baudrate=9600,
+            baudrate=19200,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS
@@ -184,6 +187,9 @@ class motor_communication(object):
 
     def is_extreme_pos_known(self):
         return self.__extremeknown
+
+    def start_home_seq(self):
+        self.write_on_port('GOHOSEQ')
 
     def check_initialization_status(self, extreme_pos_mode=False):
         """
@@ -372,14 +378,14 @@ class motor_communication(object):
         print('Start initialization sequence --> going home')
         if self.check_moving() is False:
 
-            self.write_on_port('GOHOSEQ')
+            self.start_home_seq()
 
             if self.check_moving() is True:
                 cominghome = True
                 while cominghome:
                     # give position
 
-                    time.sleep(2.0)
+                    time.sleep(1.0)
 
                     print(self.__name + ' Coming-Home position ' + str(self.get_posinc()) +
                           'inc @ ' + str(self.get_rpm()) + 'rpm')

@@ -146,6 +146,7 @@ class RfEar(object):
         plt.xlabel('Frequency [MHz]')
         plt.ylabel('Power [dB]')
         drawing = True
+        line1.set_xdata(x)
         while drawing:
             try:
                 # Busy-wait for keyboard interrupt (Ctrl+C)
@@ -603,7 +604,7 @@ class LocEar(RfEar):
             ax = fig1.add_subplot(111)
 
             x_min = -500.0
-            x_max = 1500.0
+            x_max = 3000.0
             y_min = -500.0
             y_max = 2000.0
             plt.axis([x_min, x_max, y_min, y_max])
@@ -613,15 +614,17 @@ class LocEar(RfEar):
             plt.ylabel('y-Axis [mm]')
 
             for i in range(self.__numoftx):
-                ax.plot(txpos[i, 0], txpos[i, 1], 'ro')
+                txpos_single = txpos[i]
+                ax.plot(txpos_single[0], txpos_single[1], 'ro')
 
             # init measurement circles and add them to the plot
             circle_meas = []
             circle_meas_est = []
             for i in range(self.__numoftx):
-                circle_meas.append(plt.Circle((txpos[i, 0], txpos[i, 1]), 0.01, color='r', fill=False))
+                txpos_single = txpos[i]
+                circle_meas.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='r', fill=False))
                 ax.add_artist(circle_meas[i])
-                circle_meas_est.append(plt.Circle((txpos[i, 0], txpos[i, 1]), 0.01, color='g', fill=False))
+                circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
                 ax.add_artist(circle_meas_est[i])
 
         """ initialize EKF """
