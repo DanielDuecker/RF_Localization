@@ -20,7 +20,8 @@ def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], grid_dxdy=[50, 50], ti
     :param timemeas: - time [s] to wait at each position for measurements
     :return: wp_mat [x, y, t]
     """
-    steps = [xn[0]/grid_dxdy[0]+1, xn[1]/grid_dxdy[1]+1]
+    steps = [(xn[0]-x0[0])/grid_dxdy[0]+1, (xn[1]-x0[1])/grid_dxdy[1]+1]
+    print('wp-grid_shape = ' + str(steps))
 
     startx = x0[0]
     endx = xn[0]
@@ -95,6 +96,7 @@ def read_data_from_wp_list_file(filename):
                 timemeas = grid_settings[6]
 
                 data_shape = [xn[0]/grid_dxdy[0]+1, xn[1]/grid_dxdy[1]+1]
+                print('wp-grid_shape = ' + str(data_shape))
 
             if load_wplist and not load_grid_settings:
                 #print('read wplist')
