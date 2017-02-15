@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 import time as t
 import serial_control as sc
 import hippocampus_toolbox as hc_tools
+import rf_tools
 
 
 class GantryControl(object):
     def __init__(self, gantry_dimensions=[0, 3000, 0, 1580], use_gui=False):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0]  # initial position after start
-        self.__target_wp = []
+        self.__target_wp_mm = []
         self.__oCal = []
         self.__oLoc = []
         self.__oScX = []  # spindle-drive
@@ -68,7 +69,7 @@ class GantryControl(object):
     def set_target_wp(self, target_wp):
         if len(target_wp) == len(self.__gantry_pos):
             if self.check_wp_in_workspace(target_wp):
-                self.__target_wp = target_wp
+                self.__target_wp_mm = target_wp
                 b_new_wp = True
             else:
                 print('ERROR:target way-point: x=' + str(target_wp(0) + ' y=' + str(target_wp(1)) + ' not in workspace'))
@@ -78,6 +79,9 @@ class GantryControl(object):
             print('len(target_wp) ='+str(len(target_wp))+' ~= len(self.__gantry_pos)  ='+str(len(self.__gantry_pos)))
             b_new_wp = False
         return b_new_wp
+
+    def get_target_wp_mm(self):
+        return self.__target_wp_mm
 
     def get_gantry_pos_xy_mm(self):
         pos_x_mm = self.__oScX.get_posmm()  # belt-drive
@@ -109,25 +113,49 @@ class GantryControl(object):
             btransmission = False
         return btransmission
 
-    def move_gantry_to_target(self):
-        target_wp = self.__target_wp
+    def confirm_arrived_at_target_wp(self):
+        """
+        This method checks whether the gantry has arrived at its target position
+        within a range of 'maxdeviation' [mm]
+        :return: flag - arrived true/false
+        """
+        barrival_confirmed = False
+        gantry_pos_mm = self.get_gantry_pos_xy_mm()
+        target_pos_mm = self.get_target_wp_mm()
+        distx = abs(gantry_pos_mm[0] - target_pos_mm[0])
+        disty = abs(gantry_pos_mm[1] - target_pos_mm[1])
+
+        if distx < self.__maxposdeviation and disty < self.__maxposdeviation:
+            barrival_confirmed = True
+
+        return barrival_confirmed
+
+    def start_moving_gantry_to_target(self):
+        target_wp = self.get_target_wp_mm()
 
         print ('Move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
         self.__oScX.go_to_pos_mm(target_wp[0])
         self.__oScY.go_to_pos_mm(target_wp[1])
 
+    def move_gantry_to_target(self):
+        self.start_moving_gantry_to_target()
+
         bArrived_both = False
         while bArrived_both is False:
             t.sleep(0.1)
-            actpos_X = self.__oScX.get_posmm()
-            actpos_Y = self.__oScY.get_posmm()
-            actpos = [actpos_X, actpos_Y]
+
+            actpos_X_mm, actpos_Y_mm = self.get_gantry_pos_xy_mm()
+            actpos = [actpos_X_mm, actpos_Y_mm]
             print('Actual position: x=' + str(actpos[0]) + 'mm y=' + str(actpos[1]) + 'mm')
             self.set_gantry_pos(actpos)
-
+            """
             dist_x = abs(self.get_gantry_pos()[0] - target_wp[0])
             dist_y = abs(self.get_gantry_pos()[1] - target_wp[1])
             if dist_x < self.__maxposdeviation and dist_y < self.__maxposdeviation:
+                print ('Arrived at way-point')
+                bArrived_both = True
+            """
+            if self.confirm_arrived_at_target_wp():
                 print ('Arrived at way-point')
                 bArrived_both = True
 
@@ -136,7 +164,7 @@ class GantryControl(object):
         return bArrived_both
 
     def move_gantry_to_target_manual(self):
-        target_wp = self.__target_wp
+        target_wp = self.get_target_wp_mm()
 
         print ('move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
 
@@ -158,15 +186,37 @@ class GantryControl(object):
 
         return bArrived
 
-    def confirm_arrived_at_wp(self):
-        barrivalconfirmed = False
+    def follow_wp_and_take_measurements(self):
+        start_wp = [1500, 600]
+        wp_list = [[2200, 600],
+                   [2200, 1000],
+                   [1500, 1000]]
+        num_wp = len(wp_list)
+        print('Number of way points: ' + str(num_wp))
+        start_time = t.time()
 
-        dist_x = abs(self.get_gantry_pos()[0] - self.__target_wp[0])
-        dist_y = abs(self.get_gantry_pos()[1] - self.__target_wp[1])
-        if dist_x < self.__maxposdeviation and dist_y < self.__maxposdeviation:
-            barrivalconfirmed = True
+        self.set_target_wp(start_wp)
+        self.start_moving_gantry_to_target()
+        while not self.confirm_arrived_at_target_wp():
+            print('Moving to start position = ' + str(start_wp))
+            t.sleep(0.2)
 
-        return barrivalconfirmed
+        for wp in wp_list:
+            # got to wp
+            self.set_target_wp(wp)
+            self.start_moving_gantry_to_target()
+            not_arrived_at_wp = True
+            print('Moving to wp = ' + str(wp))
+            while not_arrived_at_wp:
+                time_elapsed = t.time() - start_time
+                pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
+                freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
+                print('Time = ' + str(time_elapsed) + ' Pos = [' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ']: peaks = '
+                      + str(pxx_den_max))
+                if self.confirm_arrived_at_target_wp():
+                    not_arrived_at_wp = False
+
+
 
     def follow_wp_trajectory(self, vdes_x, vdes_y, dist_threshhold):
         """
@@ -231,7 +281,7 @@ class GantryControl(object):
 
         return True
 
-    def process_measurement_sequence(self, wplist_filename, measdata_filename):
+    def process_measurement_sequence(self, wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx):
         """
         :return:
         """
@@ -241,26 +291,92 @@ class GantryControl(object):
         # read data from waypoint file
         #wplist_filename = hc_tools.select_file()
 
+        """
         with open(wplist_filename, 'r') as wpfile:
+
+            for i, line in enumerate(wplist_filename):
+                print('i= ' + str(i) + ' line:' + line)
+                if line == '###':
+                if i >= 3:  # ignore header (first 3 lines)
+
             wp_data_list = [map(float, line.split(',')) for line in wpfile]
             wp_data_mat = np.asarray(wp_data_list)
+            wpfile.close()
+        """
+        #wp_data_mat, x0, xn, grid_dxdy, timemeas = rf_tools.read_data_from_wp_list_file(wplist_filename)
+        with open(wplist_filename, 'r') as wpfile:
+            load_description = True
+            load_grid_settings = False
+            load_wplist = False
+            wp_append_list = []
+            for i, line in enumerate(wpfile):
+
+                if line == '### begin grid settings\n':
+                    print('griddata found')
+                    load_description = False
+                    load_grid_settings = True
+                    load_wplist = False
+                    continue
+                elif line == '### begin wp_list\n':
+                    load_description = False
+                    load_grid_settings = False
+                    load_wplist = True
+                    print('### found')
+                    continue
+                if load_description:
+                    print('file description')
+                    print(line)
+
+                if load_grid_settings and not load_wplist:
+                    grid_settings = map(float, line.split(','))
+                    x0 = [grid_settings[0], grid_settings[1]]
+                    xn = [grid_settings[2], grid_settings[3]]
+                    grid_dxdy = [grid_settings[4], grid_settings[5]]
+                    timemeas = grid_settings[6]
+
+                    data_shape = [xn[0] / grid_dxdy[0] + 1, xn[1] / grid_dxdy[1] + 1]
+
+                if load_wplist and not load_grid_settings:
+                    # print('read wplist')
+                    wp_append_list.append(map(float, line.split(',')))
+
+            print(str(np.asarray(wp_append_list)))
+            wp_data_mat = np.asarray(wp_append_list)
+
             wpfile.close()
 
         #measdata_filename = hc_tools.save_as_dialog('Save measurement data as...')
         with open(measdata_filename, 'w') as measfile:
-            # write header to measurement file
 
-            measfile.write(t.ctime() + '\n')
-            measfile.write('some description' + '\n')
-            measfile.write('\n')
+            # write header to measurement file
+            file_description = 'Measurement file\n' + 'Measurement was taken on ' + t.ctime() + '\n'
+
+            txdata = str(numtx) + ', '
+            for itx in range(numtx):
+                txpos = tx_abs_pos[itx]
+                txdata += str(txpos[0]) + ', ' + str(txpos[1]) + ', '
+            for itx in range(numtx):
+                txdata += str(freqtx[itx]) + ', '
+
+            print('txdata = ' + txdata)
+
+            measfile.write('Way point list \n')
+            measfile.write(file_description)
+            measfile.write('### begin grid settings\n')
+            measfile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' +
+                           str(xn[0]) + ', ' + str(xn[1]) + ', ' +
+                           str(grid_dxdy[0]) + ', ' + str(grid_dxdy[1]) + ', ' +
+                           str(timemeas) + ', ' + txdata +
+                           '\n')
+            measfile.write('### begin measurement data\n')
 
             # setup plot
             plt.ion()
             plt.plot(wp_data_mat[:, 1], wp_data_mat[:, 2], 'b.-')
             plt.xlabel('Distance in mm (belt-drive)')
             plt.ylabel('Distance in mm (spindle-drive)')
-            plt.xlim(-10, 2940)
-            plt.ylim(-10, 1700)
+            plt.xlim(x0[0]-10, xn[0]+100)
+            plt.ylim(x0[1]-10, xn[1]+100)
             plt.grid()
             plt.show()
 
@@ -280,7 +396,7 @@ class GantryControl(object):
 
                 if self.transmit_wp_to_gantry(new_target_wp):
                     if self.move_gantry_to_target():
-                        if self.confirm_arrived_at_wp():
+                        if self.confirm_arrived_at_target_wp():
                             t.sleep(1)  # wait to damp motion/oscillation of antenna etc
 
                             print('START Measurement for ' + str(meastime) + 's')
