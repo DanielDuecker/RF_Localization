@@ -36,7 +36,9 @@ plt.show()
 
 
 #txpos_offset = np.array([1060, 450])
-txpos_offset = np.array([1040, 450])
+freqtx = [434.1e6, 434.15e6, 434.4e6, 434.45e6]
+
+txpos_offset = np.array([1050, 420])
 
 txpos = [[0, 0],  # 433.9MHz
          [0, 800],  # 434.1MHz
@@ -146,9 +148,9 @@ gamma = [-10.919717821111632, -7.6105614655357741, -8.5610583035501779, -8.16667
 freqtx = [434.1e6, 434.15e6, 434.4e6, 434.45e6]
 cal = rf.CalEar(freqtx)
 
-cal.plot_psd()
+#cal.plot_psd()
 #cal.get_performance()
-#cal.plot_txrss_live()
+cal.plot_txrss_live()
 
 
 freqspan = 2e4

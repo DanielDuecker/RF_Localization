@@ -54,7 +54,7 @@ def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], steps=[7, 7], timemeas
     return wp_filename  # file output [line#, x, y, time]
 
 
-def analyse_measdata_from_file(measdata_filename, analyze_tx, txpos, txpos_offset=[0, 0], meantype='db_mean'):
+def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype='db_mean'):
     """
 
     :param measdata_filename:
@@ -64,11 +64,11 @@ def analyse_measdata_from_file(measdata_filename, analyze_tx, txpos, txpos_offse
     :param meantype:
     :return:
     """
-
+    print(analyze_tx)
     analyze_tx[:] = [x - 1 for x in analyze_tx]  # substract -1 as arrays begin with index 0
 
-    # measdata_filename = hc_tools.select_file()
-    # print(measdata_filename)
+    measdata_filename = hc_tools.select_file()
+    print(measdata_filename)
 
     with open(measdata_filename, 'r') as measfile:
         plotdata_mat_lis = []
@@ -178,7 +178,8 @@ def analyse_measdata_from_file(measdata_filename, analyze_tx, txpos, txpos_offse
             rss_var = plotdata_mat[:, 2 + num_tx + itx]
 
             #data_shape = [16,30]
-            data_shape = [31, 59]
+            #data_shape = [31, 59]
+            data_shape  = [32, 61]
             xx = np.reshape(x, data_shape)
             yy = np.reshape(y, data_shape)
             rss = np.reshape(rss_mean, data_shape)
