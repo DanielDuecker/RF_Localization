@@ -1,6 +1,7 @@
 import Tkinter as Tk
 import ttk
 import gantry_control
+import rf_tools
 
 LARGE_FONT = ('Verdana', 12)
 
@@ -124,6 +125,10 @@ class StartPage(Tk.Frame):
 
         button1 = ttk.Button(self, text='Drive Settings', command=lambda: controller.show_frame(PageOne))
         button1.grid(row=8, column=1)
+
+        button_home_seq = ttk.Button(self, text='Analyze Data',
+                                     command=lambda: rf_tools.analyse_measdata_from_file())
+        button_home_seq.grid(row=8, column=2, sticky='W', pady=4)
 
 
 class PageOne(Tk.Frame):
