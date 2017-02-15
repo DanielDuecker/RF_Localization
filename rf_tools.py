@@ -208,7 +208,7 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
                 grid_dxdy = [grid_settings[4], grid_settings[5]]
                 timemeas = grid_settings[6]
 
-                data_shape = [int(xn[0] / grid_dxdy[0] + 1), int(xn[1] / grid_dxdy[1] + 1)]
+                data_shape_file = [int((xn[0]-x0[0]) / grid_dxdy[0] + 1), int((xn[1]-x0[1]) / grid_dxdy[1] + 1)]
 
                 numtx = int(grid_settings[7])
                 txdata = grid_settings[8:8+3*numtx]
@@ -350,8 +350,8 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
             #print('shape : ' + str(np.shape(x)))
 
 
-            #print('shape_from_file ' + str(data_shape))
-            data_shape = [32,61]
+            #print('shape_from_file ' + str(data_shape_file))
+            data_shape = [data_shape_file[1], data_shape_file[0]]
 
             xx = np.reshape(x, data_shape)
             yy = np.reshape(y, data_shape)
@@ -460,7 +460,7 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
                 ax.set_ylabel('Distance [mm]')
 
 
-        plot_fig5 = True
+        plot_fig5 = False
         if plot_fig5:
             fig = plt.figure(5)
             for itx in analyze_tx:
