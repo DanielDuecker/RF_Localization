@@ -186,11 +186,8 @@ class GantryControl(object):
 
         return bArrived
 
-    def follow_wp_and_take_measurements(self):
-        start_wp = [1500, 600]
-        wp_list = [[2200, 600],
-                   [2200, 1000],
-                   [1500, 1000]]
+    def follow_wp_and_take_measurements(self, start_wp, wp_list, filename):
+
         num_wp = len(wp_list)
         print('Number of way points: ' + str(num_wp))
         start_time = t.time()
@@ -201,22 +198,76 @@ class GantryControl(object):
             print('Moving to start position = ' + str(start_wp))
             t.sleep(0.2)
 
-        for wp in wp_list:
-            # got to wp
-            self.set_target_wp(wp)
-            self.start_moving_gantry_to_target()
-            not_arrived_at_wp = True
-            print('Moving to wp = ' + str(wp))
-            while not_arrived_at_wp:
-                time_elapsed = t.time() - start_time
+        with open(filename, 'w') as measfile:
+            measfile.write('Measurement file for trajectory following\n')
+            measfile.write('### begin grid settings\n')
+            meascounter = 0
+            for wp in wp_list:
+                # go to wp
+                self.set_target_wp(wp)
+                self.start_moving_gantry_to_target()
+                not_arrived_at_wp = True
+                print('Moving to wp = ' + str(wp))
+                while not_arrived_at_wp:
+                    meascounter += 1
+                    time_elapsed = t.time() - start_time
+                    pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
+                    freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
+
+                    # log data
+                    data_line = str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
+                    for rss_tx in pxx_den_max:
+                        data_line += str(rss_tx) + ', '
+                    data_line += '\n'
+                    measfile.write(data_line)
+
+                    if self.confirm_arrived_at_target_wp():
+                        not_arrived_at_wp = False
+                print('Logging with avg. ' + str(meascounter/time_elapsed) + 'Hz')
+
+            measfile.close()
+
+        return True
+
+    def position_hold_measurements(self, xy_pos_mm, meas_time, filename):
+        """
+
+        :param xy_pos_mm:
+        :param meas_time:
+        :param filename:
+        :return:
+        """
+        self.set_target_wp(xy_pos_mm)
+        self.start_moving_gantry_to_target()
+        while not self.confirm_arrived_at_target_wp():
+            print('Moving to start position = ' + str(xy_pos_mm))
+            t.sleep(0.2)
+
+        sample_size = self.__oCal.getsize()
+        with open(filename, 'w') as measfile:
+            measfile.write('Measurement file for trajectory following\n')
+            measfile.write('### begin grid settings\n')
+            measfile.write('sample size = ' + str(sample_size) + ' [*1024]')
+            measfile.write('### begin data log\n')
+
+            start_time = t.time()
+            time_elapsed = 0.0
+            while time_elapsed < meas_time:
                 pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
                 freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
-                print('Time = ' + str(time_elapsed) + ' Pos = [' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ']: peaks = '
-                      + str(pxx_den_max))
-                if self.confirm_arrived_at_target_wp():
-                    not_arrived_at_wp = False
 
+                time_elapsed = t.time() - start_time
 
+                # log data
+                data_line = str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
+                for rss_tx in pxx_den_max:
+                    data_line += str(rss_tx) + ', '
+                data_line += '\n'
+                measfile.write(data_line)
+
+            measfile.close()
+
+        return True
 
     def follow_wp_trajectory(self, vdes_x, vdes_y, dist_threshhold):
         """

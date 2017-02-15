@@ -19,6 +19,13 @@ tx_abs_pos = [[1060, 470],  # 433.9MHz
               [2340, 470],  # 434.3MHz
               [2340, 1260]]  # 434.5MHz
 
+
 gt.process_measurement_sequence('wp_list_inner_space_50mm_5s.txt', 'measdata_2017_02_15_inner_space_50mm_5s.txt', numtx, tx_abs_pos, freqtx)
 
-#gt.follow_wp_and_take_measurements()
+
+
+start_wp = [1500, 600]
+wp_list = [[2200, 600],
+           [2200, 1000],
+           [1500, 1000]]
+gt.follow_wp_and_take_measurements(start_wp, wp_list, meastime_at_wp=0.0, filelog=False, printlog=False)
