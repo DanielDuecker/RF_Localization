@@ -258,13 +258,13 @@ class GantryControl(object):
             start_time = t.time()
             print('measuring for ' + str(meas_time) + 's ...\n')
             time_elapsed = 0.0
-            meas_counter = 0
+            meas_counter = 0.0
             data_list = []
             while time_elapsed < meas_time:
                 pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
                 freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
                 time_elapsed = t.time() - start_time
-                meas_counter += 1
+                meas_counter += 1.0
 
                 data_row = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm, pxx_den_max]
                 data_list.append(data_row)
@@ -278,7 +278,7 @@ class GantryControl(object):
                 """
 
             print('Logging with avg. ' + str(meas_counter / time_elapsed) + ' Hz')
-            
+            print(data_list)
             data_mat = np.asarray(data_list)
             for row in data_mat:
                 meas_counter = row[0]

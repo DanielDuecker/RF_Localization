@@ -22,7 +22,7 @@ tx_abs_pos = [[1060, 470],  # 433.9MHz
               [2340, 470],  # 434.3MHz
               [2340, 1260]]  # 434.5MHz
 
-#gt.position_hold_measurements([600,600], 10, 'pos_hold_measurement.txt')
+gt.position_hold_measurements([600,500], 1, 'pos_hold_measurement.txt')
 
 #gt.process_measurement_sequence('wp_list_inner_space_50mm_5s_stripe.txt', 'measdata_2017_02_15_inner_space_50mm_5s_stripe.txt', numtx, tx_abs_pos, freqtx)
 
@@ -33,4 +33,4 @@ start_wp = [1500, 600]
 wp_list = [[2200, 600],
            [2200, 1000],
            [1500, 1000]]
-gt.follow_wp_and_take_measurements(start_wp, wp_list, 'log_traj_rectangle.txt')
+#gt.follow_wp_and_take_measurements(start_wp, wp_list, 'log_traj_rectangle.txt')
