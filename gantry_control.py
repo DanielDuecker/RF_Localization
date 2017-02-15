@@ -26,6 +26,10 @@ class GantryControl(object):
             print('Gantry Control - gui mode')
             self.__oScX.open_port()
             self.__oScY.open_port()
+            # set home position knwon flao
+            self.__oScX.set_home_pos_known(True)
+            self.__oScY.set_home_pos_known(True)
+
         else:
             # belt-drive
             self.__oScX.open_port()
@@ -96,14 +100,14 @@ class GantryControl(object):
         gantry_dim = self.get_gantry_dimensions()
 
         if wp[0] >= gantry_dim[0] and wp[0] <= gantry_dim[1] and wp[1] >= gantry_dim[2] and wp[1] <= gantry_dim[3]:
-            bvalid_wp = True
+            valid_wp = True
         else:
             print ('ERROR: Target way-point cannot be approached!')
             print ('Target way-point ' + str(wp) + ' does not lie within the gantry workspace ' +
                    'x= [' + str(gantry_dim[0]) + ' ... ' + str(gantry_dim[2]) + '], ' +
                    'y= [' + str(gantry_dim[1]) + ' ... ' + str(gantry_dim[3]) + '] ')
-            bvalid_wp = False
-        return bvalid_wp
+            valid_wp = False
+        return valid_wp
 
     def transmit_wp_to_gantry(self, targetwp):
         if self.set_target_wp(targetwp):
@@ -201,7 +205,7 @@ class GantryControl(object):
         with open(filename, 'w') as measfile:
             measfile.write('Measurement file for trajectory following\n')
             measfile.write('### begin grid settings\n')
-            meascounter = 0
+            meas_counter = 0
             for wp in wp_list:
                 # go to wp
                 self.set_target_wp(wp)
@@ -209,7 +213,7 @@ class GantryControl(object):
                 not_arrived_at_wp = True
                 print('Moving to wp = ' + str(wp))
                 while not_arrived_at_wp:
-                    meascounter += 1
+                    meas_counter += 1
                     time_elapsed = t.time() - start_time
                     pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
                     freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
@@ -223,18 +227,19 @@ class GantryControl(object):
 
                     if self.confirm_arrived_at_target_wp():
                         not_arrived_at_wp = False
-                print('Logging with avg. ' + str(meascounter/time_elapsed) + 'Hz')
+                print('Logging with avg. ' + str(meas_counter/time_elapsed) + ' Hz')
 
             measfile.close()
 
         return True
 
-    def position_hold_measurements(self, xy_pos_mm, meas_time, filename):
+    def position_hold_measurements(self, xy_pos_mm, meas_time, filename, set_sample_size=256):
         """
 
         :param xy_pos_mm:
         :param meas_time:
         :param filename:
+        :param set_sample_size:
         :return:
         """
         self.set_target_wp(xy_pos_mm)
@@ -242,16 +247,18 @@ class GantryControl(object):
         while not self.confirm_arrived_at_target_wp():
             print('Moving to start position = ' + str(xy_pos_mm))
             t.sleep(0.2)
-
-        sample_size = self.__oCal.getsize()
+        self.__oCal.set_size(set_sample_size)
+        sample_size = self.__oCal.get_size()
+        print('Sampling with sample size ' + str(sample_size) + ' [*1024]\n')
         with open(filename, 'w') as measfile:
             measfile.write('Measurement file for trajectory following\n')
             measfile.write('### begin grid settings\n')
-            measfile.write('sample size = ' + str(sample_size) + ' [*1024]')
+            measfile.write('sample size = ' + str(sample_size) + ' [*1024]\n')
             measfile.write('### begin data log\n')
-
             start_time = t.time()
+            print('measuring for ' + str(meas_time) + 's ...\n')
             time_elapsed = 0.0
+            meas_counter = 0
             while time_elapsed < meas_time:
                 pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
                 freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
@@ -259,13 +266,16 @@ class GantryControl(object):
                 time_elapsed = t.time() - start_time
 
                 # log data
-                data_line = str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
+                meas_counter += 1
+                data_line = str(meas_counter) + ', ' + str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
                 for rss_tx in pxx_den_max:
                     data_line += str(rss_tx) + ', '
                 data_line += '\n'
                 measfile.write(data_line)
 
+            print('Logging with avg. ' + str(meas_counter / time_elapsed) + ' Hz')
             measfile.close()
+
 
         return True
 

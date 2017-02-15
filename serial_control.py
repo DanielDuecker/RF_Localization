@@ -134,6 +134,9 @@ class MotorCommunication(object):
         time.sleep(self.__timewritewait)
         return True
 
+    def set_home_pos_known(self, bknown):
+        self.__homeknown = bknown
+
     def get_rpm(self):
         self.write_on_port('GN')
         self.listen_to_port('rpm')
