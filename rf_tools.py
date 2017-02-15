@@ -156,13 +156,11 @@ def temp_method():
 
 
 
-def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype='db_mean'):
+def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
     """
 
-    :param measdata_filename:
     :param analyze_tx:
-    :param txpos:
-    :param txpos_offset:
+    :param txpos_tuning:
     :param meantype:
     :return:
     """
@@ -173,27 +171,88 @@ def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype=
     print(measdata_filename)
 
     with open(measdata_filename, 'r') as measfile:
+        load_description = True
+        load_grid_settings = False
+        load_measdata = False
+        meas_data_append_list = []
+
         plotdata_mat_lis = []
 
         for i, line in enumerate(measfile):
-            if i >= 3:  # ignore header (first 3 lines)
 
-                meas_data_list = map(float, line[0:-3].split(', '))
-                #print(meas_data_list)
+            if line == '### begin grid settings\n':
+                print('griddata found')
+                load_description = False
+                load_grid_settings = True
+                load_measdata = False
+                continue
+            elif line == '### begin measurement data\n':
+                load_description = False
+                load_grid_settings = False
+                load_measdata = True
+                print('Measurement data found')
+                continue
+            if load_description:
+                print('file description')
+                print(line)
 
-                meas_data_mat_line = np.asarray(meas_data_list)
-                #print(meas_data_mat_line)
+            if load_grid_settings and not load_measdata:
+                print(line)
+                #line_split = line.split(',')
+                #print(line_split)
+                grid_settings = map(float, line[0:-3].split(','))
+                x0 = [grid_settings[0], grid_settings[1]]
+                xn = [grid_settings[2], grid_settings[3]]
+                grid_dxdy = [grid_settings[4], grid_settings[5]]
+                timemeas = grid_settings[6]
 
-                # print ('x = ' + str(meas_data_mat_line[0]) + ' y= ' + str(meas_data_mat_line[1]))
+                data_shape = [int(xn[0] / grid_dxdy[0] + 1), int(xn[1] / grid_dxdy[1] + 1)]
 
-                #wp_meas_lis.append([meas_data_mat_line[0], meas_data_mat_line[1], meas_data_mat_line[2]])
-                #print ('wp_lis ' + str(wp_meas_lis))
-                #print ('wp_lis_shape ' + str(wp_meas_lis.shape))
+                numtx = int(grid_settings[7])
+                txdata = grid_settings[8:8+3*numtx]
+
+                # read tx positions
+                txpos_list = []
+                for itx in range(numtx):
+                    itxpos = txdata[2*itx:2*itx+2]
+                    txpos_list.append(itxpos)
+                txpos = np.asarray(txpos_list)
+
+                # read tx frequencies
+                freqtx_list = []
+                for itx in range(numtx):
+                    freqtx_list.append(txdata[2*numtx+itx])
+                freqtx = np.asarray(freqtx_list)
+
+            if load_measdata and not load_grid_settings:
+                #print('read measdata')
+                meas_data_line = map(float, line[0:-3].split(', '))
+                meas_data_append_list.append(meas_data_line)
+
+        #print(str(np.asarray(meas_data_append_list)))
+
+        #meas_data_mat = np.asarray(meas_data_append_list)
+
+
+
+
+        #plotdata_mat_lis = []
+
+        #for i, line in enumerate(measfile):
+        #    if i >= 3:  # ignore header (first 3 lines)
+
+
+
+
+                meas_data_mat_line = np.asarray(meas_data_line)
+
                 num_wp = int(meas_data_mat_line[2])
                 num_tx = int(meas_data_mat_line[3])
                 num_meas = int(meas_data_mat_line[4])
-                freq_vec = []
+
                 # @todo add numtx to data file
+                freq_vec = freqtx
+
                 first_rss = 5 + num_tx
 
                 meas_data_mat_rss = meas_data_mat_line[first_rss:]
@@ -210,13 +269,18 @@ def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype=
                     mean = np.mean(rss_mat, axis=1)
                     var = np.var(rss_mat, axis=1)
                     # print('var = ' + str(var))
-                wp = [meas_data_mat_line[0], meas_data_mat_line[1]]
+                wp_pos = [meas_data_mat_line[0], meas_data_mat_line[1]]
 
-                plotdata_line = np.concatenate((wp, mean, var), axis=1)
+                plotdata_line = np.concatenate((wp_pos, mean, var), axis=1)
 
                 plotdata_mat_lis.append(plotdata_line)
 
         measfile.close()
+
+
+
+
+
         totnumwp = num_wp + 1  # counting starts with zero
 
         plotdata_mat = np.asarray(plotdata_mat_lis)
@@ -232,7 +296,7 @@ def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype=
             """Range Sensor Model (RSM) structure."""
             return -20 * np.log10(dist) - alpha * dist - xi  # rss in db
 
-        txpos = txpos + txpos_offset  # necessary since gantry frame and the tx-frame are shifted
+        txpos = txpos + txpos_tuning  # necessary since gantry frame and the tx-frame are shifted
 
         alpha = []
         xi = []
@@ -281,8 +345,12 @@ def analyse_measdata_from_file(analyze_tx, txpos, txpos_offset=[0, 0], meantype=
 
             #data_shape = [16,30]
             #data_shape = [31, 59]#
-            print('shape : ' + str(np.shape(x)))
+            #print('shape : ' + str(np.shape(x)))
+
+
+            #print('shape_from_file ' + str(data_shape))
             data_shape = [32,61]
+
             xx = np.reshape(x, data_shape)
             yy = np.reshape(y, data_shape)
             rss = np.reshape(rss_mean, data_shape)
