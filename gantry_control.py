@@ -259,88 +259,43 @@ class GantryControl(object):
             print('measuring for ' + str(meas_time) + 's ...\n')
             time_elapsed = 0.0
             meas_counter = 0
+            data_list = []
             while time_elapsed < meas_time:
                 pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
                 freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
-
                 time_elapsed = t.time() - start_time
-
-                # log data
                 meas_counter += 1
+
+                data_row = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm, pxx_den_max]
+                data_list.append(data_row)
+                # log data
+                """
                 data_line = str(meas_counter) + ', ' + str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
                 for rss_tx in pxx_den_max:
                     data_line += str(rss_tx) + ', '
                 data_line += '\n'
                 measfile.write(data_line)
+                """
 
             print('Logging with avg. ' + str(meas_counter / time_elapsed) + ' Hz')
+            
+            data_mat = np.asarray(data_list)
+            for row in data_mat:
+                meas_counter = row[0]
+                time_elapsed = row[1]
+                pos_x_mm = row[2]
+                pos_y_mm = row[3]
+                pxx_logged = row[4]
+                data_string = str(meas_counter) + ', ' + str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
+                for rss_tx in pxx_logged:
+                    data_string += str(rss_tx) + ', '
+                data_string += '\n'
+                measfile.write(data_string)
+
             measfile.close()
 
-
         return True
 
-    def follow_wp_trajectory(self, vdes_x, vdes_y, dist_threshhold):
-        """
-
-        :param vdes_x:
-        :param vdes_y:
-        :param dist_threshhold: [mm]
-        :return:
-        """
-
-        wp_list = [[1500, 600],
-                   [2200, 600],
-                   [2200, 1000],
-                   [1500, 1000],
-                   [1500, 600]]
-
-        num_wp = len(wp_list)
-        print('Number of way points: ' + str(num_wp))
-        """
-        insert a sequence to move to starting point
-        """
-
-        for i_wp in range(num_wp):
-
-            target_wp = wp_list[i_wp]
-            print('Target_wp = ' + str(target_wp))
-            self.set_target_wp(target_wp)
-            bdrive_x_arrived = False
-            bdrive_y_arrived = False
-
-            if self.__oScX.get_dist_to(target_wp[0]) >= 0:
-                v_x = vdes_x
-            elif self.__oScX.get_dist_to(target_wp[0]) < 0:  # move backwards
-                v_x = -vdes_x
-
-            if self.__oScY.get_dist_to(target_wp[1]) >= 0:
-                v_y = vdes_y
-            elif self.__oScY.get_dist_to(target_wp[1]) < 0:  # move backwards
-                v_y = -vdes_y
-
-            self.__oScX.set_drive_speed(v_x)
-            self.__oScY.set_drive_speed(v_y)
-
-            target_pos_reached = False
-            while target_pos_reached is False:
-                print('X-dist = ' + str(self.__oScX.get_dist_to(target_wp[0])) + ' speed: ' + str(v_x))
-                print('Y-dist = ' + str(self.__oScY.get_dist_to(target_wp[1])) + ' speed: ' + str(v_y))
-
-                if abs(self.__oScX.get_dist_to(target_wp[0])) < dist_threshhold:
-                    v_x = 0
-                    self.__oScX.set_drive_speed(v_x)
-                    bdrive_x_arrived = True
-                if abs(self.__oScY.get_dist_to(target_wp[1])) < dist_threshhold:
-                    v_y = 0
-                    self.__oScY.set_drive_speed(v_y)
-                    bdrive_y_arrived = True
-
-                if bdrive_x_arrived and bdrive_y_arrived:
-                    print('Arrived!')
-                    target_pos_reached = True
-            print('Go to next WP')
-
-        return True
 
     def process_measurement_sequence(self, wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx):
         """
