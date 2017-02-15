@@ -5,9 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
 
-
-#rf_tools.wp_generator([0, 0], [2900, 1500], [59, 31], 10.0, True) # x-axis is along belt-drive
-
+rf_tools.wp_generator('test_wp_list.txt',[0, 0], [3000, 1500], [50, 50], 10.0, False) # x-axis is along belt-drive
+rf_tools.test_method('test_wp_list.txt')
 
 
 txpos_offset = np.array([1040, 450])
@@ -23,9 +22,9 @@ analyze_tx = [1,2,3,4]
 
 
 freqtx = [434.1e6, 434.15e6, 434.4e6, 434.45e6]
-cal = rf.CalEar(freqtx)
+#cal = rf.CalEar(freqtx)
 
-cal.plot_psd()
+#cal.plot_psd()
 
 #cal.get_performance()
 #cal.plot_txrss_live()

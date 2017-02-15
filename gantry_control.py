@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import time as t
 import serial_control as sc
 import hippocampus_toolbox as hc_tools
+import rf_tools
 
 
 class GantryControl(object):
@@ -280,7 +281,7 @@ class GantryControl(object):
 
         return True
 
-    def process_measurement_sequence(self, wplist_filename, measdata_filename):
+    def process_measurement_sequence(self, wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx):
         """
         :return:
         """
@@ -290,26 +291,92 @@ class GantryControl(object):
         # read data from waypoint file
         #wplist_filename = hc_tools.select_file()
 
+        """
         with open(wplist_filename, 'r') as wpfile:
+
+            for i, line in enumerate(wplist_filename):
+                print('i= ' + str(i) + ' line:' + line)
+                if line == '###':
+                if i >= 3:  # ignore header (first 3 lines)
+
             wp_data_list = [map(float, line.split(',')) for line in wpfile]
             wp_data_mat = np.asarray(wp_data_list)
+            wpfile.close()
+        """
+        #wp_data_mat, x0, xn, grid_dxdy, timemeas = rf_tools.read_data_from_wp_list_file(wplist_filename)
+        with open(wplist_filename, 'r') as wpfile:
+            load_description = True
+            load_grid_settings = False
+            load_wplist = False
+            wp_append_list = []
+            for i, line in enumerate(wpfile):
+
+                if line == '### begin grid settings\n':
+                    print('griddata found')
+                    load_description = False
+                    load_grid_settings = True
+                    load_wplist = False
+                    continue
+                elif line == '### begin wp_list\n':
+                    load_description = False
+                    load_grid_settings = False
+                    load_wplist = True
+                    print('### found')
+                    continue
+                if load_description:
+                    print('file description')
+                    print(line)
+
+                if load_grid_settings and not load_wplist:
+                    grid_settings = map(float, line.split(','))
+                    x0 = [grid_settings[0], grid_settings[1]]
+                    xn = [grid_settings[2], grid_settings[3]]
+                    grid_dxdy = [grid_settings[4], grid_settings[5]]
+                    timemeas = grid_settings[6]
+
+                    data_shape = [xn[0] / grid_dxdy[0] + 1, xn[1] / grid_dxdy[1] + 1]
+
+                if load_wplist and not load_grid_settings:
+                    # print('read wplist')
+                    wp_append_list.append(map(float, line.split(',')))
+
+            print(str(np.asarray(wp_append_list)))
+            wp_data_mat = np.asarray(wp_append_list)
+
             wpfile.close()
 
         #measdata_filename = hc_tools.save_as_dialog('Save measurement data as...')
         with open(measdata_filename, 'w') as measfile:
-            # write header to measurement file
 
-            measfile.write(t.ctime() + '\n')
-            measfile.write('some description' + '\n')
-            measfile.write('\n')
+            # write header to measurement file
+            file_description = 'Measurement file\n' + 'Measurement was taken on ' + t.ctime() + '\n'
+
+            txdata = str(numtx) + ', '
+            for itx in range(numtx):
+                txpos = tx_abs_pos[itx]
+                txdata += str(txpos[0]) + ', ' + str(txpos[1]) + ', '
+            for itx in range(numtx):
+                txdata += str(freqtx[itx]) + ', '
+
+            print('txdata = ' + txdata)
+
+            measfile.write('Way point list \n')
+            measfile.write(file_description)
+            measfile.write('### begin grid settings\n')
+            measfile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' +
+                           str(xn[0]) + ', ' + str(xn[1]) + ', ' +
+                           str(grid_dxdy[0]) + ', ' + str(grid_dxdy[1]) + ', ' +
+                           str(timemeas) + ', ' + txdata +
+                           '\n')
+            measfile.write('### begin measurement data\n')
 
             # setup plot
             plt.ion()
             plt.plot(wp_data_mat[:, 1], wp_data_mat[:, 2], 'b.-')
             plt.xlabel('Distance in mm (belt-drive)')
             plt.ylabel('Distance in mm (spindle-drive)')
-            plt.xlim(-10, 2940)
-            plt.ylim(-10, 1700)
+            plt.xlim(x0[0]-10, xn[0]+100)
+            plt.ylim(x0[1]-10, xn[1]+100)
             plt.grid()
             plt.show()
 
