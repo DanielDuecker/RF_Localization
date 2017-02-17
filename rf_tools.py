@@ -142,7 +142,7 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
     analyze_tx[:] = [x - 1 for x in analyze_tx]  # substract -1 as arrays begin with index 0
 
     measdata_filename = hc_tools.select_file()
-    print(measdata_filename)
+
 
     with open(measdata_filename, 'r') as measfile:
         load_description = True
@@ -155,7 +155,7 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
         for i, line in enumerate(measfile):
 
             if line == '### begin grid settings\n':
-                print('griddata found')
+                #print('griddata found')
                 load_description = False
                 load_grid_settings = True
                 load_measdata = False
@@ -164,16 +164,15 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
                 load_description = False
                 load_grid_settings = False
                 load_measdata = True
-                print('Measurement data found')
+                #print('Measurement data found')
                 continue
             if load_description:
-                print('file description')
+                #print('file description')
                 print(line)
 
             if load_grid_settings and not load_measdata:
-                print(line)
-                #line_split = line.split(',')
-                #print(line_split)
+                #print(line)
+
                 grid_settings = map(float, line[0:-3].split(','))
                 x0 = [grid_settings[0], grid_settings[1]]
                 xn = [grid_settings[2], grid_settings[3]]
@@ -197,6 +196,15 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
                 for itx in range(numtx):
                     freqtx_list.append(txdata[2*numtx+itx])
                 freqtx = np.asarray(freqtx_list)
+
+                # print out
+                print('filename = ' + measdata_filename)
+                print('num_of_gridpoints = ' + str(data_shape_file[0]*data_shape_file[1]))
+                print('x0 = ' + str(x0))
+                print('xn = ' + str(xn))
+                print('steps_dxdy = ' + str(data_shape_file))
+                print('tx_pos = ' + str(txpos_list))
+                print('freqtx = ' + str(freqtx))
 
             if load_measdata and not load_grid_settings:
                 #print('read measdata')
@@ -240,7 +248,7 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
         totnumwp = num_wp + 1  # counting starts with zero
 
         plotdata_mat = np.asarray(plotdata_mat_lis)
-        print('Number of gridpoints: ' + str(plotdata_mat.shape[0]))
+        #print('Number of gridpoints: ' + str(plotdata_mat.shape[0]))
 
 
 
@@ -270,7 +278,7 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
 
             alpha.append(popt[0])
             gamma.append(popt[1])
-            print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' gamma= ' + str(gamma[itx]))
+            # print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' gamma= ' + str(gamma[itx]))
             rdist.append(rdist_temp)
 
         rdist_temp = np.reshape(rdist, [num_tx, totnumwp])

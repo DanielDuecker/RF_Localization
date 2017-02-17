@@ -585,8 +585,8 @@ class LocEar(RfEar):
         def h_rss_jacobian(x_est, txpos, numtx):
             tx_pos = txpos[numtx]  # position of the transceiver
             factor = 0.5/np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
-            #h_rss_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
-            h_rss_jac = 0
+            h_rss_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
+            #h_rss_jac = 0
             return h_rss_jac
 
         if h_func_select == 'h_dist':
