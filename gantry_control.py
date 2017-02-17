@@ -190,7 +190,9 @@ class GantryControl(object):
 
         return bArrived
 
-    def follow_wp_and_take_measurements(self, start_wp, wp_list, filename):
+    def follow_wp_and_take_measurements(self, start_wp, wp_list, filename, set_sample_size=256):
+        self.__oCal.set_size(set_sample_size)
+        sample_size = self.__oCal.get_size()
 
         num_wp = len(wp_list)
         print('Number of way points: ' + str(num_wp))
@@ -198,36 +200,57 @@ class GantryControl(object):
 
         self.set_target_wp(start_wp)
         self.start_moving_gantry_to_target()
+        print('Moving to start position = ' + str(start_wp))
         while not self.confirm_arrived_at_target_wp():
-            print('Moving to start position = ' + str(start_wp))
             t.sleep(0.2)
+        print('Arrived at start point')
+
+        t.sleep(0.5)
+        print('Start following way point sequence')
+
+        data_list = []
+        meas_counter = 0
+        time_elapsed = 0.0
+        for wp in wp_list:
+            # go to wp
+            self.set_target_wp(wp)
+            self.start_moving_gantry_to_target()
+            not_arrived_at_wp = True
+            print('Moving to wp = ' + str(wp))
+
+            # taking measurements
+            while not_arrived_at_wp:
+                meas_counter += 1
+                time_elapsed = t.time() - start_time
+                pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
+                freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
+
+                data_row = np.append([meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max)
+                data_list.append(data_row)
+
+                if self.confirm_arrived_at_target_wp():
+                    not_arrived_at_wp = False
+
+            meas_freq = meas_counter / time_elapsed
+            print('Logging with avg. ' + str(meas_freq) + ' Hz')
 
         with open(filename, 'w') as measfile:
             measfile.write('Measurement file for trajectory following\n')
+            measfile.write('Measurement was taken on ' + t.ctime() + '\n')
             measfile.write('### begin grid settings\n')
-            meas_counter = 0
-            for wp in wp_list:
-                # go to wp
-                self.set_target_wp(wp)
-                self.start_moving_gantry_to_target()
-                not_arrived_at_wp = True
-                print('Moving to wp = ' + str(wp))
-                while not_arrived_at_wp:
-                    meas_counter += 1
-                    time_elapsed = t.time() - start_time
-                    pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
-                    freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
-
-                    # log data
-                    data_line = str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
-                    for rss_tx in pxx_den_max:
-                        data_line += str(rss_tx) + ', '
-                    data_line += '\n'
-                    measfile.write(data_line)
-
-                    if self.confirm_arrived_at_target_wp():
-                        not_arrived_at_wp = False
-                print('Logging with avg. ' + str(meas_counter/time_elapsed) + ' Hz')
+            measfile.write('sample size = ' + str(sample_size) + ' [*1024]\n')
+            measfile.write('avg. meas frequency = ' + str(meas_freq) + ' Hz\n')
+            measfile.write('start_point =' + str(start_wp) + '\n')
+            measfile.write('wp_list =' + str(wp_list) + '\n')
+            measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max\n')
+            measfile.write('### begin data log\n')
+            data_mat = np.asarray(data_list)
+            for row in data_mat:
+                row_string = ''
+                for i in range(len(row)):
+                    row_string += str(row[i]) + ', '
+                row_string += '\n'
+                measfile.write(row_string)
 
             measfile.close()
 
@@ -245,64 +268,60 @@ class GantryControl(object):
         self.set_target_wp(xy_pos_mm)
         self.start_moving_gantry_to_target()
         while not self.confirm_arrived_at_target_wp():
-            print('Moving to start position = ' + str(xy_pos_mm))
+            print('Moving to position = ' + str(xy_pos_mm))
             t.sleep(0.2)
+
         self.__oCal.set_size(set_sample_size)
         sample_size = self.__oCal.get_size()
+
         print('Sampling with sample size ' + str(sample_size) + ' [*1024]\n')
+
+        start_time = t.time()
+        print('measuring for ' + str(meas_time) + 's ...\n')
+        time_elapsed = 0.0
+        meas_counter = 0.0
+        data_list = []
+
+        # taking measurements
+        while time_elapsed < meas_time:
+            pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
+            freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
+            time_elapsed = t.time() - start_time
+            meas_counter += 1.0
+
+            data_row = np.append([meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max)
+            data_list.append(data_row)
+
+        meas_freq = meas_counter / time_elapsed
+        print('Logging with avg. ' + str(meas_freq) + ' Hz')
+
+        # save data to file
         with open(filename, 'w') as measfile:
             measfile.write('Measurement file for trajectory following\n')
+            measfile.write('Measurement was taken on ' + t.ctime() + '\n')
             measfile.write('### begin grid settings\n')
+            measfile.write('measurements at position = ' + str(xy_pos_mm) + '\n')
+            measfile.write('Meas_time = ' + str(meas_time) + '\n')
             measfile.write('sample size = ' + str(sample_size) + ' [*1024]\n')
+            measfile.write('avg. meas frequency = ' + str(meas_freq) + ' Hz\n')
+            measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max\n')
             measfile.write('### begin data log\n')
-            start_time = t.time()
-            print('measuring for ' + str(meas_time) + 's ...\n')
-            time_elapsed = 0.0
-            meas_counter = 0.0
-            data_list = []
-            while time_elapsed < meas_time:
-                pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
-                freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
-                time_elapsed = t.time() - start_time
-                meas_counter += 1.0
-
-                data_row = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm, pxx_den_max]
-                data_list.append(data_row)
-                # log data
-                """
-                data_line = str(meas_counter) + ', ' + str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
-                for rss_tx in pxx_den_max:
-                    data_line += str(rss_tx) + ', '
-                data_line += '\n'
-                measfile.write(data_line)
-                """
-
-            print('Logging with avg. ' + str(meas_counter / time_elapsed) + ' Hz')
-            print(data_list)
             data_mat = np.asarray(data_list)
             for row in data_mat:
-                meas_counter = row[0]
-                time_elapsed = row[1]
-                pos_x_mm = row[2]
-                pos_y_mm = row[3]
-                pxx_logged = row[4]
-                data_string = str(meas_counter) + ', ' + str(time_elapsed) + ', ' + str(pos_x_mm) + ', ' + str(pos_y_mm) + ', '
-                for rss_tx in pxx_logged:
-                    data_string += str(rss_tx) + ', '
-                data_string += '\n'
-                measfile.write(data_string)
+                row_string = ''
+                for i in range(len(row)):
+                    row_string += str(row[i]) + ', '
+                row_string += '\n'
+                measfile.write(row_string)
 
             measfile.close()
 
         return True
 
-
     def process_measurement_sequence(self, wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx):
         """
         :return:
         """
-
-
         print('Process Measurement Sequence started')
         # read data from waypoint file
         #wplist_filename = hc_tools.select_file()
@@ -376,7 +395,6 @@ class GantryControl(object):
 
             print('txdata = ' + txdata)
 
-            measfile.write('Way point list \n')
             measfile.write(file_description)
             measfile.write('### begin grid settings\n')
             measfile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' +

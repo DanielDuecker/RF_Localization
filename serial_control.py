@@ -11,8 +11,8 @@ class MotorCommunication(object):
         self.__drivetype = drivetype
         self.__travelling_distance_mm = float(travelling_distance_mm)
         self.__isopen = False
-        self.__timewritewait = 0.005  # [s]
-        self.__timereadwait = 0.005  # [s]
+        self.__timewritewait = 0.015  # [s]
+        self.__timereadwait = 0.015  # [s]
         self.__signal = []
         self.__signallist = ['p', 'h', 'f']
         self.__homeknown = False
