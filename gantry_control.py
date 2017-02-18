@@ -189,6 +189,54 @@ class GantryControl(object):
             bArrived = False
 
         return bArrived
+    def follow_wp(self, start_wp, wp_list):
+
+
+        num_wp = len(wp_list)
+        print('Number of way points: ' + str(num_wp))
+        start_time = t.time()
+
+        self.set_target_wp(start_wp)
+        self.start_moving_gantry_to_target()
+        print('Moving to start position = ' + str(start_wp))
+        while not self.confirm_arrived_at_target_wp():
+            t.sleep(0.2)
+        print('Arrived at start point')
+
+        t.sleep(0.5)
+        print('Start following way point sequence')
+
+
+        meas_counter = 0
+        time_elapsed = 0.0
+        for wp in wp_list:
+            # go to wp
+            self.set_target_wp(wp)
+            self.start_moving_gantry_to_target()
+            not_arrived_at_wp = True
+            print('Moving to wp = ' + str(wp))
+
+            # moving to next wp
+            while not_arrived_at_wp:
+                meas_counter += 1
+                time_elapsed = t.time() - start_time
+                pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
+
+
+
+
+
+                if self.confirm_arrived_at_target_wp():
+                    not_arrived_at_wp = False
+
+            meas_freq = meas_counter / time_elapsed
+            print('Logging with avg. ' + str(meas_freq) + ' Hz')
+
+
+
+        return True
+
+
 
     def follow_wp_and_take_measurements(self, start_wp, wp_list, filename, set_sample_size=256):
         self.__oCal.set_size(set_sample_size)
@@ -248,7 +296,7 @@ class GantryControl(object):
             for row in data_mat:
                 row_string = ''
                 for i in range(len(row)):
-                    row_string += str(row[i]) + ', '
+                    row_string += str(row[i]) + ','
                 row_string += '\n'
                 measfile.write(row_string)
 
@@ -310,7 +358,7 @@ class GantryControl(object):
             for row in data_mat:
                 row_string = ''
                 for i in range(len(row)):
-                    row_string += str(row[i]) + ', '
+                    row_string += str(row[i]) + ','
                 row_string += '\n'
                 measfile.write(row_string)
 

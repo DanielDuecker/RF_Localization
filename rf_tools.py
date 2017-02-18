@@ -202,7 +202,8 @@ def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
                 print('num_of_gridpoints = ' + str(data_shape_file[0]*data_shape_file[1]))
                 print('x0 = ' + str(x0))
                 print('xn = ' + str(xn))
-                print('steps_dxdy = ' + str(data_shape_file))
+                print('grid_shape = ' + str(data_shape_file))
+                print('steps_dxdy = ' + str(grid_dxdy))
                 print('tx_pos = ' + str(txpos_list))
                 print('freqtx = ' + str(freqtx))
 

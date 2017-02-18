@@ -574,19 +574,32 @@ class LocEar(RfEar):
             return h_dist_jac
 
         def h_rss(x, tx_param, numtx):
-            tx_pos = tx_param[numtx, 0:2]  # position of the transceiver
-            alpha = tx_param[numtx, 2]
-            gamma = tx_param[numtx, 3]
+            tx_param_temp = tx_param[numtx]
+            tx_pos = tx_param_temp[0]  # position of the transceiver
+            alpha = tx_param_temp[1]
+            gamma = tx_param_temp[2]
 
-            r_dist = np.sqrt((x[0] - tx_pos[0]) ** 2 + (x[1] - tx_pos[1]) ** 2) # r = sqrt((x-x_tx)^2+(y-y_tx)^2)
+            # r = sqrt((x - x_tx) ^ 2 + (y - y_tx) ^ 2)
+            r_dist = np.sqrt((x[0] - tx_pos[0])**2 + (x[1] - tx_pos[1])**2)
             y_rss = -20 * np.log10(r_dist) - alpha * r_dist - gamma
+
             return y_rss
 
-        def h_rss_jacobian(x_est, txpos, numtx):
-            tx_pos = txpos[numtx]  # position of the transceiver
-            factor = 0.5/np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
-            h_rss_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
-            #h_rss_jac = 0
+        def h_rss_jacobian(x_est, tx_param, numtx):
+            tx_param_temp = tx_param[numtx]
+            tx_pos = tx_param_temp[0]  # position of the transceiver
+            alpha = tx_param_temp[1]
+            # gamma = tx_param_temp[2]  # not used here
+
+            R_dist = np.sqrt((x_est[0] - tx_pos[0])**2 + (x_est[1] - tx_pos[1])**2)
+
+            # dh / dx1
+            h_rss_jac_x = -20 * (x_est[0] - tx_pos[0]) / (np.log(10) * R_dist**2) - alpha * (x_est[0] - tx_pos[0]) / R_dist
+            # dh / dx2
+            h_rss_jac_y = -20 * (x_est[1] - tx_pos[1]) / (np.log(10) * R_dist**2) - alpha * (x_est[1] - tx_pos[1]) / R_dist
+
+            h_rss_jac = np.array([[h_rss_jac_x], [h_rss_jac_y]])
+
             return h_rss_jac
 
         if h_func_select == 'h_dist':
@@ -631,7 +644,14 @@ class LocEar(RfEar):
                 ax.add_artist(circle_meas[i])
                 circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
                 ax.add_artist(circle_meas_est[i])
-
+        """ initialize tracking setup """
+        print(str(self.__alpha))
+        print(str(self.__gamma))
+        print(str(txpos))
+        tx_param = []
+        for itx in range(self.__numoftx):
+            tx_param.append([txpos[itx],self.__alpha[itx], self.__gamma[itx]])
+        print(str(np.asarray(tx_param)))
         """ initialize EKF """
         # standard deviations
         sig_x1 = 500
@@ -639,8 +659,8 @@ class LocEar(RfEar):
         p_mat = np.array(np.diag([sig_x1 ** 2, sig_x2 ** 2]))
 
         # process noise
-        sig_w1 = 20
-        sig_w2 = 20
+        sig_w1 = 50
+        sig_w2 = 50
         q_mat = np.array(np.diag([sig_w1 ** 2, sig_w2 ** 2]))
 
         # measurement noise
@@ -664,29 +684,28 @@ class LocEar(RfEar):
                 freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
                 x_est[:, 0] = x_log[:, -1]
 
+                z_meas = rss
                 for itx in range(self.__numoftx):
 
                     """ prediction """
-                    x_est[:, 0] = x_est[:, 0] + np.random.randn(1, 2) * 1  # = I * x_est
+                    x_est = x_est  #+ np.random.randn(2, 1) * 1  # = I * x_est
 
                     p_mat_est = i_mat.dot(p_mat.dot(i_mat)) + q_mat
 
                     # print('x_est: ' + str(x_est))
 
                     """ update """
-                    # get new measurement / get distance from rss-measurement
-                    z_meas[itx] = self.lambertloc(rss[itx], itx)
                     # estimate measurement from x_est
-                    y_est[itx] = h(x_est[:, 0], txpos, itx)
+                    y_est[itx] = h(x_est, tx_param, itx)
                     y_tild = z_meas[itx] - y_est[itx]
 
                     # calc K-gain
-                    h_jac_mat = h_jacobian(x_est[:, 0], txpos, itx)
+                    h_jac_mat = h_jacobian(x_est[:, 0], tx_param, itx)
                     s_mat = np.dot(h_jac_mat.transpose(), np.dot(p_mat, h_jac_mat)) + r_mat  # = H^t * P * H + R
-                    k_mat = np.dot(p_mat, h_jac_mat.transpose() / s_mat)  # 1/s_scal since s_mat is dim = 1x1
+                    k_mat = np.dot(p_mat, h_jac_mat / s_mat)  # 1/s_scal since s_mat is dim = 1x1
 
-                    x_est[:, 0] = x_est[:, 0] + k_mat * y_tild  # = x_est + k * y_tild
-                    p_mat = (i_mat - k_mat.dot(h_jac_mat)) * p_mat_est  # = (I-KH)*P
+                    x_est = x_est + k_mat * y_tild  # = x_est + k * y_tild
+                    p_mat = (i_mat - np.dot(k_mat, h_jac_mat.transpose())) * p_mat_est  # = (I-KH)*P
 
                 x_log = np.append(x_log, x_est, axis=1)
 
@@ -695,9 +714,11 @@ class LocEar(RfEar):
                     # add new x_est to plot
                     ax.plot(x_est[0, -1], x_est[1, -1], 'bo')
                     # update measurement circles around tx-nodes
+                    """
                     for i in range(self.__numoftx):
                         circle_meas[i].set_radius(z_meas[i])
                         circle_meas_est[i].set_radius(y_est[i])
+                    """
                     # update figure 1
                     fig1.canvas.draw()
                     plt.pause(0.001)  # pause to allow for keyboard inputs

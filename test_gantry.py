@@ -3,29 +3,34 @@ import rf_tools
 import numpy as np
 
 
-dx = 50  # [mm]
-dy = 50  # [mm]
-rf_tools.wp_generator('wp_list_inner_space_50mm_5s.txt', [1150, 550], [2250, 1200], [dx, dy], 5.0, True)  # x-axis along belt-drive
+dx = 100  # [mm]
+dy = 100  # [mm]
+"""
+meas_time_set = [5]
+for meas_time in meas_time_set:
 
+    wp_filename = 'wp_list_inner_space_' + str(dx) +'mm_'+ str(meas_time)+'s.txt'
+    rf_tools.wp_generator(wp_filename, [1150, 550], [2250, 1200], [dx, dy], meas_time, False)  # x-axis along belt-drive
+"""
 gt = gantry_control.GantryControl([0, 3100, 0, 1600], True)
 
 
 
 freqtx = [434.1e6, 434.15e6, 434.4e6, 434.45e6]
 
-#gt.follow_wp_trajectory(400, 2000, 50)
 
-gt.start_CalEar(freqtx)
+#gt.start_CalEar(freqtx)
 numtx = len(freqtx)
 tx_abs_pos = [[1060, 470],  # 433.9MHz
               [1060, 1260],  # 434.1MHz
               [2340, 470],  # 434.3MHz
               [2340, 1260]]  # 434.5MHz
 
-
-
-gt.process_measurement_sequence('wp_list_inner_space_50mm_5s.txt', 'measdata_2017_02_15_inner_space_50mm_5s.txt', numtx, tx_abs_pos, freqtx)
-
+"""
+    date = '2017_02_17'
+    meas_filename = 'measdata_' + date + '_inner_space_'+str(dx)+'mm_' + str(meas_time) + 's_a.txt'
+    gt.process_measurement_sequence(wp_filename, meas_filename, numtx, tx_abs_pos, freqtx)
+"""
 
 start_wp = [1500, 600]
 wp_list = [[2200, 600],
@@ -44,14 +49,15 @@ wp_list_outer = [[2540,270],
                  [2540,1460],
                  [860,1460],
                  [860,270]]
-
-
-run = [1,2,3]
-sample_size = 256
+for i in range(3):
+    gt.follow_wp(start_wp_outer, wp_list_outer)
 """
-for num in run:
-    filename = 'rectangle_2017_02_17_outer_symmetric_sample'+str(sample_size)+'_'+str(num)+'_.txt'
-    gt.follow_wp_and_take_measurements(start_wp_outer, wp_list_outer, filename,sample_size)
+run = [1,2,3]
+sample_size_set = [32, 256]
+for sample_size in sample_size_set:
+    for num in run:
+        filename = 'rectangle_2017_02_17_inner_symmetric_sample'+str(sample_size)+'_'+str(num)+'_a.txt'
+        gt.follow_wp_and_take_measurements(start_wp_inner, wp_list_inner, filename,sample_size)
 """
 
 
