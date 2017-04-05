@@ -130,7 +130,7 @@ def write_measfile_header(ofile, file_description, x0, xn, grid_dxdy, timemeas, 
     return True
 
 
-def analyse_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
+def analyze_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
     """
 
     :param analyze_tx:

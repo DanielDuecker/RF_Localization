@@ -17,6 +17,7 @@ class GantryControl(object):
         self.__oScY = []  # belt-drive
         self.__maxposdeviation = 2  # [mm] max position deviation per axis
 
+
         self.__oScX = sc.MotorCommunication('/dev/ttyS4', 'belt_drive', 115200, 'belt', 3100, 2000e3)
         self.__oScY = sc.MotorCommunication('/dev/ttyS5', 'spindle_drive', 19200, 'spindle', 1600, 5150e3)
 
@@ -365,6 +366,22 @@ class GantryControl(object):
             measfile.close()
 
         return True
+
+    def start_field_measurement_file_select(self):
+        # read data from waypoint file
+        #wplist_filename = hc_tools.select_file()
+        #measdata_filename = ''
+        wplist_filename = hc_tools.select_file()
+        print(wplist_filename)
+
+        measdata_filename = hc_tools.save_as_dialog()
+        print(measdata_filename)
+
+
+        tx_abs_pos = []
+        freqtx = []
+        numtx = len(freqtx)
+        self.process_measurement_sequence(wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx)
 
     def process_measurement_sequence(self, wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx):
         """
