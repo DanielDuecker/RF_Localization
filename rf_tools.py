@@ -130,7 +130,7 @@ def write_measfile_header(ofile, file_description, x0, xn, grid_dxdy, timemeas, 
     return True
 
 
-def analyze_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
+def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
     """
 
     :param analyze_tx:
@@ -246,7 +246,12 @@ def analyze_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
 
         measfile.close()
 
-        totnumwp = num_wp + 1  # counting starts with zero
+        # print('shape_from_file ' + str(data_shape_file))
+        data_shape = [data_shape_file[1], data_shape_file[0]]
+        data_shape = [9, 16]
+        # print('shape : ' + str(np.shape(x)))
+
+        totnumwp = data_shape[0] * data_shape[1] #num_wp + 1  # counting starts with zero
 
         plotdata_mat = np.asarray(plotdata_mat_lis)
         #print('Number of gridpoints: ' + str(plotdata_mat.shape[0]))
@@ -260,8 +265,6 @@ def analyze_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
         def rsm_model(dist, alpha, gamma):
             """Range Sensor Model (RSM) structure."""
             return -20 * np.log10(dist) - alpha * dist - gamma  # rss in db
-
-        txpos = txpos + txpos_tuning  # necessary since gantry frame and the tx-frame are shifted
 
         alpha = []
         gamma = []
@@ -308,13 +311,12 @@ def analyze_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
             rss_mean = plotdata_mat[:, 2 + itx]
             rss_var = plotdata_mat[:, 2 + num_tx + itx]
 
-            #data_shape = [16,30]
-            #data_shape = [31, 59]#
-            #print('shape : ' + str(np.shape(x)))
 
 
-            #print('shape_from_file ' + str(data_shape_file))
-            data_shape = [data_shape_file[1], data_shape_file[0]]
+
+
+
+
 
             xx = np.reshape(x, data_shape)
             yy = np.reshape(y, data_shape)
@@ -329,8 +331,7 @@ def analyze_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
             ax.grid()
             ax.set_xlabel('x [mm]')
             ax.set_ylabel('y [mm]')
-            # ax.axis('equal')
-
+            ax.axis('equal')
             ax.set_title('RSS field for TX# ' + str(itx + 1))
 
         plot_fig1 = True

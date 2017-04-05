@@ -11,14 +11,15 @@ class GantryControl(object):
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0]  # initial position after start
         self.__target_wp_mm = []
-        self.__oCal = []
+        self.__oRf = []
+        #self.__oCal = []
         self.__oLoc = []
         self.__oScX = []  # spindle-drive
         self.__oScY = []  # belt-drive
         self.__maxposdeviation = 2  # [mm] max position deviation per axis
 
         self.__oScX = sc.MotorCommunication('/dev/ttyS4', 'belt_drive', 115200, 'belt', 3100, 2000e3)
-        self.__oScY = sc.MotorCommunication('/dev/ttyS5', 'spindle_drive', 19200, 'spindle', 1600, 5150e3)
+        self.__oScY = sc.MotorCommunication('/dev/ttyS5', 'spindle_drive', 19200, 'spindle', 1600, 945800)
 
 
         self.__starttime = []
@@ -151,7 +152,7 @@ class GantryControl(object):
 
             actpos_X_mm, actpos_Y_mm = self.get_gantry_pos_xy_mm()
             actpos = [actpos_X_mm, actpos_Y_mm]
-            print('Actual position: x=' + str(actpos[0]) + 'mm y=' + str(actpos[1]) + 'mm')
+            print('Actual position: x = ' + str(round(actpos[0], 1)) + 'mm y = ' + str(round(actpos[1], 1)) + 'mm')
             self.set_gantry_pos(actpos)
             """
             dist_x = abs(self.get_gantry_pos()[0] - target_wp[0])
@@ -377,10 +378,12 @@ class GantryControl(object):
         measdata_filename = hc_tools.save_as_dialog()
         print(measdata_filename)
 
+        self.start_RfEar()
+        freqtx, numtx, tx_abs_pos = self.__oRf.get_txparams()
+        print(freqtx)
+        print(numtx)
+        print(tx_abs_pos)
 
-        tx_abs_pos = []
-        freqtx = []
-        numtx = len(freqtx)
         self.process_measurement_sequence(wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx)
 
     def process_measurement_sequence(self, wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx):
@@ -503,7 +506,9 @@ class GantryControl(object):
                             plt.plot(new_target_wp[0], new_target_wp[1], 'go')
                             plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +
                                       '- measurement sequence was started at ' + str(self.get_starttime()))
-                            dataseq = self.__oCal.take_measurement(meastime)
+                            #dataseq = self.__oCal.take_measurement(meastime)
+                            dataseq = self.__oRf.take_measurement(meastime)
+
 
                             [nummeas, numtx] = np.shape(dataseq)
 
@@ -511,8 +516,7 @@ class GantryControl(object):
                             str_base_data = str(new_target_wp[0]) + ', ' + str(new_target_wp[1]) + ', ' +\
                                             str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
                             # freq data
-                            freqs = self.__oCal.get_freq()
-                            str_freqs = ', '.join(map(str, freqs)) + ', '
+                            str_freqs = ', '.join(map(str, freqtx)) + ', '
 
                             # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
                             #print('data ' + str(dataseq))
@@ -541,7 +545,18 @@ class GantryControl(object):
 
         return True
 
-    def start_CalEar(self, freqtx=433.9e6, freqspan=2e4):
+    def start_RfEar(self, center_freq=434.2e6, freqspan=2e4):
+        import rf
+        self.__oRf = rf.RfEar(center_freq, freqspan)
+        freqtx = [433.9e6, 434.15e6, 434.40e6, 434.65e6]
+        tx_pos = [[790, 440],
+                  [2530, 460],
+                  [2530, 1240],
+                  [790, 1230]]
+        self.__oRf.set_txparams(freqtx, tx_pos)
+        return True
+
+    def start_CalEar(self, freqtx=434.2e6, freqspan=2e4):
         import rf
         self.__oCal = rf.CalEar(freqtx, freqspan)
         return True
