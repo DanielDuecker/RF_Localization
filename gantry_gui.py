@@ -126,9 +126,13 @@ class StartPage(Tk.Frame):
         button1 = ttk.Button(self, text='Drive Settings', command=lambda: controller.show_frame(PageOne))
         button1.grid(row=8, column=1)
 
-        button_home_seq = ttk.Button(self, text='Analyze Data',
-                                     command=lambda: rf_tools.analyse_measdata_from_file())
-        button_home_seq.grid(row=8, column=2, sticky='W', pady=4)
+        button_start_field_meas = ttk.Button(self, text='Start EM-Field Measurement',
+                                             command=lambda: self.__gt.start_field_measurement_file_select())
+        button_start_field_meas.grid(row=8, column=5, sticky='W', pady=4)
+
+        #button_analyze_data = ttk.Button(self, text='Analyze Data',
+        #                             command=lambda: rf_tools.analyze_measdata_from_file())
+        #button_analyze_data.grid(row=8, column=6, sticky='W', pady=4)
 
 
 class PageOne(Tk.Frame):

@@ -11,8 +11,8 @@ class MotorCommunication(object):
         self.__drivetype = drivetype
         self.__travelling_distance_mm = float(travelling_distance_mm)
         self.__isopen = False
-        self.__timewritewait = 0.015  # [s]
-        self.__timereadwait = 0.015  # [s]
+        self.__timewritewait = 0.02  # [s]
+        self.__timereadwait = 0.02  # [s]
         self.__signal = []
         self.__signallist = ['p', 'h', 'f']
         self.__homeknown = False
@@ -81,6 +81,8 @@ class MotorCommunication(object):
         # teststring = '-2000\r\np\r\nf\r\nOK\r\n'
         # out = teststring
 
+        print('Listen to port: ' + out)
+
         out_split = out.rstrip().split('\r\n')
         for item in out_split:
             try:
@@ -140,7 +142,8 @@ class MotorCommunication(object):
     def get_rpm(self):
         self.write_on_port('GN')
         self.listen_to_port('rpm')
-        if abs(self.__tempval) < 10000:  # max motor speed = 7000rpm
+        print(str(self.__tempval))
+        if abs(self.__tempval) < 12000:  # max motor speed = 7000rpm
             self.__rpm = self.__tempval
         return self.__rpm
 
