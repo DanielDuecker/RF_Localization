@@ -130,7 +130,7 @@ def write_measfile_header(ofile, file_description, x0, xn, grid_dxdy, timemeas, 
     return True
 
 
-def analyze_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
+def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
     """
 
     :param analyze_tx:
@@ -260,8 +260,6 @@ def analyze_measdata_from_file(analyze_tx, txpos_tuning, meantype='db_mean'):
         def rsm_model(dist, alpha, gamma):
             """Range Sensor Model (RSM) structure."""
             return -20 * np.log10(dist) - alpha * dist - gamma  # rss in db
-
-        txpos = txpos + txpos_tuning  # necessary since gantry frame and the tx-frame are shifted
 
         alpha = []
         gamma = []

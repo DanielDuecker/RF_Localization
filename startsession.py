@@ -16,14 +16,20 @@ analyze_tx = [1, 2, 3, 4]
 #rf_tools.analyse_measdata_from_file(analyze_tx, txpos_tuning)
 
 
-freqtx = [434.1e6, 434.15e6, 434.4e6, 434.45e6]
+freqtx = [433.9e6, 434.15e6, 434.34e6, 434.59e6]
 
 
-#cal = rf.CalEar(434.0e6)
-#cal.set_freqtx(freqtx)
+Rf = rf.RfEar(434.2e6, 2e4)
+freqtx = [433.9e6, 434.15e6, 434.34e6, 434.59e6]
+tx_pos = [[790, 440],
+          [2530, 460],
+          [2530, 1240],
+          [790, 1230]]
+Rf.set_txparams(freqtx, tx_pos)
 
-#cal.plot_power_spectrum_density()
-#cal.plot_txrss_live()
+Rf.plot_power_spectrum_density()
+#Rf.plot_txrss_live()
+
 
 
 

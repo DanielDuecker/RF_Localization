@@ -62,6 +62,14 @@ class RfEar(object):
         self.__btxparamsavailable = True
         return self.__btxparamsavailable
 
+    def get_txparams(self):
+        """
+
+        :return: self.__freqtx, self.__numoftx, self.__txpos
+        """
+        if self.__btxparamsavailable:
+            return self.__freqtx, self.__numoftx, self.__txpos
+
     def check_calparamsavailable(self):
         return self.__bcalparamsavailable
 
@@ -137,7 +145,7 @@ class RfEar(object):
         """Defines the sampling rate.
 
         Keyword arguments:
-        :param samplerate -- samplerate [Samples/s] (default 2.4e6)
+        :param samplingrate -- samplerate [Samples/s] (default 2.4e6)
         """
         self.__sdr.sample_rate = samplingrate
 
@@ -244,7 +252,6 @@ class RfEar(object):
             freq_peaks.append(freq_peak[maxind])
 
         return freq_peaks, rss_peaks
-
 
     def take_measurement(self, meastime):
         """ Takes measurements over defined persiod of time
