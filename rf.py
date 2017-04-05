@@ -17,182 +17,190 @@ from scipy import signal
 from scipy.optimize import curve_fit
 from scipy.special import lambertw
 
-# connect to sdr
-sdr = RtlSdr()
-sdr.gain = 1
-sdr.sample_rate = 2.048e6
 
 # define classes
-
-
 class RfEar(object):
     """A simple class to compute PSD with a DVBT-dongle."""
 
-    __metaclass__ = ABCMeta
+    #__metaclass__ = ABCMeta
 
-    def __init__(self, freqtx, freqspan=2e4):
-        """Keyword-arguments:
-        :param *args -- list of frequencies (must be in a range of __sdr.sample_rate)
+    def __init__(self, center_freq, freqspan=2e4):
+        """
+        init-method
+        :param center_freq: [Hz] Defines the center frequency where to listen (between 27MHz and 1.7GHz)
+        :param freqspan: [Hz] span within the the algorithm is looking for amplitude peaks
+        """
+        # connect to sdr
+        self.__sdr = RtlSdr()
+        self.__sdr.gain = 1
+        self.__sdr.sample_rate = 2.048e6
+
+        self.__centerfreq = center_freq
+        self.set_sdr_centerfreq(self.__centerfreq)
+
+        self.__freqspan = freqspan
+        self.__samplesize = 0
+        self.set_samplesize(32)
+
+        self.__btxparamsavailable = False
+        self.__freqtx = 0
+        self.__numoftx = 0
+        self.__txpos = []
+
+        self.__bcalparamsavailable = False
+        self.__txalpha = []
+        self.__txgamma = []
+
+    def check_txparamsavailable(self):
+        return self.__btxparamsavailable
+
+    def set_txparams(self, freqtx, txpos):
+        self.__freqtx = freqtx
+        self.__numoftx = len(freqtx)
+        self.__txpos = txpos
+
+        self.__btxparamsavailable = True
+        return self.__btxparamsavailable
+
+    def check_calparamsavailable(self):
+        return self.__bcalparamsavailable
+
+    def set_calparams(self, txalpha, txgamma):
+        """
+        set tx parameters which were obtained
+        :param txalpha:
+        :param txgamma:
+        :return:
         """
 
-        self.__freqtx = freqtx
-        self.set_freq(self.__freqtx)
-        self.__numoftx = len(self.__freqtx)
-        self.__freqspan = freqspan
-        self.__size = 0
-        self.set_size(256)
+        if self.__numoftx == len(txalpha):
+            self.__txalpha = txalpha
+        else:
+            print('ERROR - Setting tx calibration parameter')
+            print('txalpha = ' + str(txalpha))
+            print('Number of tx is ' + str(self.__numoftx))
+            print('Number of txalpha is' + str(len(txalpha)))
 
+            self.__bcalparamsavailable = False
+            return self.__bcalparamsavailable
 
-    def set_size(self, size):
+        if self.__numoftx == len(txgamma):
+            self.__txgamma = txgamma
+        else:
+            print('ERROR - Setting tx calibration parameter')
+            print('txgamma = ' + str(txgamma))
+            print('Number of tx is ' + str(self.__numoftx))
+            print('Number of txgamma is ' + str(len(txgamma)))
+
+            self.__bcalparamsavailable = False
+            return self.__bcalparamsavailable
+
+        self.__bcalparamsavailable = True
+        return self.__bcalparamsavailable
+
+    def set_samplesize(self, samplesize):
         """Set number of samples to be read by sdr [*1024].
         Keyword arguments:
-        :param size -- size of the samples be read by sdr [*1024]
+        :param samplesize -- size of the samples be read by sdr [*1024]
         """
-        self.__size = size
+        self.__samplesize = samplesize
 
-    def get_size(self):
+    def get_samplesize(self):
         """Return number of samples to be read by sdr [*1024]."""
-        return self.__size
+        return self.__samplesize
 
-    def get_iq(self):
-        """Read and return self.__size*1024 iq samples at a certain frequency."""
-        samples = sdr.read_samples(self.__size * 1024)
-        return samples
+    def get_sdr_iq_sample(self):
+        """ Reads the I/Q-samples from the sdr-dongle
 
-    def set_freq(self, freqtx):
-        """Defines frequencies where to listen (between 27MHz and 1.7GHz).
+        :return: self.__samplesize*1024 iq samples around the center frequency.
+        """
+        iq_sample = self.__sdr.read_samples(self.__samplesize * 1024)
+        return iq_sample
+
+    def set_sdr_centerfreq(self, centerfreq):
+        """Defines the center frequency where to listen (between 27MHz and 1.7GHz).
         The range must be in the __sdr.sample_rate bandwidth.
 
         Keyword arguments:
-        :param freqtx -- single frequency or array of frequencies (default none)
+        :param centerfreq -- [Hz] single frequency
         """
-        sdr.center_freq = np.mean(freqtx)
+        self.__sdr.center_freq = centerfreq
 
-    def get_freq(self):
-        """Returns list of frequencies assigned to the object."""
-        return self.__freqtx
+    def get_sdr_centerfreq(self):
+        """
 
-    def set_srate(self, srate=2.4e6):
+        :return: sdr center frequency [Hz]
+        """
+        return self.__sdr.center_freq
+
+    def set_sdr_samplingrate(self, samplingrate=2.4e6):
         """Defines the sampling rate.
 
         Keyword arguments:
-        :param srate -- samplerate [Samples/s] (default 2.4e6)
+        :param samplerate -- samplerate [Samples/s] (default 2.4e6)
         """
-        sdr.sample_rate = srate
+        self.__sdr.sample_rate = samplingrate
 
-    def get_srate(self):
+    def get_sdr_samplingrate(self,bprintout=False):
         """Returns sample rate assigned to object and gives default tuner value.
         range is between 1.0 and 3.2 MHz
         """
-        print ('Default sample rate: 2.4MHz')
-        print ('Current sample rate: ' + str(sdr.sample_rate / 1e6) + 'MHz')
+        if bprintout:
+            print ('Default sample rate: 2.4MHz')
+            print ('Current sample rate: ' + str(self.__sdr.sample_rate / 1e6) + 'MHz')
+        return self.__sdr.sample_rate
 
-    def print_pxx_density(self):
-        """ method to print the sorted power density values to console
+    def set_freqtx(self, freqtx_list):
+        """ Defines the frequencies on which the beacons transmit power
 
-        :return:
+        :param freqtx_list:  [Hz] list with frequencies on which the beacons transmit power
         """
-        printing = True
-        while printing:
-            try:
-                freq, pxx_den = self.get_absfreq_pden_sorted()
-                print(str(pxx_den))
-                plt.pause(0.001)
+        self.__freqtx = freqtx_list
+        self.__numoftx = len(freqtx_list)
 
-            except KeyboardInterrupt:
-                print ('Liveplot interrupted by user')
-                printing = False
-        return True
-
-    def take_measurement(self, meastime):
+    def get_freqtx(self):
         """
 
-        :param meastime:
-
-        :return:
+        :return: list of transceiver frequencies
         """
-        print ('... measuring for ' + str(meastime) + 's ...')
-        elapsed_time = 0.0
-        dataseq = []
+        return self.__freqtx
 
-        while elapsed_time < meastime:
-            start_calctime = t.time()
-            freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
-
-            dataseq.append(pxx_den_max)
-
-            calc_time = t.time() - start_calctime
-            elapsed_time = elapsed_time + calc_time
-            t.sleep(0.001)
-            dataseq_mat = np.asarray(dataseq)
-        return dataseq_mat
-
-    def get_rss_peaks_from_single_sample(self):
-        freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
-        return freq_den_max, pxx_den_max
-
-    def plot_psd(self):
-        """Get Power Spectral Density Live Plot."""
-
-        sdr.center_freq = np.mean(self.__freqtx)
-        plt.ion()      # turn interactive mode on
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        # init x and y -> y is update with each sample
-        x = np.linspace(sdr.center_freq-1024e3, sdr.center_freq+1022e3, 1024)  # 1024 as the fft has 1024frequency-steps
-        y = x
-        line1, = ax.plot(x, y, 'b-')
-        """ setup plot properties """
-        plt.axis([sdr.center_freq - 1.5e6, sdr.center_freq + 1.5e6, -120, 0])
-        xlabels = np.linspace((sdr.center_freq-.5*sdr.sample_rate)/1e6,
-                              (sdr.center_freq+.5*sdr.sample_rate)/1e6, 5)
-        plt.xticks(np.linspace(min(x), max(x), 5), xlabels, rotation='horizontal')
-        plt.grid()
-        plt.xlabel('Frequency [MHz]')
-        plt.ylabel('Power [dB]')
-        drawing = True
-        line1.set_xdata(x)
-        while drawing:
-            try:
-                # Busy-wait for keyboard interrupt (Ctrl+C)
-                freq, pxx_den = self.get_absfreq_pden_sorted()
-                line1.set_ydata(10*np.log10(pxx_den))
-
-                ## @todo annotations on the frequency peaks
-                # if known_freqtx > 0:
-                #    #freq_den_max, pdb_den_max = self.get_max_rss_in_freqspan(known_freqtx, freqspan)
-                #    plt.annotate(r'$this is an annotation',
-                #                 xy=(433e6, -80), xycoords='data',
-                #                 xytext=(+10, +30), textcoords='offset points', fontsize=16,
-                #                 arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))
-                fig.canvas.draw()
-                plt.pause(0.001)
-            except KeyboardInterrupt:
-                print ('Liveplot interrupted by user')
-                drawing = False
-        return True
-
-    def get_absfreq_pden_sorted(self):
+    def get_numoftx(self):
         """
-        gets the iq-samples and calculates the powerdensity.
+
+        :return: number of transceiver
+        """
+        return self.__numoftx
+
+    """
+
+    Section with general data processing methods
+
+    """
+
+    def get_power_density_spectrum(self):
+        """
+        gets the iq-samples and calculates the power density.
         It sorts the freq and pden vector such that the frequencies are increasing.
-        Moreover the centerfrequency is added to freq such that freq contains the absolute frequencies for the
-        corresponding powerdensity
+        Moreover the center frequency is added to freq such that freq contains the absolute frequencies for the
+        corresponding power density
 
-        :return: freqsort, pxx_densort
+        :return: freq_sorted, pxx_density_sorted
         """
-        samples = self.get_iq()
-        freq, pxx_den = signal.periodogram(samples,
-                                           fs=sdr.sample_rate, nfft=1024)
+        samples = self.get_sdr_iq_sample()
 
-        freq_sorted = np.concatenate((freq[len(freq) / 2:], freq[:len(freq) / 2]), axis=1)
-        pxx_den_sorted = np.concatenate((pxx_den[len(pxx_den) / 2:], pxx_den[:len(pxx_den) / 2]), axis=1)
+        # FFT
+        freq, pxx_den = signal.periodogram(samples, fs=self.get_sdr_samplingrate(), nfft=1024)
 
-        freq_sorted = freq_sorted + sdr.center_freq  # add centerfreq to get absolut frequency values
+        # sort the data to get increasing frequencies
+        freq_sorted = np.concatenate((freq[len(freq) / 2:], freq[:len(freq) / 2]), axis=0)
+        pxx_density_sorted = np.concatenate((pxx_den[len(pxx_den) / 2:], pxx_den[:len(pxx_den) / 2]), axis=0)
 
-        return freq_sorted, pxx_den_sorted
+        freq_sorted = freq_sorted + self.get_sdr_centerfreq()  # add center frequency to get absolute frequency values
 
-    def get_max_rss_in_freqspan(self, freqtx, freqspan=2e4):
+        return freq_sorted, pxx_density_sorted
+
+    def get_rss_peaks_at_freqtx(self, freqtx, freqspan=2e4):
         """
         find maximum rss peaks in spectrum
         :param freqtx: frequency which max power density is looked for
@@ -200,25 +208,25 @@ class RfEar(object):
         :return: frequeny, maxpower
         """
 
-        freq, pxx_den = self.get_absfreq_pden_sorted()
+        freq_peak, pxx_den = self.get_power_density_spectrum()
 
-        freq_den_max = []
-        pdb_den_max = []
+        freq_peaks = []
+        rss_peaks = []
 
         # loop for all tx-frequencies
         for ifreq in range(len(freqtx)):
             startindex = 0
-            endindex = len(freq)
+            endindex = len(freq_peak)
             i = 0
             # find start index of frequency vector
-            while i < len(freq):
-                if freq[i] >= freqtx[ifreq] - freqspan / 2:
+            while i < len(freq_peak):
+                if freq_peak[i] >= freqtx[ifreq] - freqspan / 2:
                     startindex = i
                     break
                 i += 1
             # find end index of frequency vector
-            while i < len(freq):
-                if freq[i] >= freqtx[ifreq] + freqspan / 2:
+            while i < len(freq_peak):
+                if freq_peak[i] >= freqtx[ifreq] + freqspan / 2:
                     endindex = i
                     break
                 i += 1
@@ -232,19 +240,91 @@ class RfEar(object):
             maxind = maxind[0]  # converts array to list
             maxind = maxind[0]  # takes first list element
 
-            pdb_den_max.append(10 * np.log10(pxx_den[maxind]))
-            freq_den_max.append(freq[maxind])
+            rss_peaks.append(10 * np.log10(pxx_den[maxind]))
+            freq_peaks.append(freq_peak[maxind])
 
-        return freq_den_max, pdb_den_max
+        return freq_peaks, rss_peaks
+
+
+    def take_measurement(self, meastime):
+        """ Takes measurements over defined persiod of time
+
+        :param meastime: [s] time for taking measurements
+
+        :return: np array of rss-peaks at freqtx
+        """
+        print ('... measuring for ' + str(meastime) + 's ...')
+        elapsed_time = 0.0
+        dataseq = []
+
+        while elapsed_time < meastime:
+            start_calctime = t.time()
+            freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(self.get_freqtx(), self.__freqspan)
+
+            dataseq.append(pxx_den_max)
+
+            calc_time = t.time() - start_calctime
+            elapsed_time = elapsed_time + calc_time
+            t.sleep(0.001)
+
+        dataseq_mat = np.asarray(dataseq)
+        return dataseq_mat
+
+    """
+
+    Plotting methods
+
+    """
+
+    def plot_power_spectrum_density(self):
+        """Get Power Spectral Density Live Plot."""
+        center_freq = self.get_sdr_centerfreq()
+
+        plt.ion()      # turn interactive mode on
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        # init x and y -> y is update with each sample
+        x = np.linspace(center_freq-1024e3, center_freq+1022e3, 1024)  # 1024 as the fft has 1024frequency-steps
+        y = x
+        line1, = ax.plot(x, y, 'b-')
+
+        """ setup plot properties """
+        plt.axis([center_freq - 1.1e6, center_freq + 1.1e6, -120, 0])
+        xlabels = np.linspace((center_freq-1.5e6)/1e6,
+                              (center_freq+1.5e6)/1e6, 31)
+        plt.xticks(np.linspace(min(x), max(x), 31), xlabels, rotation='vertical')
+        plt.grid()
+        plt.xlabel('Frequency [MHz]')
+        plt.ylabel('Power [dB]')
+        drawing = True
+        line1.set_xdata(x)
+        while drawing:
+            try:
+                # Busy-wait for keyboard interrupt (Ctrl+C)
+                freq, pxx_den = self.get_power_density_spectrum()
+                line1.set_ydata(10*np.log10(pxx_den))
+
+                ## @todo annotations on the frequency peaks
+                # if known_freqtx > 0:
+                #    #freq_den_max, pdb_den_max = self.get_max_rss_in_freqspan(known_freqtx, freqspan)
+                #    plt.annotate(r'$this is an annotation',
+                #                 xy=(433e6, -80), xycoords='data',
+                #                 xytext=(+10, +30), textcoords='offset points', fontsize=16,
+                #                 arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))
+                fig.canvas.draw()
+                plt.pause(0.01)
+            except KeyboardInterrupt:
+                print ('Liveplot interrupted by user')
+                drawing = False
+        return True
 
     def plot_txrss_live(self, numofplottedsamples=250):
         """ Live plot for the measured rss from each tx
 
-        :param freqspan: width of the frequencyspan around the tracked frq
         :param numofplottedsamples: number of displayed samples (default= 250)
         :return: 0
         """
-        freq = self.__freqtx
+        freq = self.get_freqtx()
         numoftx = self.__numoftx
         freqspan = self.__freqspan
 
@@ -266,7 +346,7 @@ class RfEar(object):
                 # Busy-wait for keyboard interrupt (Ctrl+C)
                 cnt += 1
                 # find maximum power peaks in spectrum
-                freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, freqspan)
+                freq_found, pxx_den_max = self.get_rss_peaks_at_freqtx(freq, freqspan)
 
                 for i in range(numoftx):
                     temp[i, 0] = pxx_den_max[i]
@@ -292,19 +372,11 @@ class RfEar(object):
                 drawing = False
         return True
 
-    @abstractmethod
-    def rfear_type(self):
-        """Return a string representing the type of rfear this is."""
-        pass
 
-
-class CalEar(RfEar):
-    """Subclass of Superclass RfEar for modelling and testing purpose."""
-    def __init__(self, freqtx=433.9e6, freqspan=2e4):
-        RfEar.__init__(self, freqtx, freqspan)
-    #    self.__freqtx = freqtx
-    #    self.__freqspan = freqspan
-    #    self.__numoftx = len(freqtx)
+#class CalEar(RfEar):
+#    """Subclass of Superclass RfEar for modelling and testing purpose."""
+#    def __init__(self, center_freq=434.0e6, freqspan=2e4):
+#        RfEar.__init__(self, center_freq, freqspan)
 
     def measure_rss_var(self, freqtx, freqrange=2e4, time=10.0):
         """
@@ -316,7 +388,7 @@ class CalEar(RfEar):
         :return: modeldata, variance - arrays with mean rss for each distance + its variance
         """
 
-        sdr.center_freq = np.mean(self.get_freq())
+        self.__sdr.center_freq = np.mean(self.get_freq())
 
         testing = True
         modeldata = []
@@ -400,24 +472,17 @@ class CalEar(RfEar):
         plt.show()
         return popt
 
-    def rfear_type(self):
-        """"Return a string representing the type of rfear and its properties."""
-        print ('CalEar,')
-        print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
-        self.get_srate()
-        print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
-
-    def get_performance(self, testfreqtx=433.91e6, bandwidth=2.4e6):
+    def get_performance(self, testfreqtx=434e6, samplingrate=2.4e6):
         """Measure performance at certain sizes and sampling rates.
 
         Keyword arguments:
         :param testfreqtx -- single frequency for which the performence is determined
-        :param bandwidth -- sampling rate of sdr [Ms/s] (default 2.4e6)
+        :param samplingrate -- sampling rate of sdr [Ms/s] (default 2.4e6)
         """
         print('Performance test started!')
         freqtx = [testfreqtx]
-        sdr.center_freq = np.mean(self.get_freq())
-        self.set_srate(bandwidth)
+        self.set_sdr_centerfreq(np.mean(freqtx))
+        self.set_sdr_samplingrate(samplingrate)
         measurements = 100
         SIZE = [4, 8, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256]
         VAR = []
@@ -433,8 +498,8 @@ class CalEar(RfEar):
                 cnt += 1
                 start_calctime = t.time()
                 # use matplotlib to estimate the PSD and save the max power
-                self.set_size(i)
-                freqmax, pxx_max = self.get_max_rss_in_freqspan(freqtx)
+                self.set_samplesize(i)
+                freqmax, pxx_max = self.get_rss_peaks_at_freqtx(freqtx)
                 powerstack.append(pxx_max)
                 t.sleep(0.005)
                 calctime = t.time() - start_calctime
@@ -445,7 +510,7 @@ class CalEar(RfEar):
             MEAN.append(np.mean(powerstack))
             UPDATE.append(calctime)
             total_time = total_time+elapsed_time
-            print (str(measurements) + ' measurements for batch-size ' + str(self.get_size()) +
+            print (str(measurements) + ' measurements for batch-size ' + str(self.set_samplesize()) +
                    ' * 1024 finished after ' + str(elapsed_time) + 's. => ' + str(measurements/elapsed_time) + 'Hz')
         print('')
         print ('Finished.')
@@ -472,17 +537,17 @@ class CalEar(RfEar):
         return SIZE, VAR, MEAN, UPDATE
 
 
-class LocEar(RfEar):
-    """Subclass of Superclass RfEar for 2D dynamic object localization."""
-    def __init__(self, freqtx, freqspan, alpha, gamma, txpos):
-        RfEar.__init__(self,  freqtx, freqspan)
-        self.__freqtx = freqtx
-        self.__freqspan = freqspan
-        self.__numoftx = len(freqtx)
-        self.__alpha = alpha
-        self.__gamma = gamma
-        self.__txpos = txpos
-        self.set_txpos(txpos)
+#class LocEar(RfEar):
+#    """Subclass of Superclass RfEar for 2D dynamic object localization."""
+#    def __init__(self, center_freq, freqtx, freqspan, alpha, gamma, txpos):
+#        RfEar.__init__(self,  center_freq, freqspan)
+#        self.__freqtx = freqtx
+#        self.__freqspan = freqspan
+#        self.__numoftx = len(freqtx)
+#        self.__alpha = alpha
+#        self.__gamma = gamma
+#        self.__txpos = txpos
+#        self.set_txpos(txpos)
 
     def set_txpos(self, txpos):
         """
@@ -492,7 +557,14 @@ class LocEar(RfEar):
         """
         self.__txpos = txpos  # @todo: implement a dimension check
 
-    def calibrate(self, numtx=0, time=20.0):
+    def get_txpos(self):
+        """
+
+        :return: [mm] array with positions of all beacons
+        """
+        return self.__txpos
+
+    def calibrate(self, numtx=0, time=5.0):
         """Adjust RSM in line with measurement.
         :param numtx - number of the tx which needs to be calibrated
         :param time - time for calibration measurement in [s]
@@ -509,14 +581,14 @@ class LocEar(RfEar):
         powerstack = []
 
         # take first sample after boot dvb-t-dongle and delete it
-        firstsample = self.get_iq()
+        firstsample = self.get_sdr_iq_sample()
         del firstsample
 
         # get measurements
         print (' ... measuring ' + str(time) + 's ...')
         while elapsed_time < time:
             start_calctime = t.time()
-            freq_den_max, pxx_den_max = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+            freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(self.get_freqtx(), self.__freqspan)
             powerstack.append(pxx_den_max[numtx])
             calc_time = t.time() - start_calctime
             elapsed_time = elapsed_time + calc_time
@@ -536,7 +608,8 @@ class LocEar(RfEar):
         dist_ref = np.array(dist_ref, dtype=float)
         p_ref = p_mean
 
-        # curve fit with calibrated value - dist_ref, alpha, gamma are fixed -> gamma_diff_opt is the change in gamma by new meas
+        # curve fit with calibrated value -
+        # dist_ref, alpha, gamma are fixed -> gamma_diff_opt is the change in gamma by new meas
         gamma_diff_opt, pcov = curve_fit(rsm_func, [dist_ref, self.__alpha[numtx], self.__gamma[numtx]], p_ref)
         del pcov
         print ('gamma alt: ' + str(self.__gamma[numtx]))
@@ -548,15 +621,19 @@ class LocEar(RfEar):
         """Returns the calibrated RSM params."""
         return self.__alpha[numtx], self.__gamma[numtx]
 
+
+
+
+
     def map_path_ekf(self, x0, h_func_select, bplot=True, blog=False, bprintdata=False):
         """ map/track the position of the mobile node using an EKF
 
         Keyword arguments:
         :param x0 -- initial estimate of the mobile node position
-        :param txpos -- vector of tx positions [x,y], first tx is origin of coordinate frame [mm]
+        :param h_func_select:
         :param bplot -- Activate/Deactivate liveplotting the data (True/False)
         :param blog -- activate data logging to file (default: False)
-        :param bprintdata -
+        :param bprintdata - activate data print to console(default: False)
         """
 
         # measurement function
@@ -612,7 +689,6 @@ class LocEar(RfEar):
             print ('You need to select to a measurement function "h" like "h_rss" or "h_dist"!')
             print ('exit...')
             return True
-
 
         txpos = self.__txpos
         """ setup figure """
@@ -681,7 +757,7 @@ class LocEar(RfEar):
         while tracking:
             try:
                 # iterate through all tx-rss-values
-                freq_den_max, rss = self.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
+                freq_den_max, rss = self.get_rss_peaks_at_freqtx(self.get_freqtx(), self.__freqspan)
                 x_est[:, 0] = x_log[:, -1]
 
                 z_meas = rss

@@ -17,8 +17,8 @@ class GantryControl(object):
         self.__oScY = []  # belt-drive
         self.__maxposdeviation = 2  # [mm] max position deviation per axis
 
-        self.__oScX = sc.MotorCommunication('/dev/ttyS4', 'belt_drive', 'belt', 3100, 2000e3)
-        self.__oScY = sc.MotorCommunication('/dev/ttyS5', 'spindle_drive', 'spindle', 1600, 5150e3)
+        self.__oScX = sc.MotorCommunication('/dev/ttyS4', 'belt_drive', 115200, 'belt', 3100, 2000e3)
+        self.__oScY = sc.MotorCommunication('/dev/ttyS5', 'spindle_drive', 19200, 'spindle', 1600, 5150e3)
 
         self.__starttime = []
 
@@ -271,7 +271,7 @@ class GantryControl(object):
                 meas_counter += 1
                 time_elapsed = t.time() - start_time
                 pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
-                freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
+                freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_at_freqtx()
 
                 data_row = np.append([meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max)
                 data_list.append(data_row)
@@ -333,7 +333,7 @@ class GantryControl(object):
         # taking measurements
         while time_elapsed < meas_time:
             pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
-            freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_from_single_sample()
+            freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_at_freqtx()
             time_elapsed = t.time() - start_time
             meas_counter += 1.0
 

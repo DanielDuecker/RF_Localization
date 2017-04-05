@@ -4,10 +4,11 @@ import serial
 
 class MotorCommunication(object):
 
-    def __init__(self, portname, name, drivetype, travelling_distance_mm, extreme_pos_inc):  #
+    def __init__(self, portname, name, baudrate, drivetype, travelling_distance_mm, extreme_pos_inc):  #
         self.__oserial = []
         self.__portname = portname
         self.__name = name
+        self.__baudrate = baudrate
         self.__drivetype = drivetype
         self.__travelling_distance_mm = float(travelling_distance_mm)
         self.__isopen = False
@@ -44,7 +45,7 @@ class MotorCommunication(object):
         # configure the serial connections (the parameters differs on the device you are connecting to)
         self.__oserial = serial.Serial(
             port=self.__portname,
-            baudrate=19200,
+            baudrate=self.__baudrate,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS

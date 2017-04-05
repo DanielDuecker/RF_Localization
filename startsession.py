@@ -17,9 +17,18 @@ analyze_tx = [1, 2, 3, 4]
 
 
 freqtx = [434.1e6, 434.15e6, 434.4e6, 434.45e6]
-#cal = rf.CalEar(freqtx)
 
-#cal.plot_psd()
+
+#cal = rf.CalEar(434.0e6)
+#cal.set_freqtx(freqtx)
+
+#cal.plot_power_spectrum_density()
+#cal.plot_txrss_live()
+
+
+
+
+
 
 #cal.get_performance()
 #cal.plot_txrss_live()
@@ -36,10 +45,10 @@ tx_abs_pos = [[1060, 470],  # 433.9MHz
               [2340, 1260]]  # 434.5MHz
 
 
-loc = rf.LocEar(freqtx, freqspan, alpha, gamma, tx_abs_pos)
+loc = rf.LocEar(434.0e6, freqtx, freqspan, alpha, gamma, tx_abs_pos)
 
 #loc.plot_txdist_live()
 
 x0 = np.array([600, 400])  # initial estimate
-loc.set_size(16)
+loc.set_samplesize(16)
 loc.map_path_ekf(x0, 'h_rss', True, False, False)
