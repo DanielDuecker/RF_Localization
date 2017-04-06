@@ -297,9 +297,9 @@ class RfEar(object):
 
         """ setup plot properties """
         plt.axis([center_freq - 1.1e6, center_freq + 1.1e6, -120, 0])
-        xlabels = np.linspace((center_freq-1.5e6)/1e6,
-                              (center_freq+1.5e6)/1e6, 31)
-        plt.xticks(np.linspace(min(x), max(x), 31), xlabels, rotation='vertical')
+        xlabels = np.linspace((center_freq-1.0e6)/1e6,
+                              (center_freq+1.0e6)/1e6, 21)
+        plt.xticks(np.linspace(min(x), max(x), 21), xlabels, rotation='vertical')
         plt.grid()
         plt.xlabel('Frequency [MHz]')
         plt.ylabel('Power [dB]')
