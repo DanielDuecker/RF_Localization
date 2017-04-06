@@ -296,10 +296,11 @@ class RfEar(object):
         line1, = ax.plot(x, y, 'b-')
 
         """ setup plot properties """
-        plt.axis([center_freq - 1.1e6, center_freq + 1.1e6, -120, 0])
-        xlabels = np.linspace((center_freq-1.0e6)/1e6,
-                              (center_freq+1.0e6)/1e6, 21)
-        plt.xticks(np.linspace(min(x), max(x), 21), xlabels, rotation='vertical')
+        plt.axis([center_freq - 1100e3, center_freq + 1100e3, -120, 0])
+        xlabels = np.linspace((center_freq-1024e3)/1e6,
+                              (center_freq+1022e3)/1e6, 41)
+        plt.xticks(np.linspace(min(x), max(x), 41), xlabels, rotation='vertical')
+
         plt.grid()
         plt.xlabel('Frequency [MHz]')
         plt.ylabel('Power [dB]')
@@ -516,7 +517,7 @@ class RfEar(object):
             VAR.append(np.var(powerstack))
             MEAN.append(np.mean(powerstack))
             UPDATE.append(calctime)
-            total_time = total_time+elapsed_time
+            total_time += elapsed_time
             print (str(measurements) + ' measurements for batch-size ' + str(self.set_samplesize()) +
                    ' * 1024 finished after ' + str(elapsed_time) + 's. => ' + str(measurements/elapsed_time) + 'Hz')
         print('')
