@@ -4,6 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
+wp_filename = 'wp_list_full_field_50mm.txt'
+x0 = [0,0]
+xn = [3000,1550]
+dxdy = [50,50]
+
+#rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 5.0, True)
+
+
 txpos_offset = np.array([0, 0])
 
 txpos_tuning = [[0, 0],  # 433.9MHz
@@ -16,11 +24,9 @@ analyze_tx = [1, 2, 3, 4]
 #rf_tools.analyse_measdata_from_file(analyze_tx, txpos_tuning)
 
 
-freqtx = [433.9e6, 434.15e6, 434.34e6, 434.59e6]
-
 
 Rf = rf.RfEar(434.2e6, 2e4)
-freqtx = [433.9e6, 434.15e6, 434.34e6, 434.59e6]
+freqtx = [433.9e6, 434.15e6, 434.40e6, 434.65e6]
 tx_pos = [[790, 440],
           [2530, 460],
           [2530, 1240],
@@ -30,7 +36,7 @@ Rf.set_txparams(freqtx, tx_pos)
 Rf.set_samplesize(32)
 
 #Rf.plot_power_spectrum_density()
-Rf.plot_txrss_live()
+#Rf.plot_txrss_live()
 
 
 

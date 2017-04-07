@@ -547,12 +547,12 @@ class GantryControl(object):
     def start_RfEar(self, center_freq=434.2e6, freqspan=2e4):
         import rf
         self.__oRf = rf.RfEar(center_freq, freqspan)
-        freqtx = [433.9e6, 434.15e6, 434.34e6, 434.59e6]
-        tx_pos = [[790,440],
-                  [2530,460],
-                  [2530,1240],
-                  [790,1230]]
-        self.__oRf.set_txparams(freqtx,tx_pos)
+        freqtx = [433.9e6, 434.15e6, 434.40e6, 434.65e6]
+        tx_pos = [[790, 440],
+                  [2530, 460],
+                  [2530, 1240],
+                  [790, 1230]]
+        self.__oRf.set_txparams(freqtx, tx_pos)
         return True
 
     def start_CalEar(self, freqtx=434.2e6, freqspan=2e4):
