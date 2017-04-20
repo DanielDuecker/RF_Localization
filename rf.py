@@ -368,7 +368,7 @@ class RfEar(object):
 
                 for i in range(numoftx):
                     plt.plot(rdist[i, firstdata:-1], str(colorvec[i])+'.-',
-                             label="Freq = " + str(freq_found[i] / 1e6) + ' MHz')
+                             label="Freq = " + str(round(freq_found[i] / 1e6, 2)) + ' MHz' + '@ ' + str(round(rdist[i, -1],2)) + 'dBm')
                 plt.ylim(-120, 10)
                 plt.ylabel('RSS [dB]')
                 plt.grid()
