@@ -4,12 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
-wp_filename = 'wp_list_full_field_50mm.txt'
+wp_filename = 'wp_list_wo-tx_field_50mm.txt'
 x0 = [0,0]
-xn = [3000,1550]
-dxdy = [50,50]
+xn = [3000, 1500]
+dxdy = [50, 50]
 
-#rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 5.0, True)
+rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 5.0, True)
 
 
 txpos_offset = np.array([0, 0])
@@ -36,7 +36,7 @@ Rf.set_txparams(freqtx, tx_pos)
 Rf.set_samplesize(32)
 
 #Rf.plot_power_spectrum_density()
-Rf.plot_txrss_live()
+#Rf.plot_txrss_live()
 
 
 
