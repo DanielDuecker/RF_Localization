@@ -331,8 +331,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
             ax.grid()
             ax.set_xlabel('x [mm]')
             ax.set_ylabel('y [mm]')
-            # ax.axis('equal')
-
+            ax.axis('equal')
             ax.set_title('RSS field for TX# ' + str(itx + 1))
 
         plot_fig1 = True
