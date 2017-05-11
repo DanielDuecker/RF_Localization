@@ -131,7 +131,7 @@ def write_measfile_header(ofile, file_description, x0, xn, grid_dxdy, timemeas, 
 
 
 
-def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
+def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
     """
 
     :param analyze_tx:
@@ -185,7 +185,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
                 data_shape_file = [int((xn[0]-x0[0]) / grid_dxdy[0] + 1), int((xn[1]-x0[1]) / grid_dxdy[1] + 1)]
 
                 numtx = int(grid_settings[7])
-                txdata = grid_settings[8:8+3*numtx]
+                txdata = grid_settings[(2+numtx):(2+numtx+3*numtx)]
 
                 # read tx positions
                 txpos_list = []
@@ -326,7 +326,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
 
         fig = plt.figure(6)
         for itx in analyze_tx:
-            pos = 221 + itx
+            pos = 231 + itx
             if len(analyze_tx) == 1:
                 pos = 111
 
@@ -364,7 +364,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
         if plot_fig1:
             fig = plt.figure(1)
             for itx in analyze_tx:
-                pos = 221 + itx
+                pos = 231 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
 
@@ -383,7 +383,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
         if plot_fig2:
             fig = plt.figure(2)
             for itx in analyze_tx:
-                pos = 221 + itx
+                pos = 231 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
 
@@ -407,7 +407,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
                 rdist = np.array(rdist_temp[itx, :], dtype=float)
                 rss_mean = np.array(rss_mean, dtype=float)
                 rss_var = np.array(rss_var, dtype=float)
-                pos = 221 + itx
+                pos = 231 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
                 ax = fig.add_subplot(pos)
@@ -434,7 +434,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
                 rss_mean = np.array(rss_mean, dtype=float)
                 rss_var = np.array(rss_var, dtype=float)
 
-                pos = 221 + itx
+                pos = 231 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
                 ax = fig.add_subplot(pos)
@@ -484,7 +484,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4], meantype='db_mean'):
                         ibin += 1
                         #print('ibin ' + str(ibin))
 
-                pos = 221 + itx
+                pos = 231 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
                 ax = fig.add_subplot(pos)
