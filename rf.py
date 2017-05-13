@@ -51,6 +51,9 @@ class RfEar(object):
         self.__txalpha = []
         self.__txgamma = []
 
+    def get_freqspan(self):
+        return self.__freqspan
+
     def check_txparamsavailable(self):
         return self.__btxparamsavailable
 
@@ -208,15 +211,27 @@ class RfEar(object):
 
         return freq_sorted, pxx_density_sorted
 
-    def get_rss_peaks_at_freqtx(self, freqtx, freqspan=2e4):
+    def get_rss_peaks(self):
+        """
+        for external use i.e. estimator methods
+        finds maximus rss peaks in power spectrum by calling method *get_max_rss_peaks_at_freqtx
+        :return: freq_peaks, rss_peaks
+        """
+        freqtx = self.get_freqtx()
+        freq_peaks, rss_peaks = self.get_rss_peaks_at_freqtx(freqtx)
+
+        return freq_peaks, rss_peaks
+
+    def get_rss_peaks_at_freqtx(self, freqtx):
         """
         find maximum rss peaks in spectrum
         :param freqtx: frequency which max power density is looked for
-        :param freqspan: width of the frequency span (default 2e4Hz)
-        :return: frequeny, maxpower
+        :return: freq_peaks, rss_peaks
         """
 
-        freq_peak, pxx_den = self.get_power_density_spectrum()
+        freqspan = self.get_freqspan()
+
+        freq_spectrum, pxx_den = self.get_power_density_spectrum()
 
         freq_peaks = []
         rss_peaks = []
@@ -224,17 +239,17 @@ class RfEar(object):
         # loop for all tx-frequencies
         for ifreq in range(len(freqtx)):
             startindex = 0
-            endindex = len(freq_peak)
+            endindex = len(freq_spectrum)
             i = 0
             # find start index of frequency vector
-            while i < len(freq_peak):
-                if freq_peak[i] >= freqtx[ifreq] - freqspan / 2:
+            while i < len(freq_spectrum):
+                if freq_spectrum[i] >= freqtx[ifreq] - freqspan / 2:
                     startindex = i
                     break
                 i += 1
             # find end index of frequency vector
-            while i < len(freq_peak):
-                if freq_peak[i] >= freqtx[ifreq] + freqspan / 2:
+            while i < len(freq_spectrum):
+                if freq_spectrum[i] >= freqtx[ifreq] + freqspan / 2:
                     endindex = i
                     break
                 i += 1
@@ -249,7 +264,7 @@ class RfEar(object):
             maxind = maxind[0]  # takes first list element
 
             rss_peaks.append(10 * np.log10(pxx_den[maxind]))
-            freq_peaks.append(freq_peak[maxind])
+            freq_peaks.append(freq_spectrum[maxind])
 
         return freq_peaks, rss_peaks
 
@@ -266,7 +281,7 @@ class RfEar(object):
 
         while elapsed_time < meastime:
             start_calctime = t.time()
-            freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(self.get_freqtx(), self.__freqspan)
+            freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(self.get_freqtx())
 
             dataseq.append(pxx_den_max)
 
@@ -333,9 +348,7 @@ class RfEar(object):
         :param numofplottedsamples: number of displayed samples (default= 250)
         :return: 0
         """
-        freq = self.get_freqtx()
         numoftx = self.__numoftx
-        freqspan = self.__freqspan
 
         if numoftx > 7:
             print('Number of tracked tx needs to be <=7!')  # see length of colorvec
@@ -355,7 +368,7 @@ class RfEar(object):
                 # Busy-wait for keyboard interrupt (Ctrl+C)
                 cnt += 1
                 # find maximum power peaks in spectrum
-                freq_found, pxx_den_max = self.get_rss_peaks_at_freqtx(freq, freqspan)
+                freq_found, pxx_den_max = self.get_rss_peaks()
 
                 for i in range(numoftx):
                     temp[i, 0] = pxx_den_max[i]
@@ -386,100 +399,100 @@ class RfEar(object):
 #    """Subclass of Superclass RfEar for modelling and testing purpose."""
 #    def __init__(self, center_freq=434.0e6, freqspan=2e4):
 #        RfEar.__init__(self, center_freq, freqspan)
+#
+#    def measure_rss_var(self, freqtx, freqrange=2e4, time=10.0):
+#        """
+#        Interactive method to get PSD data
+#        at characteristic frequencies.
+#        :param freqtx: tx-frequency [Hz]
+#        :param freqrange: range [Hz] around tx-frequency where the peak-rss lies in
+#        :param time: time of measurement [s] (default 10.0)
+#        :return: modeldata, variance - arrays with mean rss for each distance + its variance
+#        """
+#
+#        self.__sdr.center_freq = np.mean(self.get_freq())
+#
+#        testing = True
+#        modeldata = []
+#        variance = []
+#        plt.figure()
+#        plt.grid()
+#
+#        print ('RSS ist measured at freq: ' + str(freqtx[0] / 1e6) +
+#               'MHz, frequency span is +/-' + str(freqrange / 1e3) + 'kHz \n')
+#        while testing:
+#            try:
+#                raw_input('Press Enter to make a measurement,'
+#                          ' or Ctrl+C+Enter to stop testing:\n')
+#                elapsed_time = 0
+#                powerstack = []
+#                print (' ... measuring for ' + str(time) + 's ...')
+#                while elapsed_time < time:
+#                    start_calctime = t.time()
+#                    freqs, rss = self.get_max_rss_in_freqspan(freqtx, freqrange)
+#                    del freqs
+#                    powerstack.append(rss)
+#                    calc_time = t.time() - start_calctime
+#                    elapsed_time = elapsed_time + calc_time
+#                    t.sleep(0.01)
+#                print ('done\n')
+#                t.sleep(0.5)
+#                print (' ... evaluating ...')
+#
+#                powerstack.pop(0)  # uggly workaround to ignore first element after dvb-t boot up#
+#
+#                modeldata.append(np.mean(powerstack))
+#                variance.append(np.var(powerstack))
+#
+#                plt.clf()
+#                plt.errorbar(range(len(modeldata)), modeldata, yerr=variance, fmt='o', ecolor='g')
+#                plt.xlabel('# of Evaluations')
+#                plt.ylabel('Mean maximum power [dB]')
+#                plt.grid()
+#                plt.show()
+#                del powerstack
+#                print ('done\n')
+#                t.sleep(0.5)
+#            except KeyboardInterrupt:
+#                print ('Testing finished')
+#                testing = False
+#
+#        return modeldata, variance
 
-    def measure_rss_var(self, freqtx, freqrange=2e4, time=10.0):
-        """
-        Interactive method to get PSD data
-        at characteristic frequencies.
-        :param freqtx: tx-frequency [Hz]
-        :param freqrange: range [Hz] around tx-frequency where the peak-rss lies in
-        :param time: time of measurement [s] (default 10.0)
-        :return: modeldata, variance - arrays with mean rss for each distance + its variance
-        """
-
-        self.__sdr.center_freq = np.mean(self.get_freq())
-
-        testing = True
-        modeldata = []
-        variance = []
-        plt.figure()
-        plt.grid()
-
-        print ('RSS ist measured at freq: ' + str(freqtx[0] / 1e6) +
-               'MHz, frequency span is +/-' + str(freqrange / 1e3) + 'kHz \n')
-        while testing:
-            try:
-                raw_input('Press Enter to make a measurement,'
-                          ' or Ctrl+C+Enter to stop testing:\n')
-                elapsed_time = 0
-                powerstack = []
-                print (' ... measuring for ' + str(time) + 's ...')
-                while elapsed_time < time:
-                    start_calctime = t.time()
-                    freqs, rss = self.get_max_rss_in_freqspan(freqtx, freqrange)
-                    del freqs
-                    powerstack.append(rss)
-                    calc_time = t.time() - start_calctime
-                    elapsed_time = elapsed_time + calc_time
-                    t.sleep(0.01)
-                print ('done\n')
-                t.sleep(0.5)
-                print (' ... evaluating ...')
-
-                powerstack.pop(0)  # uggly workaround to ignore first element after dvb-t boot up
-
-                modeldata.append(np.mean(powerstack))
-                variance.append(np.var(powerstack))
-
-                plt.clf()
-                plt.errorbar(range(len(modeldata)), modeldata, yerr=variance, fmt='o', ecolor='g')
-                plt.xlabel('# of Evaluations')
-                plt.ylabel('Mean maximum power [dB]')
-                plt.grid()
-                plt.show()
-                del powerstack
-                print ('done\n')
-                t.sleep(0.5)
-            except KeyboardInterrupt:
-                print ('Testing finished')
-                testing = False
-
-        return modeldata, variance
-
-    def get_model(self, pdata, vdata):
-        """Create a function to fit with measured data.
-        alpha and gamma are the coefficients that curve_fit will calculate.
-        The function structure is known.
-
-        Keyword arguments:
-        :param pdata -- array containing the power values [dB]
-        :param vdata -- array containing the variance of the measurement series [dB]
-        """
-        x_init = raw_input('Please enter initial distance [mm]: ')
-        x_step = raw_input('Please enter step size [mm]:')
-        xdata = np.arange(int(x_init), int(x_init)+len(pdata)*int(x_step), int(x_step))
-        xdata = np.array(xdata, dtype=float)
-        pdata = np.array(pdata, dtype=float)
-        vdata = np.array(vdata, dtype=float)
-        plt.figure()
-        plt.grid()
-        plt.errorbar(xdata, pdata, yerr=vdata,
-                     fmt='ro', ecolor='g', label='Original Data')
-
-        def rsm_func(dist, alpha, gamma):
-            """Range Sensor Model (RSM) structure."""
-            return -20*np.log10(dist)-alpha*dist-gamma
-
-        popt, pcov = curve_fit(rsm_func, xdata, pdata)
-        del pcov
-        print ('alpha = %s , gamma = %s' % (popt[0], popt[1]))
-        xdata = np.linspace(xdata[0], xdata[-1], num=1000)
-        plt.plot(xdata, rsm_func(xdata, *popt), label='Fitted Curve')
-        plt.legend(loc='upper right')
-        plt.xlabel('Distance [mm]')
-        plt.ylabel('RSS [dB]')
-        plt.show()
-        return popt
+#    def get_model(self, pdata, vdata):
+#        """Create a function to fit with measured data.
+#        alpha and gamma are the coefficients that curve_fit will calculate.
+#        The function structure is known.
+#
+#        Keyword arguments:
+#        :param pdata -- array containing the power values [dB]
+#        :param vdata -- array containing the variance of the measurement series [dB]
+#        """
+#        x_init = raw_input('Please enter initial distance [mm]: ')
+#        x_step = raw_input('Please enter step size [mm]:')
+#        xdata = np.arange(int(x_init), int(x_init)+len(pdata)*int(x_step), int(x_step))
+#        xdata = np.array(xdata, dtype=float)
+#        pdata = np.array(pdata, dtype=float)
+#        vdata = np.array(vdata, dtype=float)
+#        plt.figure()
+#        plt.grid()
+#        plt.errorbar(xdata, pdata, yerr=vdata,
+#                     fmt='ro', ecolor='g', label='Original Data')
+#
+#        def rsm_func(dist, alpha, gamma):
+#            """Range Sensor Model (RSM) structure."""
+#            return -20*np.log10(dist)-alpha*dist-gamma
+#
+#        popt, pcov = curve_fit(rsm_func, xdata, pdata)
+#        del pcov
+#        print ('alpha = %s , gamma = %s' % (popt[0], popt[1]))
+#        xdata = np.linspace(xdata[0], xdata[-1], num=1000)
+#        plt.plot(xdata, rsm_func(xdata, *popt), label='Fitted Curve')
+#        plt.legend(loc='upper right')
+#        plt.xlabel('Distance [mm]')
+#        plt.ylabel('RSS [dB]')
+#        plt.show()
+#        return popt
 
     def get_performance(self, testfreqtx=434e6, samplingrate=2.4e6):
         """Measure performance at certain sizes and sampling rates.
@@ -597,7 +610,7 @@ class RfEar(object):
         print (' ... measuring ' + str(time) + 's ...')
         while elapsed_time < time:
             start_calctime = t.time()
-            freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(self.get_freqtx(), self.__freqspan)
+            freq_den_max, pxx_den_max = self.get_rss_peaks()
             powerstack.append(pxx_den_max[numtx])
             calc_time = t.time() - start_calctime
             elapsed_time = elapsed_time + calc_time
@@ -621,10 +634,10 @@ class RfEar(object):
         # dist_ref, alpha, gamma are fixed -> gamma_diff_opt is the change in gamma by new meas
         gamma_diff_opt, pcov = curve_fit(rsm_func, [dist_ref, self.__alpha[numtx], self.__gamma[numtx]], p_ref)
         del pcov
-        print ('gamma alt: ' + str(self.__gamma[numtx]))
+        print ('gamma old: ' + str(self.__gamma[numtx]))
         self.__gamma[numtx] = self.__gamma[numtx] + gamma_diff_opt[0]  # update gamma with calibration
         print ('gamma_diff: ' + str(gamma_diff_opt[0]))
-        print ('gamma neu: ' + str(self.__gamma[numtx]))
+        print ('gamma new: ' + str(self.__gamma[numtx]))
 
     def get_caldata(self, numtx=0):
         """Returns the calibrated RSM params."""
@@ -766,7 +779,7 @@ class RfEar(object):
         while tracking:
             try:
                 # iterate through all tx-rss-values
-                freq_den_max, rss = self.get_rss_peaks_at_freqtx(self.get_freqtx(), self.__freqspan)
+                freq_den_max, rss = self.get_rss_peaks()
                 x_est[:, 0] = x_log[:, -1]
 
                 z_meas = rss

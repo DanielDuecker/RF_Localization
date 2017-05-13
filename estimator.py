@@ -3,10 +3,10 @@ from abc import ABCMeta, abstractmethod
 import time as t
 import numpy as np
 import matplotlib.pyplot as plt
+import rf
 
 
-
-def map_path_ekf(x0, h_func_select, bplot=True, blog=False, bprintdata=False):
+def map_path_ekf(x0, h_func_select='h_rss', bplot=True, blog=False, bprintdata=False):
     """ map/track the position of the mobile node using an EKF
 
     Keyword arguments:
@@ -21,31 +21,38 @@ def map_path_ekf(x0, h_func_select, bplot=True, blog=False, bprintdata=False):
     tx_alpha = []
     tx_gamma = []
 
+    tx_freq = [434.00e6, 434.15e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
+
+    tx_pos = [[790, 440],
+               [1650, 450],
+               [2530, 460],
+               [2530, 1240],
+               [1650, 1235],
+               [790, 1230]]
+    tx_alpha = [0.013854339628529109,
+                0.0071309466013866158,
+                0.018077579531274993,
+                0.016243668091798915,
+                0.016243668091798915,
+                0.016243668091798915]
+    tx_gamma = [-1.5898021024559508,
+                2.0223747861988461,
+                -5.6650866655302714,
+                -5.1158161676293972,
+                -5.1158161676293972,
+                -5.1158161676293972]
+
+    oMeasSys = rf.RfEar(434.2e6)
+    oMeasSys.set_txparams(tx_freq, tx_pos)
+    oMeasSys.set_calparams(tx_alpha, tx_gamma)
+
     tx_num = len(tx_freq)
 
-    get_rss_measurements = oMeasSys.get_max_rss_in_freqspan(self.__freqtx, self.__freqspan)
-
-
     # measurement function
-    def h_dist(x, txpos, numtx):
-        tx_pos = txpos[numtx]  # position of the transceiver
-        # r = sqrt((x-x_tx)^2+(y-y_tx)^2)
-        y_dist = np.sqrt((x[0] - tx_pos[0]) ** 2 + (x[1] - tx_pos[1]) ** 2)
-        return y_dist
-
-    # jacobian of the measurement function
-    def h_dist_jacobian(x_est, txpos, numtx):
-        tx_pos = txpos[numtx]  # position of the transceiver
-        factor = 0.5 / np.sqrt((x_est[0] - tx_pos[0]) ** 2 + (x_est[1] - tx_pos[1]) ** 2)
-        h_dist_jac = np.array(
-            [factor * 2 * (x_est[0] - tx_pos[0]), factor * 2 * (x_est[1] - tx_pos[1])])  # = [dh/dx1, dh/dx2]
-        return h_dist_jac
-
-    def h_rss(x, tx_param, numtx):
-        tx_param_temp = tx_param[numtx]
-        tx_pos = tx_param_temp[0]  # position of the transceiver
-        alpha = tx_param_temp[1]
-        gamma = tx_param_temp[2]
+    def h_rss(x, tx_param):
+        tx_pos = tx_param[0]  # position of the transceiver
+        alpha = tx_param[1]
+        gamma = tx_param[2]
 
         # r = sqrt((x - x_tx) ^ 2 + (y - y_tx) ^ 2)
         r_dist = np.sqrt((x[0] - tx_pos[0]) ** 2 + (x[1] - tx_pos[1]) ** 2)
@@ -53,11 +60,11 @@ def map_path_ekf(x0, h_func_select, bplot=True, blog=False, bprintdata=False):
 
         return y_rss
 
-    def h_rss_jacobian(x_est, tx_param, numtx):
-        tx_param_temp = tx_param[numtx]
-        tx_pos = tx_param_temp[0]  # position of the transceiver
-        alpha = tx_param_temp[1]
-        # gamma = tx_param_temp[2]  # not used here
+    # jacobian of the measurement function
+    def h_rss_jacobian(x_est, tx_param):
+        tx_pos = tx_param[0]  # position of the transceiver
+        alpha = tx_param[1]
+        # gamma = tx_param[2]  # not used here
 
         R_dist = np.sqrt((x_est[0] - tx_pos[0]) ** 2 + (x_est[1] - tx_pos[1]) ** 2)
 
@@ -72,10 +79,23 @@ def map_path_ekf(x0, h_func_select, bplot=True, blog=False, bprintdata=False):
 
         return h_rss_jac
 
-    if h_func_select == 'h_dist':
-        h = h_dist
-        h_jacobian = h_dist_jacobian
-    elif h_func_select == 'h_rss':
+    def measurement_covariance_model(rss_noise_model):
+        """
+        estimate measurement noise based on the received signal strength
+        :param rss: measured signal strength
+        :return: r_mat -- measurement covariance matrix 
+        """
+
+        # simple first try
+        if rss_noise_model >= -85:
+            r_sig = 10
+        elif rss_noise_model < -85:
+            r_sig = 100
+
+        r_mat = r_sig ** 2
+        return r_mat
+
+    if h_func_select == 'h_rss':
         h = h_rss
         h_jacobian = h_rss_jacobian
     else:
@@ -113,20 +133,13 @@ def map_path_ekf(x0, h_func_select, bplot=True, blog=False, bprintdata=False):
             circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
             ax.add_artist(circle_meas_est[i])
 
-
-
-
     """ initialize tracking setup """
     print(str(tx_alpha))
     print(str(tx_gamma))
     print(str(tx_pos))
     tx_param = []
     for itx in range(tx_num):
-        tx_param.append([tx_pos[itx], tx_alpha, tx_gamma[itx]])
-
-
-
-
+        tx_param.append([tx_pos[itx], tx_alpha[itx], tx_gamma[itx]])
 
     """ initialize EKF """
     # standard deviations
@@ -140,8 +153,9 @@ def map_path_ekf(x0, h_func_select, bplot=True, blog=False, bprintdata=False):
     q_mat = np.array(np.diag([sig_w1 ** 2, sig_w2 ** 2]))
 
     # measurement noise
-    sig_r = 10
-    r_mat = sig_r ** 2
+    # --> see measurement_covariance_model
+    #sig_r = 10
+    #r_mat = sig_r ** 2
 
     # initial values and system dynamic (=eye)
     x_log = np.array([[x0[0]], [x0[1]]])
@@ -152,38 +166,37 @@ def map_path_ekf(x0, h_func_select, bplot=True, blog=False, bprintdata=False):
     z_meas = np.zeros(tx_num)
     y_est = np.zeros(tx_num)
 
-    """ Start EKF-loop"""
+    """ Start EKF-loop """
     tracking = True
     while tracking:
         try:
-            # iterate through all tx-rss-values
-            freq_den_max, rss = get_rss_measurements
-            z_meas = rss
-
             x_est[:, 0] = x_log[:, -1]
 
+            """ prediction """
+            x_est = x_est  # + np.random.randn(2, 1) * 1  # = I * x_est
+            p_mat_est = i_mat.dot(p_mat.dot(i_mat)) + q_mat
 
+            """ innovation """
+            # get new measurement
+            freq_peaks, rss = oMeasSys.get_rss_peaks()
+            z_meas = rss
+
+            # iterate through all tx-rss-values
             for itx in range(tx_num):
-                """ prediction """
-                x_est = x_est  # + np.random.randn(2, 1) * 1  # = I * x_est
-
-                p_mat_est = i_mat.dot(p_mat.dot(i_mat)) + q_mat
-
-                # print('x_est: ' + str(x_est))
-
-                """ update """
                 # estimate measurement from x_est
-                y_est[itx] = h(x_est, tx_param, itx)
+                y_est[itx] = h(x_est, tx_param[itx])
                 y_tild = z_meas[itx] - y_est[itx]
 
+                # estimate measurement noise based on
+                r_mat = measurement_covariance_model(z_meas[itx])
+
                 # calc K-gain
-                h_jac_mat = h_jacobian(x_est[:, 0], tx_param, itx)
+                h_jac_mat = h_jacobian(x_est[:, 0], tx_param[itx])
                 s_mat = np.dot(h_jac_mat.transpose(), np.dot(p_mat, h_jac_mat)) + r_mat  # = H^t * P * H + R
                 k_mat = np.dot(p_mat, h_jac_mat / s_mat)  # 1/s_scal since s_mat is dim = 1x1
 
                 x_est = x_est + k_mat * y_tild  # = x_est + k * y_tild
                 p_mat = (i_mat - np.dot(k_mat, h_jac_mat.transpose())) * p_mat_est  # = (I-KH)*P
-
             x_log = np.append(x_log, x_est, axis=1)
 
             """ update figure / plot after all measurements are processed """
@@ -229,3 +242,5 @@ def map_path_ekf(x0, h_func_select, bplot=True, blog=False, bprintdata=False):
         raw_input('Press Enter to close the figure and terminate the method!')
 
     return x_est
+
+map_path_ekf([1000, 1000])
