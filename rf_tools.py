@@ -326,7 +326,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
 
         fig = plt.figure(6)
         for itx in analyze_tx:
-            pos = 231 + itx
+            pos = 321 + itx
             if len(analyze_tx) == 1:
                 pos = 111
 
@@ -364,7 +364,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
         if plot_fig1:
             fig = plt.figure(1)
             for itx in analyze_tx:
-                pos = 231 + itx
+                pos = 321 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
 
@@ -383,7 +383,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
         if plot_fig2:
             fig = plt.figure(2)
             for itx in analyze_tx:
-                pos = 231 + itx
+                pos = 321 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
 
@@ -407,7 +407,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
                 rdist = np.array(rdist_temp[itx, :], dtype=float)
                 rss_mean = np.array(rss_mean, dtype=float)
                 rss_var = np.array(rss_var, dtype=float)
-                pos = 231 + itx
+                pos = 321 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
                 ax = fig.add_subplot(pos)
@@ -434,7 +434,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
                 rss_mean = np.array(rss_mean, dtype=float)
                 rss_var = np.array(rss_var, dtype=float)
 
-                pos = 231 + itx
+                pos = 321 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
                 ax = fig.add_subplot(pos)
@@ -484,7 +484,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
                         ibin += 1
                         #print('ibin ' + str(ibin))
 
-                pos = 231 + itx
+                pos = 321 + itx
                 if len(analyze_tx) == 1:
                     pos = 111
                 ax = fig.add_subplot(pos)
