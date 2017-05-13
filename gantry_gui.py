@@ -56,6 +56,21 @@ class StartPage(Tk.Frame):
         button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position())
         button_gantry_position.grid(row=1, column=0)
 
+        def goto_position():
+            target_pos = int(entry_goto_pos.get())
+            new_target_wp = target_pos#[new_target_wpx, new_target_wpy]  # find a solution for this uggly workaround...
+            if self.__gt.transmit_wp_to_gantry(new_target_wp):
+                if self.__gt.move_gantry_to_target():
+                    if self.__gt.confirm_arrived_at_target_wp():
+                        pos_x_mm, pos_y_mm = self.__gt.get_gantry_pos_xy_mm()
+                        print('Arrived at position x=' + str(pos_x_mm) + 'mm, y=' + str(pos_y_mm) + 'mm')
+            return True
+
+        button_goto_pos = ttk.Button(self, text='Go to Position',command=lambda goto_position())
+        button_goto_pos.grid(row=1, column=2)
+        entry_goto_pos = ttk.Entry(self)
+        entry_goto_pos.insert(0, '[0,0]')
+
         """
         Belt-Drive
         """
