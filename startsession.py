@@ -47,8 +47,8 @@ Rf.set_txparams(freq6tx, tx_6pos)
 
 Rf.set_samplesize(32)
 
-#Rf.plot_power_spectrum_density()
-Rf.plot_txrss_live()
+Rf.plot_power_spectrum_density()
+#Rf.plot_txrss_live()
 
 
 
@@ -56,7 +56,7 @@ Rf.plot_txrss_live()
 
 
 
-#cal.get_performance()
+#Rf.get_performance()
 #cal.plot_txrss_live()
 
 """
