@@ -27,14 +27,9 @@ analyze_tx = [1, 2, 3, 4]
 
 
 Rf = rf.RfEar(434.2e6, 1e4)
-#freq4tx = [433.9e6, 434.15e6, 434.40e6, 434.65e6]
-#tx_6pos = [[790, 440],
-#          [2530, 460],
-#          [2530, 1240],
-#          [790, 1230]]
 
-#freq6tx = [434.15e6, 434.25e6, 434.35e6, 434.45e6, 434.55e6, 434.65e6]
-#freq6tx = [434.05e6, 434.25e6, 434.35e6, 434.45e6, 434.65e6, 433.95e6]
+
+
 freq6tx = [434.00e6, 434.15e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
 
 tx_6pos = [[790, 440],
@@ -47,8 +42,8 @@ Rf.set_txparams(freq6tx, tx_6pos)
 
 Rf.set_samplesize(32)
 
-#Rf.plot_power_spectrum_density()
-Rf.plot_txrss_live()
+Rf.plot_power_spectrum_density()
+#Rf.plot_txrss_live()
 
 
 
@@ -56,7 +51,7 @@ Rf.plot_txrss_live()
 
 
 
-#cal.get_performance()
+#Rf.get_performance()
 #cal.plot_txrss_live()
 
 """

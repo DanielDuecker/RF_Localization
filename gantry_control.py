@@ -174,7 +174,6 @@ class GantryControl(object):
 
         print ('move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
 
-
         # some control stuff can be inserted here
         t.sleep(1.0)
         self.set_gantry_pos(target_wp)
@@ -191,9 +190,8 @@ class GantryControl(object):
             bArrived = False
 
         return bArrived
+
     def follow_wp(self, start_wp, wp_list):
-
-
         num_wp = len(wp_list)
         print('Number of way points: ' + str(num_wp))
         start_time = t.time()
@@ -207,7 +205,6 @@ class GantryControl(object):
 
         t.sleep(0.5)
         print('Start following way point sequence')
-
 
         meas_counter = 0
         time_elapsed = 0.0
@@ -223,26 +220,19 @@ class GantryControl(object):
                 meas_counter += 1
                 time_elapsed = t.time() - start_time
                 pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
-
-
-
-
-
                 if self.confirm_arrived_at_target_wp():
                     not_arrived_at_wp = False
 
             meas_freq = meas_counter / time_elapsed
             print('Logging with avg. ' + str(meas_freq) + ' Hz')
-
-
-
         return True
 
-
-
-    def follow_wp_and_take_measurements(self, start_wp, wp_list, filename, set_sample_size=256):
+    def follow_wp_and_take_measurements(self, start_wp, wp_list, set_sample_size=32):
         self.__oCal.set_size(set_sample_size)
         sample_size = self.__oCal.get_size()
+
+        measdata_filename = hc_tools.save_as_dialog()
+        print(measdata_filename)
 
         num_wp = len(wp_list)
         print('Number of way points: ' + str(num_wp))
@@ -284,7 +274,7 @@ class GantryControl(object):
             meas_freq = meas_counter / time_elapsed
             print('Logging with avg. ' + str(meas_freq) + ' Hz')
 
-        with open(filename, 'w') as measfile:
+        with open(measdata_filename, 'w') as measfile:
             measfile.write('Measurement file for trajectory following\n')
             measfile.write('Measurement was taken on ' + t.ctime() + '\n')
             measfile.write('### begin grid settings\n')
@@ -369,9 +359,8 @@ class GantryControl(object):
         return True
 
     def start_field_measurement_file_select(self):
-        # read data from waypoint file
-        #wplist_filename = hc_tools.select_file()
-        #measdata_filename = ''
+        #read data from waypoint file
+
         wplist_filename = hc_tools.select_file()
         print(wplist_filename)
 
