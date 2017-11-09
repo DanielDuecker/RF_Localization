@@ -1,9 +1,10 @@
 """This module is used on a raspberry pi to read
 PSD values on a certein frequency
 """
-rf.t.sleep(120)
+
 
 import rf
+rf.t.sleep(120)
 
 EAR_PI = rf.RFear(435e6)
 
