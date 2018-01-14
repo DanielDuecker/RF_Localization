@@ -632,12 +632,12 @@ class RfEar(object):
                 circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
                 ax.add_artist(circle_meas_est[i])
         """ initialize tracking setup """
-        print(str(self.__alpha))
-        print(str(self.__gamma))
-        print(str(txpos))
+        print(str(self.__txalpha))
+        print(str(self.__txgamma))
+        print(str(self.__txpos))
         tx_param = []
         for itx in range(self.__numoftx):
-            tx_param.append([txpos[itx],self.__alpha[itx], self.__gamma[itx]])
+            tx_param.append([txpos[itx],self.__txalpha[itx], self.__txgamma[itx]])
         print(str(np.asarray(tx_param)))
         """ initialize EKF """
         # standard deviations
@@ -695,17 +695,17 @@ class RfEar(object):
                     p_mat = (i_mat - np.dot(k_mat, h_jac_mat.transpose())) * p_mat_est  # = (I-KH)*P
 
                 x_log = np.append(x_log, x_est, axis=1)
-
+                print(str(z_meas-y_est))
                 """ update figure / plot after all measurements are processed """
                 if bplot:
                     # add new x_est to plot
                     ax.plot(x_est[0, -1], x_est[1, -1], 'bo')
                     # update measurement circles around tx-nodes
-                    """
-                    for i in range(self.__numoftx):
-                        circle_meas[i].set_radius(z_meas[i])
-                        circle_meas_est[i].set_radius(y_est[i])
-                    """
+
+                    #for i in range(self.__numoftx):
+                    #    circle_meas[i].set_radius(z_meas[i])
+                    #    circle_meas_est[i].set_radius(y_est[i])
+
                     # update figure 1
                     fig1.canvas.draw()
                     plt.pause(0.001)  # pause to allow for keyboard inputs
