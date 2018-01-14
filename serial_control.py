@@ -333,6 +333,25 @@ class MotorCommunication(object):
 
         return True
 
+    def set_drive_max_speed(self, max_speed):
+        command = 'SP'+str(max_speed)  # set max speed (will be reset when drive is powered on again)
+        self.write_on_port(command)
+        return True
+
+    def go_to_delta_pos_mm(self, delta_pos_mm):  # move relative from actual position
+        delta_pos_inc = self.convert_mm2inc(delta_pos_mm)
+
+        moving_seq = ['LR'+str(delta_pos_inc),  # set relative target position in [inc]
+                      'NP',  # activate 'NotifyPosition' --> sends 'p' if position is reached
+                      'M']  # start motion
+        self.check_moving()
+        if self.__ismoving is False:
+            for command in moving_seq:
+                self.write_on_port(command)
+        else:
+            print('Warning: new position can only be set IF gantry is NOT moving!')
+        return True
+
 
     def go_to_pos_mm(self, tposmm):
         """
@@ -365,11 +384,11 @@ class MotorCommunication(object):
                 # print ('Start moving to Position: ' + str(tposinc))
                 return True
             else:
-                time_wait = 1.0
-                print(self.__name + ' cannot move to new target position, still moving to old target position!')
-                print('Waiting for ' + str(time_wait) + 's')
-                print('Try ' + str(counter) + '/' + str(maxtrys))
-                time.sleep(time_wait)
+                time_wait = 0.1
+                #print(self.__name + ' cannot move to new target position, still moving to old target position!')
+                #print('Waiting for ' + str(time_wait) + 's')
+                #print('Try ' + str(counter) + '/' + str(maxtrys))
+                #time.sleep(time_wait)
             if counter >= maxtrys:
                 trying = False  # give up trying
 

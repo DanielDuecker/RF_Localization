@@ -16,10 +16,10 @@ class GantryControl(object):
         self.__oLoc = []
         self.__oScX = []  # spindle-drive
         self.__oScY = []  # belt-drive
-        self.__maxposdeviation = 2  # [mm] max position deviation per axis
+        # self.__maxposdeviation = 2  # [mm] max position deviation per axis
 
-        self.__oScX = sc.MotorCommunication('/dev/ttyS4', 'belt_drive', 115200, 'belt', 3100, 2000e3)
-        self.__oScY = sc.MotorCommunication('/dev/ttyS5', 'spindle_drive', 19200, 'spindle', 1600, 945800)
+        self.__oScX = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2000e3)
+        self.__oScY = sc.MotorCommunication('/dev/ttyS1', 'spindle_drive', 19200, 'spindle', 1600, 945800)
 
 
         self.__starttime = []
@@ -68,6 +68,37 @@ class GantryControl(object):
 
     def get_starttime(self):
         return self.__starttime
+
+    def set_new_max_speed_x(self, max_speed):
+        belt_speed_limit = 3000
+        if max_speed > belt_speed_limit:
+            print('Warning: Not able to set max belt speed to '+str(max_speed)+' limit is ' + str(belt_speed_limit) + '!!!')
+            return True
+        self.__oScX.set_drive_max_speed(max_speed)
+        print('Set new belt max speed to ' + str(max_speed))
+        return True
+
+    def set_new_max_speed_y(self, max_speed):
+        spindle_speed_limit = 9000
+        if max_speed > spindle_speed_limit:
+            print('Warning: Not able to set max spindle speed to '+str(max_speed)+' limit is ' + str(spindle_speed_limit) + '!!!')
+            return True
+        self.__oScY.set_drive_max_speed(max_speed)
+        print('Set new spindle max speed to ' + str(max_speed))
+        return True
+
+    def go_to_abs_pos(self, pos_x, pos_y):
+        self.__oScX.go_to_pos_mm(pos_x)
+        self.__oScY.go_to_pos_mm(pos_y)
+        print('Move gantry to position x = ' + str(pos_x) + 'mm y = ' + str(pos_y) + 'mm')
+        return True
+
+    def go_to_rel_pos(self, dx_pos, dy_pos):
+        self.__oScX.go_to_delta_pos_mm(dx_pos)
+        self.__oScY.go_to_delta_pos_mm(dy_pos)
+        print('Move gantry by  dx= ' + str(dx_pos) + 'mm dy = ' + str(dy_pos) + 'mm')
+        return True
+
 
     def set_gantry_pos(self, new_pos):
         self.__gantry_pos = new_pos
@@ -119,10 +150,16 @@ class GantryControl(object):
             btransmission = False
         return btransmission
 
-    def confirm_arrived_at_target_wp(self):
+    def confirm_arrived_at_target_wp(self, tolx_mm=2, toly_mm=2):
         """
         This method checks whether the gantry has arrived at its target position
         within a range of 'maxdeviation' [mm]
+        :param tolx: position tolerance
+        :param toly: position tolerance
+        :return:
+        """
+        """
+
         :return: flag - arrived true/false
         """
         barrival_confirmed = False
@@ -131,7 +168,7 @@ class GantryControl(object):
         distx = abs(gantry_pos_mm[0] - target_pos_mm[0])
         disty = abs(gantry_pos_mm[1] - target_pos_mm[1])
 
-        if distx < self.__maxposdeviation and disty < self.__maxposdeviation:
+        if distx < tolx_mm and disty < toly_mm:
             barrival_confirmed = True
 
         return barrival_confirmed
@@ -148,11 +185,11 @@ class GantryControl(object):
 
         bArrived_both = False
         while bArrived_both is False:
-            t.sleep(0.1)
+            t.sleep(0.01)
 
             actpos_X_mm, actpos_Y_mm = self.get_gantry_pos_xy_mm()
             actpos = [actpos_X_mm, actpos_Y_mm]
-            print('Actual position: x = ' + str(round(actpos[0], 1)) + 'mm y = ' + str(round(actpos[1], 1)) + 'mm')
+            #print('Actual position: x = ' + str(round(actpos[0], 1)) + 'mm y = ' + str(round(actpos[1], 1)) + 'mm')
             self.set_gantry_pos(actpos)
             """
             dist_x = abs(self.get_gantry_pos()[0] - target_wp[0])
@@ -175,7 +212,7 @@ class GantryControl(object):
         print ('move gantry to way-point x [mm] = ' + str(target_wp[0]) + ' y [mm] = ' + str(target_wp[1]))
 
         # some control stuff can be inserted here
-        t.sleep(1.0)
+        t.sleep(0.4)
         self.set_gantry_pos(target_wp)
         if self.get_gantry_pos() == target_wp:
             print ('arrived at new waypoint')
@@ -227,9 +264,24 @@ class GantryControl(object):
             print('Logging with avg. ' + str(meas_freq) + ' Hz')
         return True
 
-    def follow_wp_and_take_measurements(self, start_wp, wp_list, set_sample_size=32):
-        self.__oCal.set_size(set_sample_size)
-        sample_size = self.__oCal.get_size()
+    def follow_wp_and_take_measurements(self, start_wp=[1000, 1000], sample_size=32):
+
+        self.start_RfEar()
+        self.__oRf.set_samplesize(sample_size)
+        sample_size = self.__oRf.get_samplesize()
+
+        wplist_filename = hc_tools.select_file()
+        print(wplist_filename)
+        wp_append_list = []
+        with open(wplist_filename, 'r') as wpfile:
+            for i, line in enumerate(wpfile):
+                print('line = ' + line)
+                print(line.split(','))
+                temp_list = line.split(',')
+                wp_append_list.append(map(float, temp_list[0:-1]))
+
+        print(str(np.asarray(wp_append_list)))
+        wp_list = np.asarray(wp_append_list)
 
         measdata_filename = hc_tools.save_as_dialog()
         print(measdata_filename)
@@ -263,7 +315,7 @@ class GantryControl(object):
                 meas_counter += 1
                 time_elapsed = t.time() - start_time
                 pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
-                freq_den_max, pxx_den_max = self.__oCal.get_rss_peaks_at_freqtx()
+                freq_den_max, pxx_den_max = self.__oRf.get_rss_peaks()
 
                 data_row = np.append([meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max)
                 data_list.append(data_row)
@@ -284,6 +336,117 @@ class GantryControl(object):
             measfile.write('wp_list =' + str(wp_list) + '\n')
             measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max\n')
             measfile.write('### begin data log\n')
+            data_mat = np.asarray(data_list)
+            for row in data_mat:
+                row_string = ''
+                for i in range(len(row)):
+                    row_string += str(row[i]) + ','
+                row_string += '\n'
+                measfile.write(row_string)
+
+            measfile.close()
+
+        return True
+
+    def follow_wp_path_opt_take_measurements(self, b_take_meas=False, b_send_pos=False, tol=10 ,start_wp=[1000, 1000], sample_size=32):
+        """
+
+        :param b_take_meas:
+        :param start_wp:
+        :param sample_size:
+        :return:
+        """
+        if b_take_meas is True:  # dont start SDR if not RSS measurements will be taken
+            self.start_RfEar()
+            self.__oRf.set_samplesize(sample_size)
+            sample_size = self.__oRf.get_samplesize()
+
+        wplist_filename = hc_tools.select_file()
+        print(wplist_filename)
+        wp_append_list = []
+        with open(wplist_filename, 'r') as wpfile:
+            for i, line in enumerate(wpfile):
+                print('line = ' + line)
+                print(line.split(','))
+                temp_list = line.split(',')
+                wp_append_list.append(map(float, temp_list[0:-1]))
+
+        print(str(np.asarray(wp_append_list)))
+        wp_list = np.asarray(wp_append_list)
+
+
+        measdata_filename = hc_tools.save_as_dialog()
+        print(measdata_filename)
+
+        num_wp = len(wp_list)
+        print('Number of way points: ' + str(num_wp))
+        start_time = t.time()
+
+        self.set_target_wp(start_wp)
+        self.start_moving_gantry_to_target()
+        print('Moving to start position = ' + str(start_wp))
+        while not self.confirm_arrived_at_target_wp():
+            t.sleep(0.2)
+        print('Arrived at start point')
+
+        t.sleep(0.5)
+        print('Start following way point sequence')
+
+        data_list = []
+        meas_counter = 0
+        time_elapsed = 0.0
+        tolx_mm = tol  # mm
+        toly_mm = tol  # mm
+
+        # follow wp sequence
+        for wp in wp_list:
+            print('wp in list = ' + str(wp))
+            # go to wp
+            self.set_target_wp(wp)
+            self.start_moving_gantry_to_target()
+            not_arrived_at_wp = True
+            print('Moving to wp = ' + str(wp))
+
+            # following sequence
+            while not_arrived_at_wp:
+                meas_counter += 1
+                time_elapsed = t.time() - start_time
+                pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
+
+                if b_take_meas is True:
+                    # taking measurements
+                    freq_den_max, pxx_den_max = self.__oRf.get_rss_peaks()
+                    data_row = np.append([meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max)
+
+                else:
+                    data_row = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm]
+
+                # add new data to list
+                data_list.append(data_row)
+
+                # arrived at wp? -> go to next
+                if self.confirm_arrived_at_target_wp(tolx_mm, toly_mm):
+                    not_arrived_at_wp = False
+
+            meas_freq = meas_counter / time_elapsed
+            print('Logging with avg. ' + str(meas_freq) + ' Hz')
+
+        with open(measdata_filename, 'w') as measfile:
+            measfile.write('Measurement file for trajectory following\n')
+            measfile.write('Measurement was taken on ' + t.ctime() + '\n')
+            measfile.write('### begin grid settings\n')
+            if b_take_meas is True:
+                measfile.write('sample size = ' + str(sample_size) + ' [*1024]\n')
+                measfile.write('avg. meas frequency = ' + str(meas_freq) + ' Hz\n')
+            measfile.write('start_point =' + str(start_wp) + '\n')
+            measfile.write('wp_list =' + str(wp_list) + '\n')
+            if b_take_meas is True:
+                measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max\n')
+            else:
+                measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm]\n')
+
+            measfile.write('### begin data log\n')
+
             data_mat = np.asarray(data_list)
             for row in data_mat:
                 row_string = ''
@@ -488,7 +651,7 @@ class GantryControl(object):
                 if self.transmit_wp_to_gantry(new_target_wp):
                     if self.move_gantry_to_target():
                         if self.confirm_arrived_at_target_wp():
-                            t.sleep(1)  # wait to damp motion/oscillation of antenna etc
+                            t.sleep(.25)  # wait to damp motion/oscillation of antenna etc
 
                             print('START Measurement for ' + str(meastime) + 's')
                             print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
@@ -543,14 +706,22 @@ class GantryControl(object):
         #          [2530, 1240],
         #          [790, 1230]]
         #self.__oRf.set_txparams(freqtx, tx_pos)
-        freq6tx = [434.00e6, 434.15e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
+        freq6tx = [434.00e6,  434.15e6,434.30e6, 434.45e6, 434.65e6, 433.90e6]
+        """
+        tx_6pos = [[700, 440],
+           [1560,450],
+           [2440, 460],
+           [2440, 1240],
+           [1560, 1235],
+           [700, 1230]]
+           """
 
-        tx_6pos = [[790, 440],
-                   [1650, 450],
-                   [2530, 460],
-                   [2530, 1240],
-                   [1650, 1235],
-                   [790, 1230]]
+        tx_6pos = [[520, 430],
+                   [1540, 430],
+                   [2570, 430],
+                   [2570, 1230],
+                   [1540, 1230],
+                   [530, 1230]]
         self.__oRf.set_txparams(freq6tx, tx_6pos)
         return True
 

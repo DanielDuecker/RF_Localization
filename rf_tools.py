@@ -349,6 +349,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
 
             val_sequence = np.linspace(-100, -20, 80/5+1)
 
+           # CS = ax.contour(wp_matx[::2,::2], wp_maty[::2,::2], rss_full_mat[::2,::2], val_sequence) # takes every second value
             CS = ax.contour(wp_matx, wp_maty, rss_full_mat, val_sequence)
             ax.clabel(CS, inline=0, fontsize=10)
             for itx_plot in analyze_tx:
@@ -360,7 +361,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
             ax.axis('equal')
             ax.set_title('RSS field for TX# ' + str(itx + 1))
 
-        plot_fig1 = True
+        plot_fig1 = False
         if plot_fig1:
             fig = plt.figure(1)
             for itx in analyze_tx:
@@ -412,7 +413,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
                     pos = 111
                 ax = fig.add_subplot(pos)
                 ax.errorbar(rdist, rss_mean, yerr=rss_var,
-                            fmt='ro', ecolor='g', label='Original Data')
+                            fmt='ro',markersize='1', ecolor='g', label='Original Data')
 
                 rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
                 ax.plot(rdata, rsm_model(rdata, alpha[itx], gamma[itx]), label='Fitted Curve')

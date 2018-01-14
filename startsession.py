@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
-"""
-wp_filename = 'wp_list_wo-tx_field_50mm.txt'
+#"""
+wp_filename = 'wp_list_6tx_Fullfield_20mm_2018.txt'
 x0 = [0,0]
-xn = [3000, 1500]
-dxdy = [50, 50]
+xn = [3000, 1600]
+dxdy = [20, 20]
 
-rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 5.0, True)
-"""
+rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 5, True)
+#"""
 
 txpos_offset = np.array([0, 0])
 
@@ -42,8 +42,8 @@ Rf.set_txparams(freq6tx, tx_6pos)
 
 Rf.set_samplesize(32)
 
-Rf.plot_power_spectrum_density()
-#Rf.plot_txrss_live()
+#Rf.plot_power_spectrum_density()
+Rf.plot_txrss_live()
 
 
 

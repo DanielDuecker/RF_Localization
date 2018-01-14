@@ -5,7 +5,8 @@ import time
 # sc.serial_example()
 # sc.test_serial()
 
-belt_drive = sc.motor_communication('/dev/ttyS4', 'belt_drive', 'belt', 2940)
+belt_drive = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2e6)
+#def __init__(self, portname, name, baudrate, drivetype, travelling_distance_mm, extreme_pos_inc):  #
 
 litposmm = np.linspace(0, 2500, 11)
 print (str(litposmm))
