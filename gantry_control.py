@@ -4,6 +4,7 @@ import time as t
 import serial_control as sc
 import hippocampus_toolbox as hc_tools
 import rf_tools
+import estimator
 
 
 class GantryControl(object):
@@ -348,7 +349,7 @@ class GantryControl(object):
 
         return True
 
-    def follow_wp_path_opt_take_measurements(self, b_take_meas=False, b_send_pos=False, tol=10 ,start_wp=[1000, 1000], sample_size=32):
+    def follow_wp_path_opt_take_measurements(self, b_take_meas=False, b_send_pos=False, tol=10 ,start_wp=[600, 600], sample_size=32):
         """
 
         :param b_take_meas:
@@ -382,21 +383,31 @@ class GantryControl(object):
         print('Number of way points: ' + str(num_wp))
         start_time = t.time()
 
-        self.set_target_wp(start_wp)
-        self.start_moving_gantry_to_target()
-        print('Moving to start position = ' + str(start_wp))
-        while not self.confirm_arrived_at_target_wp():
-            t.sleep(0.2)
-        print('Arrived at start point')
+        #self.set_target_wp(start_wp)
+        #self.start_moving_gantry_to_target()
+        #print('Moving to start position = ' + str(start_wp))
+        #while not self.confirm_arrived_at_target_wp():
+        #    t.sleep(0.2)
+        #print('Arrived at start point')
 
-        t.sleep(0.5)
-        print('Start following way point sequence')
+        #t.sleep(0.5)
+        #print('Start following way point sequence')
 
         data_list = []
         meas_counter = 0
         time_elapsed = 0.0
         tolx_mm = tol  # mm
         toly_mm = tol  # mm
+
+        b_ekf = True
+        if b_ekf is True:
+            # init EKF
+            EKF = estimator.ExtendedKalmanFilter()
+            EKF_Plotter = estimator.EKF_Plot(EKF.get_tx_pos(), EKF.get_tx_num())
+
+
+
+
 
         # follow wp sequence
         for wp in wp_list:
@@ -412,6 +423,14 @@ class GantryControl(object):
                 meas_counter += 1
                 time_elapsed = t.time() - start_time
                 pos_x_mm, pos_y_mm = self.get_gantry_pos_xy_mm()
+
+                if b_ekf is True:
+                    EKF.ekf_prediction()
+                    EKF.ekf_update()
+                    EKF_Plotter.add_data_to_plot([EKF.get_x_est()[0, -1], EKF.get_x_est()[1, -1]], 'bo')
+                    EKF_Plotter.add_data_to_plot([pos_x_mm,pos_y_mm],'go')
+                    EKF_Plotter.update_plot()
+
 
                 if b_take_meas is True:
                     # taking measurements
