@@ -66,6 +66,7 @@ class ExtendedKalmanFilter(object):
 
         self.__z_meas = np.zeros(self.__tx_num)
         self.__y_est = np.zeros(self.__tx_num)
+        self.__r_dist = np.zeros(self.__tx_num)
 
     def init_x_0(self, x0):
         self.__x_est = x0
@@ -97,7 +98,7 @@ class ExtendedKalmanFilter(object):
         r_dist = np.sqrt((x[0] - tx_pos[0]) ** 2 + (x[1] - tx_pos[1]) ** 2)
         y_rss = -20 * np.log10(r_dist) - alpha * r_dist - gamma
 
-        return y_rss
+        return y_rss, r_dist
 
     # jacobian of the measurement function
     def h_rss_jacobian(self, x, tx_param):
@@ -116,13 +117,34 @@ class ExtendedKalmanFilter(object):
 
         return h_rss_jac.reshape((2, 1))
 
-    def measurement_covariance_model(self, rss_noise_model):
+    def measurement_covariance_model(self, rss_noise_model,r_dist):
         """
         estimate measurement noise based on the received signal strength
         :param rss: measured signal strength
         :return: r_mat -- measurement covariance matrix 
         """
+        #"""
+        ekf_param = [6.5411, 7.5723, 9.5922, 11.8720, 21.6396, 53.6692, 52.0241]
+        if r_dist <= 20 or r_dist >= 1900:
+                r_sig = 100
+        else:
+            if rss_noise_model >= -55:
+                r_sig = ekf_param[0]
+            elif rss_noise_model < -55:
+                r_sig = ekf_param[1]
+            elif rss_noise_model < -65:
+                 r_sig = ekf_param[2]
+            elif rss_noise_model < -75:
+                r_sig = ekf_param[3]
+            elif rss_noise_model < -80:
+                r_sig = ekf_param[4]
 
+
+        r_mat = r_sig ** 2
+        return r_mat
+       #
+        """
+        #old model
         # simple first try
         if rss_noise_model >= -85:
             r_sig = 10
@@ -131,6 +153,8 @@ class ExtendedKalmanFilter(object):
 
         r_mat = r_sig ** 2
         return r_mat
+        
+        """
 
     def ekf_prediction(self):
         """ prediction """
@@ -147,11 +171,11 @@ class ExtendedKalmanFilter(object):
         # iterate through all tx-rss-values
         for itx in range(self.__tx_num):
             # estimate measurement from x_est
-            self.__y_est[itx] = self.h_rss(self.__x_est, self.__tx_param[itx])
+            self.__y_est[itx], self.__r_dist[itx] = self.h_rss(self.__x_est, self.__tx_param[itx])
             y_tild = self.__z_meas[itx] - self.__y_est[itx]
 
             # estimate measurement noise based on
-            r_mat = self.measurement_covariance_model(self.__z_meas[itx])
+            r_mat = self.measurement_covariance_model(self.__z_meas[itx], self.__r_dist[itx])
 
             # calc K-gain
             h_jac_mat = self.h_rss_jacobian(self.__x_est, self.__tx_param[itx])
