@@ -17,7 +17,7 @@ import rf
 
 
 class ExtendedKalmanFilter(object):
-    def __init__(self,x0=[500,500]):
+    def __init__(self, x0=[500, 500]):
 
         self.__tx_freq = []
         self.__tx_pos = []
