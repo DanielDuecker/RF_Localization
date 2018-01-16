@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import curve_fit
 from scipy.special import lambertw
+import socket
 
 import hippocampus_toolbox as hc_tools
 """
@@ -128,7 +129,6 @@ def write_measfile_header(ofile, file_description, x0, xn, grid_dxdy, timemeas, 
                  str(timemeas) + ', ' + txdata +
                  '\n')
     return True
-
 
 
 def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
@@ -489,15 +489,15 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
                 if len(analyze_tx) == 1:
                     pos = 111
                 ax = fig.add_subplot(pos)
-                #rssdata = np.linspace(-10, -110, num=1000)
-                #ax.plot(rssdata, lambertloc(rssdata, alpha[itx], gamma[itx]), label='Fitted Curve')
+                # rssdata = np.linspace(-10, -110, num=1000)
+                # ax.plot(rssdata, lambertloc(rssdata, alpha[itx], gamma[itx]), label='Fitted Curve')
 
 
-                #ax.errorbar(bin[1:-1], bin_mean, yerr=bin_var, fmt='ro', ecolor='g', label='Original Data')
+                # ax.errorbar(bin[1:-1], bin_mean, yerr=bin_var, fmt='ro', ecolor='g', label='Original Data')
                 ax.plot(bin[1:-1], bin_mean, '.')
-                #print('bin_means = ' + str(bin_mean))
-                #print('bin_var = ' + str(bin_var))
-                #ax.plot(r_dist_sort, dist_error, '.')
+                # print('bin_means = ' + str(bin_mean))
+                # print('bin_var = ' + str(bin_var))
+                # ax.plot(r_dist_sort, dist_error, '.')
                 ax.grid()
                 ax.set_xlabel('Distance to tx [mm]')
                 ax.set_ylabel('Error [mm]')
@@ -513,7 +513,51 @@ def lambertloc(rss, alpha, gamma):
     Keyword arguments:
     :param rss -- received power values [dB]
     :param alpha
-    :param xi
+    :param gamma
     """
     z = 20 / (np.log(10) * alpha) * lambertw(np.log(10) * alpha / 20 * np.exp(-np.log(10) / 20 * (rss + gamma)))
     return z.real  # [mm]
+
+
+"""
+TCP - Communication
+"""
+
+
+class SocServer(object):
+    def __init__(self, ip_server, port_server):
+        self.__server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__ip_server = ip_server
+        self.__port_server = port_server
+
+        self.__server.bind((self.__ip_server, self.__port_server))
+        self.__server.listen(1)
+        print('Server: Started listining on ip: ' + self.__ip_server + ' on port: ' + self.__port_server)
+
+        print('...\nWaiting for client to connect...')
+        self.__incoming_client, self.__incoming_address = self.__server.accept()
+        print('Server: Got connection from ip: ' + self.__incoming_address[0] + ' on port: ' + self.__incoming_address[1])
+
+    def soc_get_data_from_client(self):
+
+        new_data = self.__incoming_client.recv(1024)
+        if new_data == 'disconnect':
+            print('Received command to disconnect!')
+            self.__server.close()
+        else:
+            print('Server: Received data: ' + new_data)
+
+        return new_data
+
+
+class SocClient(object):
+    def __init__(self, ip_server, port_server):
+        self.__client = socket.socket()
+        self.__ip_server = ip_server
+        self.__port_server = port_server
+
+        self.__client.connect((self.__ip_server, self.__port_server))
+
+    def soc_send_data_so_server(self, data):
+
+        self.__client.send(data)

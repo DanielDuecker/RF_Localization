@@ -426,9 +426,11 @@ class GantryControl(object):
 
                 if b_ekf is True:
                     EKF.ekf_prediction()
-                    EKF.ekf_update()
+                    EKF.ekf_update(-80)
+                    EKF.check_valid_position_estimate()
+
                     EKF_Plotter.add_data_to_plot([EKF.get_x_est()[0, -1], EKF.get_x_est()[1, -1]], 'bo')
-                    EKF_Plotter.add_data_to_plot([pos_x_mm,pos_y_mm],'go')
+                    EKF_Plotter.add_data_to_plot([pos_x_mm,pos_y_mm], 'go')
                     EKF_Plotter.update_plot()
 
 
