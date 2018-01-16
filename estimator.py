@@ -45,11 +45,13 @@ class ExtendedKalmanFilter(object):
             self.__tx_param.append([self.__tx_pos[itx], self.__tx_alpha[itx], self.__tx_gamma[itx]])
 
         """ initialize EKF """
-        self.__x_est = np.array([[x0[0]], [x0[1]]]).reshape((2, 1))
+        self.__x_est_0 = np.array([[x0[0]], [x0[1]]]).reshape((2, 1))
+        self.__x_est = self.__x_est_0
         # standard deviations
         self.__sig_x1 = 500
         self.__sig_x2 = 500
-        self.__p_mat = np.array(np.diag([self.__sig_x1 ** 2, self.__sig_x2 ** 2]))
+        self.__p_mat_0 = np.array(np.diag([self.__sig_x1 ** 2, self.__sig_x2 ** 2]))
+        self.__p_mat = self.__p_mat_0
 
         # process noise
         self.__sig_w1 = 100
@@ -68,13 +70,17 @@ class ExtendedKalmanFilter(object):
         self.__y_est = np.zeros(self.__tx_num)
         self.__r_dist = np.zeros(self.__tx_num)
 
-    def init_x_0(self, x0):
+    def set_x_0(self, x0):
         self.__x_est = x0
         return True
 
-    def init_p_mat_0(self, p0):
+    def set_p_mat_0(self, p0):
         self.__p_mat = p0
         return True
+
+    def reset_ekf(self):
+        self.__x_est = self.__x_est_0
+        self.__p_mat = self.__p_mat_0
 
     def get_x_est(self):
         return self.__x_est
@@ -162,11 +168,17 @@ class ExtendedKalmanFilter(object):
         self.__p_mat = self.__i_mat.dot(self.__p_mat.dot(self.__i_mat)) + self.__q_mat
         return True
 
-    def ekf_update(self):
+    def ekf_update(self,rss_low_lim=-120):
         """ innovation """
+
         freq_peaks, rss = self.__oMeasSys.get_rss_peaks()
         # get new measurement
         self.__z_meas = rss
+
+        """ if no valid measurement signal is received, reset ekf i.e. boat outside water"""
+        if np.mean(rss) < rss_low_lim:
+            self.reset_ekf()
+            return True
 
         # iterate through all tx-rss-values
         for itx in range(self.__tx_num):
@@ -184,6 +196,15 @@ class ExtendedKalmanFilter(object):
 
             self.__x_est = self.__x_est + k_mat * y_tild  # = x_est + k * y_tild
             self.__p_mat = (self.__i_mat - np.dot(k_mat, h_jac_mat.transpose())) * self.__p_mat  # = (I-KH)*P
+        return True
+
+    def check_valid_position_estimate(self,x_field_begin=[0 ,0], x_field_end=[3500, 2000]):
+        if x_field_begin[0] > self.__x_est[0] or x_field_end[0] < self.__x_est[0]:
+            self.reset_ekf()
+            print('EKF: Position estimate out of range --> reset EKF')
+        elif x_field_begin[1] > self.__x_est[1] or x_field_end[1] < self.__x_est[1]:
+            self.reset_ekf()
+            print('EKF: Position estimate out of range --> reset EKF')
         return True
 
 
