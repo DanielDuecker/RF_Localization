@@ -292,6 +292,104 @@ class RfEar(object):
         dataseq_mat = np.asarray(dataseq)
         return dataseq_mat
 
+    def manual_calibration_for_one_tx(self, measdata_filename, meastime = 5, b_plotting=True):
+        """
+        :return:
+        """
+
+        print('Manual calibration started!')
+        # read data from waypoint file
+        freqtx = self.__freqtx
+        #wplist_filename = hc_tools.select_file()
+        #wp_data_mat, x0, xn, grid_dxdy, timemeas = rf_tools.read_data_from_wp_list_file(wplist_filename)
+        meas_mean = []
+        meas_var = []
+        dist_list = []
+
+        #measdata_filename = hc_tools.save_as_dialog('Save measurement data as...')
+        with open(measdata_filename, 'w') as measfile:
+            meas_counter = 0
+            b_new_measurement = True
+            # loop over all way-points
+            while b_new_measurement:
+
+                input_dist = raw_input('Next measurement distance [mm]? (type >end< to exit)')
+
+                if input_dist == 'end':
+                    break
+
+                meas_counter = meas_counter + 1
+                numwp = meas_counter
+                meas_point = [input_dist, 0]
+                dist_list.append(input_dist)
+
+                print('Measuring at Way-Point #' + str(numwp) + ' at distance ' + str(meas_point[0] + 'mm'))
+
+                dataseq = self.take_measurement(meastime)
+
+                [nummeas, numtx] = np.shape(dataseq)
+
+                # way point data - structure 'wp_x, wp_y, num_wp, num_tx, num_meas'
+                str_base_data = str(meas_point[0]) + ', ' + str(meas_point[1]) + ', ' +\
+                                str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
+                # freq data
+                str_freqs = ', '.join(map(str, freqtx)) + ', '
+
+                # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
+                # print('data ' + str(dataseq))
+                str_rss = ''
+                for i in range(numtx):
+                    str_rss = str_rss + ', '.join(map(str, dataseq[:, i])) + ', '
+
+                print('Measurements taken: ' + str(nummeas) + ' at sample-size ' + str(self.__samplesize))
+
+                measfile.write(str_base_data + str_freqs + str_rss + '\n')
+
+                meas_mean.append(np.mean(dataseq, axis=0))
+                meas_var.append(np.var(dataseq, axis=0))
+                print('input_dist = ' + input_dist)
+                if b_plotting:
+                    self.cal_plot(dist_list, meas_mean, meas_var)
+
+            measfile.close()
+            print('Measurement file ' + measdata_filename + ' closed :-)')
+        return True
+
+    def cal_plot(self, r_dist, rss_mean, rss_var):
+
+
+#        rdist = np.array(rdist_temp[itx, :], dtype=float)
+#        rss_mean = np.array(rss_mean, dtype=float)
+#        rss_var = np.array(rss_var, dtype=float)
+        plt.figure(1)
+
+
+        #r_dist = np.array(rdist_temp, dtype=float)
+        #rss_mean = np.array(rss_mean, dtype=float)
+        #rss_var = np.array(rss_var, dtype=float)
+        print(np.shape(r_dist))
+        print(np.shape(rss_mean))
+        print(np.shape(rss_mean))
+        print(r_dist)
+        print(rss_mean)
+        plt.plot(r_dist, rss_mean)
+        #plt.errorbar(r_dist, rss_mean, yerr=rss_var,
+        #        fmt='ro', markersize='1', ecolor='g', label='Original Data')
+
+
+        #rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
+        #ax.plot(rdata, rsm_model(rdata, alpha[itx], gamma[itx]), label='Fitted Curve')
+        plt.legend(loc='upper right')
+        plt.grid()
+        plt.ylim([-110, -10])
+        plt.xlabel('Distance [mm]')
+        plt.ylabel('RSS [dB]')
+        plt.title('RSM for TX# 1')
+        plt.show()
+
+        return True
+
+
     """
 
     Plotting methods

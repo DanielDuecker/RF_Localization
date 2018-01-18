@@ -47,8 +47,8 @@ Rf.set_samplesize(32)
 
 #Rf.map_path_ekf([600,600], 'h_rss')
 
-#Rf.plot_power_spectrum_density()
-Rf.plot_txrss_live()
+Rf.plot_power_spectrum_density()
+#Rf.plot_txrss_live()
 
 
 
