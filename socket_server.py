@@ -1,4 +1,37 @@
 import socket
+import sys
+from threading import *
+"""
+host = ''
+port = 50009
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+try:
+    s.bind((host, port))
+except socket.error as e:
+    print(str(e))
+
+s.listen(5)
+
+def threaded_client(conn):
+    conn.send('Type your info!\n')
+
+    while True:
+        data = conn.recv(2048)
+        reply = 'Server answer: ' + data
+        if not data:
+            break
+        conn.sendall(reply)
+    conn.close()
+
+while True:
+    conn, addr = s.accept()
+    print('connected to: ' + str(addr[0]) + ' on port ' + str(addr[1]))
+
+    start_new_thread(threaded_client,(conn,))
+
+    print('huhu')
+"""
 
 
 class SocServer(object):
@@ -17,7 +50,7 @@ class SocServer(object):
 
     def soc_send_data_to_client(self, data):
 
-        self.__server.send(data)
+        self.__incoming_client.send(data)
 
         return True
 
