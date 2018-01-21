@@ -26,7 +26,7 @@ analyze_tx = [1, 2, 3, 4]
 
 
 
-Rf = rf.RfEar(434.2e6, 1e4)
+#Rf = rf.RfEar(434.2e6, 1e4)
 
 
 
@@ -38,20 +38,24 @@ tx_6pos = [[520, 430],
            [2570, 1230],
            [1540, 1230],
            [520, 1230]]
-Rf.set_txparams(freq6tx, tx_6pos)
+#Rf.set_txparams(freq6tx, tx_6pos)
 tx_alpha = [0.01149, 0.01624, 0.01135, 0.01212, 0.00927, 0.012959]
 tx_gamma = [-8.52409, -11.6705, -8.7169, -8.684, -5.1895, -9.81247]
-Rf.set_calparams(tx_alpha, tx_gamma)
+#Rf.set_calparams(tx_alpha, tx_gamma)
 
-Rf.set_samplesize(32)
+#Rf.set_samplesize(32)
 
 #Rf.map_path_ekf([600,600], 'h_rss')
 
-Rf.plot_power_spectrum_density()
+#Rf.plot_power_spectrum_density()
 #Rf.plot_txrss_live()
 
 
+import socket_server
 
+soc_client = socket_server.SocClient('192.168.1.100', 50007)
+while True:
+    print(soc_client.soc_send_data_request())
 
 
 

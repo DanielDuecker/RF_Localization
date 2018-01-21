@@ -88,6 +88,9 @@ class ExtendedKalmanFilter(object):
     def get_p_mat(self):
         return self.__p_mat
 
+    def get_z_meas(self):
+        return  self.__z_meas
+
     def get_tx_num(self):
         return self.__tx_num
 
@@ -123,13 +126,13 @@ class ExtendedKalmanFilter(object):
 
         return h_rss_jac.reshape((2, 1))
 
-    def measurement_covariance_model(self, rss_noise_model,r_dist):
+    def measurement_covariance_model(self, rss_noise_model, r_dist):
         """
         estimate measurement noise based on the received signal strength
         :param rss: measured signal strength
         :return: r_mat -- measurement covariance matrix 
         """
-        #"""
+
         ekf_param = [6.5411, 7.5723, 9.5922, 11.8720, 21.6396, 53.6692, 52.0241]
         if r_dist <= 20 or r_dist >= 1900:
                 r_sig = 100
