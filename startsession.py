@@ -50,14 +50,26 @@ tx_gamma = [-8.52409, -11.6705, -8.7169, -8.684, -5.1895, -9.81247]
 #Rf.plot_power_spectrum_density()
 #Rf.plot_txrss_live()
 
-
 import socket_server
 
-soc_client = socket_server.SocClient('192.168.1.100', 50007)
+soc_client = socket_server.SocClient('192.168.1.23', 50007)
 while True:
     print(soc_client.soc_send_data_request())
+    str_received = soc_client.soc_send_data_request()
+# format: clientid:time:k: x_est:z_meas
+#my_str = 's2056:52.2237920761:2056:[[ 1368.3586708 ][-2457.06995452]]:[-104.83798052655034, -103.34525956119742, -101.7447387648982, -102.22726036227286, -101.4596792475335, -100.82649745178455]'
 
+    str_list = str_received.split(':')
+    msg_id = str_list[0]
+    msg_time = str_list[1]
+    msg_k = str_list[2]
+    msg_x_est = str_list[3]
+    msg_z_meas = str_list[4]
 
+    #print(msg_k)
+
+    #print(np.fromstring(msg_x_est))
+    #print(np.fromstring(msg_z_meas))
 
 
 #Rf.get_performance()

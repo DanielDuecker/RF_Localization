@@ -1,5 +1,6 @@
 import socket
 
+
 class SocServer(object):
     def __init__(self, ip_server, port_server):
         self.__server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,9 +18,9 @@ class SocServer(object):
 
     def soc_send_data_to_client(self, data):
         self.__numofsentmsg = self.__numofsentmsg + 1
-        msg = 's'+str(self.__numofsentmsg) +','+str(data)
-        self.__incoming_client.send(data)
-        print(msg)
+        msg = 's' + str(self.__numofsentmsg) + ':' + str(data)
+        self.__incoming_client.send(msg)
+        # print(msg)
 
         return True
 
@@ -30,8 +31,8 @@ class SocServer(object):
         if new_data == 'disconnect':
             print('Received command to disconnect!')
             self.__server.close()
-        else:
-            print('Server: Received data: ' + str(new_data))
+        # else:
+             # print('Server: Received data: ' + str(new_data))
 
         return new_data
 
@@ -63,12 +64,11 @@ class SocClient(object):
 
     def soc_send_data_to_server(self, data):
         self.__numofsentmsg = self.__numofsentmsg + 1
-        msg = 'c'+str(self.__numofsentmsg) +','+str(data)
+        msg = 'c' + str(self.__numofsentmsg) + ':' + str(data)
         self.__client.send(msg)
 
     def soc_get_data_from_server(self):
 
         new_data = self.__client.recv(8096)
         print('Client: Received data: ' + str(new_data))
-
         return new_data
