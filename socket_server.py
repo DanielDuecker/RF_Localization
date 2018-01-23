@@ -19,7 +19,7 @@ class SocServer(object):
 
     def soc_send_data_to_client(self, data_list):
         self.__numofsentmsg = self.__numofsentmsg + 1
-        print(data_list)
+        # print(data_list)
         pickled_list = pickle.dumps(data_list)
         msg = pickled_list
         self.__incoming_client.send(msg)
@@ -43,14 +43,10 @@ class SocServer(object):
             return False
 
     def soc_process_request(self, newdata_list):
-        print('process data: ' + str(newdata_list))
-        # received_msg = self.soc_get_data_from_client()
-        # print('recv_msg = ' + str(received_msg))
 
         if self.soc_wait_for_data_request():  # received_msg == 'req_data':
-            print('reqdata_received')
             self.soc_send_data_to_client(newdata_list)
-            print('request processed')
+            print('data sent')
             return True
         else:
             return False
@@ -84,7 +80,7 @@ class SocClient(object):
     def soc_get_data_from_server(self):
         while True:
             new_msg = self.__client.recv(8096)
-            print('new msg form server: ' + new_msg)
+            #print('new msg form server: ' + new_msg)
             if new_msg is not '':
                 new_data_list = pickle.loads(new_msg)
                 break
