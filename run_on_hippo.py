@@ -6,8 +6,8 @@ import numpy as np
 
 # def loop_on_hippo(b_soc_transmission = True, b_client_connected = True,server_ip = '192.168.1.1',server_port = 50007):
 b_soc_transmission = True
-server_ip = '192.168.1.23'
-server_port = 50007
+server_ip = '192.168.1.1'
+server_port = 50008
 
 if b_soc_transmission:
     soc_server = socket_server.SocServer(server_ip, server_port)
@@ -26,9 +26,11 @@ while True:
     # temp = EKF.get_x_est()
     # print(temp)
     # print(np.tostring(temp))
-    """ Data Transmission to base station"""
+    """ Data Transmission to base station """
     # format: clientid:time:k: x_est:z_meas
 
-    data = str(runtime) + ':' + str(k) + ':' + str(EKF.get_x_est()) + ':' + str(EKF.get_z_meas())
-    soc_server.soc_process_request(data)
+    #data = str(runtime) + ':' + str(k) + ':' + str(EKF.get_x_est()) + ':' + str(EKF.get_z_meas())
+    data_list = [runtime, k, EKF.get_x_est(), EKF.get_z_meas()]
+    print(k)
+    soc_server.soc_process_request(data_list)
 

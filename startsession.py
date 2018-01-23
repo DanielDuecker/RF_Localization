@@ -50,50 +50,12 @@ tx_gamma = [-8.52409, -11.6705, -8.7169, -8.684, -5.1895, -9.81247]
 #Rf.plot_power_spectrum_density()
 #Rf.plot_txrss_live()
 
-import socket_server
 
-soc_client = socket_server.SocClient('192.168.1.23', 50007)
-while True:
-    print(soc_client.soc_send_data_request())
-    str_received = soc_client.soc_send_data_request()
-# format: clientid:time:k: x_est:z_meas
-#my_str = 's2056:52.2237920761:2056:[[ 1368.3586708 ][-2457.06995452]]:[-104.83798052655034, -103.34525956119742, -101.7447387648982, -102.22726036227286, -101.4596792475335, -100.82649745178455]'
 
-    str_list = str_received.split(':')
-    msg_id = str_list[0]
-    msg_time = str_list[1]
-    msg_k = str_list[2]
-    msg_x_est = str_list[3]
-    msg_z_meas = str_list[4]
-
-    #print(msg_k)
-
-    #print(np.fromstring(msg_x_est))
-    #print(np.fromstring(msg_z_meas))
-
+"""
 
 #Rf.get_performance()
 #cal.plot_txrss_live()
 
 """
-freqspan = 2e4
-freqcenter = np.mean(freqtx)
 
-alpha = [0.013854339628529109, 0.0071309466013866158, 0.018077579531274993, 0.016243668091798915]
-gamma = [-1.5898021024559508, 2.0223747861988461, -5.6650866655302714, -5.1158161676293972]
-tx_abs_pos = [[1060, 470],  # 433.9MHz
-              [1060, 1260],  # 434.1MHz
-              [2340, 470],  # 434.3MHz
-              [2340, 1260]]  # 434.5MHz
-
-"""
-
-"""
-loc = rf.LocEar(434.0e6, freqtx, freqspan, alpha, gamma, tx_abs_pos)
-
-#loc.plot_txdist_live()
-
-x0 = np.array([600, 400])  # initial estimate
-loc.set_samplesize(16)
-loc.map_path_ekf(x0, 'h_rss', True, False, False)
-"""
