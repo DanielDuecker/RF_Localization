@@ -15,7 +15,7 @@ class EKF_Plot(object):
         x_max = 3100.0
         y_min = -500.0
         y_max = 2000.0
-        #plt.axis([x_min, x_max, y_min, y_max])
+        plt.axis([x_min, x_max, y_min, y_max])
 
         plt.grid()
         plt.xlabel('x-Axis [mm]')

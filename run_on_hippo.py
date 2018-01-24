@@ -22,14 +22,9 @@ while True:
     k = k + 1
     EKF.ekf_prediction()
     EKF.ekf_update()
-
-    # temp = EKF.get_x_est()
-    # print(temp)
-    # print(np.tostring(temp))
+    EKF.save_to_txt()
     """ Data Transmission to base station """
-    # format: clientid:time:k: x_est:z_meas
 
-    #data = str(runtime) + ':' + str(k) + ':' + str(EKF.get_x_est()) + ':' + str(EKF.get_z_meas())
     data_list = [runtime, k, EKF.get_x_est(), EKF.get_z_meas()]
     print(k)
     soc_server.soc_process_request(data_list)

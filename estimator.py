@@ -99,11 +99,25 @@ class ExtendedKalmanFilter(object):
         alpha = tx_param[1]
         gamma = tx_param[2]
 
-        # r = sqrt((x - x_tx) ^ 2 + (y - y_tx) ^ 2)
+        # r = sqrt((x - x_tx) ^ 2 + (y - y_tx) ^ 2)S
         r_dist = np.sqrt((x[0] - tx_pos[0]) ** 2 + (x[1] - tx_pos[1]) ** 2)
         y_rss = -20 * np.log10(r_dist) - alpha * r_dist - gamma
 
         return y_rss, r_dist
+
+        # Save on Raspberry
+
+    def save_to_txt(self):
+
+        Position = np.matrix('0 0; 0 0')
+        Position[0, 0] = self.__x_est[0];
+        Position[0, 1] = self.__x_est[1];
+        f_EKF = open("/home/pi/src/RF_Localization/EKF.txt", "w")
+        f_EKF.write(
+            str(Position[0, 0]) + " " + str(Position[0, 1]) + " " + str(self.__p_mat[0, 0]) + " " + str(
+                self.__p_mat[0, 1]) + " " + str(self.__p_mat[1, 0]) + " " + str(self.__p_mat[1, 1]))
+        f_EKF.close
+        return True
 
     # jacobian of the measurement function
     def h_rss_jacobian(self, x, tx_param):
@@ -197,7 +211,7 @@ class ExtendedKalmanFilter(object):
             self.__p_mat = (self.__i_mat - np.dot(k_mat, h_jac_mat.transpose())) * self.__p_mat  # = (I-KH)*P
         return True
 
-    def check_valid_position_estimate(self,x_field_begin=[0 ,0], x_field_end=[3500, 2000]):
+    def check_valid_position_estimate(self,x_field_begin=[-250 ,-250], x_field_end=[3500, 2400]):
         if x_field_begin[0] > self.__x_est[0] or x_field_end[0] < self.__x_est[0]:
             self.reset_ekf()
             print('EKF: Position estimate out of range --> reset EKF')
