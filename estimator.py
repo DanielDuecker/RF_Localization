@@ -85,13 +85,22 @@ class ExtendedKalmanFilter(object):
         return self.__p_mat
 
     def get_z_meas(self):
-        return  self.__z_meas
+        return self.__z_meas
+
+    def get_y_est(self):
+        return self.__y_est
 
     def get_tx_num(self):
         return self.__tx_num
 
     def get_tx_pos(self):
         return self.__tx_pos
+
+    def get_tx_alpha(self):
+        return self.__tx_alpha
+
+    def get_tx_gamma(self):
+        return self.__tx_gamma
 
     # measurement function
     def h_rss(self, x, tx_param):
@@ -180,6 +189,8 @@ class ExtendedKalmanFilter(object):
         self.__x_est = self.__x_est  # + np.random.randn(2, 1) * 1  # = I * x_est
         self.__p_mat = self.__i_mat.dot(self.__p_mat.dot(self.__i_mat)) + self.__q_mat
         return True
+
+
 
     def ekf_update(self,rss_low_lim=-120):
         """ innovation """

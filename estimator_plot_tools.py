@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
+from scipy.special import lambertw
+import numpy as np
 
 
 class EKF_Plot(object):
-    def __init__(self, tx_pos):
+    def __init__(self, tx_pos, b_plot_meas_circles=False):
         """ setup figure """
         self.__tx_pos = tx_pos
         self.__tx_num = len(tx_pos)
@@ -23,6 +25,17 @@ class EKF_Plot(object):
 
         self.plot_beacons()
 
+        if b_plot_meas_circles is True:
+            # init measurement circles and add them to the plot
+            self.__circle_meas = []
+            self.__circle_meas_est = []
+            for i in range(self.__tx_num):
+                txpos_single = self.__tx_pos[i]
+                self.__circle_meas.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='r', fill=False))
+                self.__ax.add_artist(self.__circle_meas[i])
+                self.__circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
+                self.__ax.add_artist(self.__circle_meas_est[i])
+
     def plot_beacons(self):
         # plot beacons
         for i in range(self.__tx_num):
@@ -38,6 +51,27 @@ class EKF_Plot(object):
         self.__fig1.canvas.draw()
         plt.pause(0.001)  # pause to allow for keyboard inputs
         return True
+
+    def plot_meas_circles(self, z_meas, y_est, tx_alpha, tx_gamma):
+        numtx = len(tx_alpha)
+
+        for itx in range(numtx):
+            #z_meas_itx = z_meas[itx]
+            z_dist_itx = self.lambertloc(z_meas[itx], itx, tx_alpha, tx_gamma)
+            # update measurement circles around tx-nodes
+            self.__circle_meas[itx].set_radius(z_dist_itx)
+            self.__circle_meas_est[itx].set_radius(y_est[itx])
+
+    def lambertloc(self, rss, numtx, alpha, gamma):
+            """Inverse function of the RSM. Returns estimated range in [mm].
+
+            Keyword arguments:
+            :param rss -- received power values [dB]
+            :param numtx  -- number of the tx which rss is processed. Required to use the corresponding alpha and gamma-values.
+            """
+            z_dist = 20 / (np.log(10) * alpha[numtx]) * lambertw(
+                np.log(10) * alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + gamma[numtx])))
+            return z_dist.real  # [mm]
 
     """
         def add_data_to_plot_list(self, x1, x2):
@@ -72,9 +106,5 @@ class EKF_Plot(object):
         circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
         ax.add_artist(circle_meas_est[i])
 
-    # update measurement circles around tx-nodes
-
-            for i in range(tx_num):
-                circle_meas[i].set_radius(z_meas[i])
-                circle_meas_est[i].set_radius(y_est[i])   
+  
     """

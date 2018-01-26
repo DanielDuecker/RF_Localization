@@ -25,7 +25,7 @@ while True:
     EKF.save_to_txt()
     """ Data Transmission to base station """
 
-    data_list = [runtime, k, EKF.get_x_est(), EKF.get_z_meas()]
+    data_list = [runtime, k, EKF.get_x_est(), EKF.get_z_meas(), EKF.get_y_est()]
     print(k)
     soc_server.soc_process_request(data_list)
 
