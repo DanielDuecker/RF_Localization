@@ -22,6 +22,7 @@ while True:
     #print(msg_x_est)
     ekf_plotter.add_data_to_plot(msg_x_est, 'bo')
     ekf_plotter.update_plot()
+    print('k = ' + str(msg_k) + ', x_est  = ' + str([msg_x_est[0], msg_x_est[1]]))
 
     # ekf_plotter.add_data_to_plot_list(msg_x_est[0], msg_x_est[1])
     # ekf_plotter.update_live(10)
