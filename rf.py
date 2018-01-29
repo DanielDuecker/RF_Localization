@@ -22,9 +22,7 @@ from scipy.special import lambertw
 class RfEar(object):
     """A simple class to compute PSD with a DVBT-dongle."""
 
-    #__metaclass__ = ABCMeta
-
-    def __init__(self, center_freq, freqspan=2e4):
+    def __init__(self, center_freq, freqspan=2e5):
         """
         init-method
         :param center_freq: [Hz] Defines the center frequency where to listen (between 27MHz and 1.7GHz)
@@ -33,14 +31,13 @@ class RfEar(object):
         # connect to sdr
         self.__sdr = RtlSdr()
         self.__sdr.gain = 1
-        self.__sdr.sample_rate = 2.048e6
+        self.__sdr.sample_rate = 2.048e6  # 2.048 MS/s
 
         self.__centerfreq = center_freq
         self.set_sdr_centerfreq(self.__centerfreq)
 
         self.__freqspan = freqspan
-        self.__samplesize = 0
-        self.set_samplesize(32)
+        self.__samplesize = 32
 
         self.__btxparamsavailable = False
         self.__freqtx = 0
@@ -183,6 +180,22 @@ class RfEar(object):
         """
         return self.__numoftx
 
+
+    def set_txpos(self, txpos):
+        """ Set transceiver positions
+
+        :param txpos:
+        :return:
+        """
+        self.__txpos = txpos
+
+    def get_txpos(self):
+        """ Get transceiver positions
+
+        :return: [mm] array with positions of all beacons
+        """
+        return self.__txpos
+
     """
 
     Section with general data processing methods
@@ -210,17 +223,6 @@ class RfEar(object):
         freq_sorted = freq_sorted + self.get_sdr_centerfreq()  # add center frequency to get absolute frequency values
 
         return freq_sorted, pxx_density_sorted
-
-    def get_rss_peaks(self):
-        """
-        for external use i.e. estimator methods
-        finds maximus rss peaks in power spectrum by calling method *get_max_rss_peaks_at_freqtx
-        :return: freq_peaks, rss_peaks
-        """
-        freqtx = self.get_freqtx()
-        freq_peaks, rss_peaks = self.get_rss_peaks_at_freqtx(freqtx)
-
-        return freq_peaks, rss_peaks
 
     def get_rss_peaks_at_freqtx(self, freqtx):
         """
@@ -268,8 +270,19 @@ class RfEar(object):
 
         return freq_peaks, rss_peaks
 
+    def get_rss_peaks(self):
+        """
+        for external use i.e. estimator methods
+        finds maximus rss peaks in power spectrum by calling method *get_max_rss_peaks_at_freqtx
+        :return: freq_peaks, rss_peaks
+        """
+        freqtx = self.get_freqtx()
+        freq_peaks, rss_peaks = self.get_rss_peaks_at_freqtx(freqtx)
+
+        return freq_peaks, rss_peaks
+
     def take_measurement(self, meastime):
-        """ Takes measurements over defined persiod of time
+        """ Takes measurements over defined period of time
 
         :param meastime: [s] time for taking measurements
 
@@ -292,7 +305,7 @@ class RfEar(object):
         dataseq_mat = np.asarray(dataseq)
         return dataseq_mat
 
-    def manual_calibration_for_one_tx(self, measdata_filename, meastime = 5, b_plotting=True):
+    def manual_calibration_for_one_tx(self, measdata_filename, meastime=5, b_plotting=True):
         """
         :return:
         """
@@ -355,41 +368,6 @@ class RfEar(object):
             print('Measurement file ' + measdata_filename + ' closed :-)')
         return True
 
-    def cal_plot(self, r_dist, rss_mean, rss_var):
-
-
-#        rdist = np.array(rdist_temp[itx, :], dtype=float)
-#        rss_mean = np.array(rss_mean, dtype=float)
-#        rss_var = np.array(rss_var, dtype=float)
-        plt.figure(1)
-
-
-        #r_dist = np.array(rdist_temp, dtype=float)
-        #rss_mean = np.array(rss_mean, dtype=float)
-        #rss_var = np.array(rss_var, dtype=float)
-        #print(np.shape(r_dist))
-        #print(np.shape(rss_mean))
-        #print(np.shape(rss_mean))
-        #print(r_dist)
-        #print(rss_mean)
-        plt.plot(r_dist, rss_mean)
-        #plt.errorbar(r_dist, rss_mean, yerr=rss_var,
-        #        fmt='ro', markersize='1', ecolor='g', label='Original Data')
-
-
-        #rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
-        #ax.plot(rdata, rsm_model(rdata, alpha[itx], gamma[itx]), label='Fitted Curve')
-        plt.legend(loc='upper right')
-        plt.grid()
-        plt.ylim([-110, -10])
-        plt.xlabel('Distance [mm]')
-        plt.ylabel('RSS [dB]')
-        plt.title('RSM for TX# 1')
-        plt.show()
-
-        return True
-
-
     """
 
     Plotting methods
@@ -426,7 +404,7 @@ class RfEar(object):
                 freq, pxx_den = self.get_power_density_spectrum()
                 line1.set_ydata(10*np.log10(pxx_den))
 
-                ## @todo annotations on the frequency peaks
+                # @todo annotations on the frequency peaks
                 # if known_freqtx > 0:
                 #    #freq_den_max, pdb_den_max = self.get_max_rss_in_freqspan(known_freqtx, freqspan)
                 #    plt.annotate(r'$this is an annotation',
@@ -492,9 +470,8 @@ class RfEar(object):
                 drawing = False
         return True
 
-
     def get_performance(self, testfreqtx=434e6, samplingrate=2.4e6):
-        """Measure performance at certain sizes and sampling rates.
+        """Measure performance for given sampling rates.
 
         Keyword arguments:
         :param testfreqtx -- single frequency for which the performence is determined
@@ -557,289 +534,8 @@ class RfEar(object):
         plt.show()
         return SIZE, VAR, MEAN, UPDATE
 
-
-    def set_txpos(self, txpos):
-        """
-
-        :param txpos:
-        :return:
-        """
-        self.__txpos = txpos  # @todo: implement a dimension check
-
-    def get_txpos(self):
-        """
-
-        :return: [mm] array with positions of all beacons
-        """
-        return self.__txpos
-
-    def calibrate(self, numtx=0, time=5.0):
-        """Adjust RSM in line with measurement.
-        :param numtx - number of the tx which needs to be calibrated
-        :param time - time for calibration measurement in [s]
-        """
-
-        dist_ref = raw_input('Please enter distance '
-                             'from transmitter to receiver [mm]: ')
-
-        def rsm_func(ref, gamma_diff_cal):
-            """RSM structure with correction param gamma_diff_cal."""
-            return -20 * np.log10(ref[0]) - ref[1] * ref[0] - ref[2] - gamma_diff_cal  # ... -gamma -gamma_diff
-
-        elapsed_time = 0.0
-        powerstack = []
-
-        # take first sample after boot dvb-t-dongle and delete it
-        firstsample = self.get_sdr_iq_sample()
-        del firstsample
-
-        # get measurements
-        print (' ... measuring ' + str(time) + 's ...')
-        while elapsed_time < time:
-            start_calctime = t.time()
-            freq_den_max, pxx_den_max = self.get_rss_peaks()
-            powerstack.append(pxx_den_max[numtx])
-            calc_time = t.time() - start_calctime
-            elapsed_time = elapsed_time + calc_time
-            t.sleep(0.01)
-        print ('done\n')
-        t.sleep(0.5)
-
-        print (' ... evaluating ...')
-        powerstack = np.array(powerstack)
-        p_mean = []
-        p_mean.append(np.mean(powerstack))  # powerstack is a vector of all rss-peaks
-
-        print ('Variance [dB]:')
-        print (np.var(powerstack))
-
-        print ('Calibration reference frequency: ' + str(self.__freqtx[numtx] / 1e6) + ' MHz')
-        dist_ref = np.array(dist_ref, dtype=float)
-        p_ref = p_mean
-
-        # curve fit with calibrated value -
-        # dist_ref, alpha, gamma are fixed -> gamma_diff_opt is the change in gamma by new meas
-        gamma_diff_opt, pcov = curve_fit(rsm_func, [dist_ref, self.__alpha[numtx], self.__gamma[numtx]], p_ref)
-        del pcov
-        print ('gamma old: ' + str(self.__gamma[numtx]))
-        self.__gamma[numtx] = self.__gamma[numtx] + gamma_diff_opt[0]  # update gamma with calibration
-        print ('gamma_diff: ' + str(gamma_diff_opt[0]))
-        print ('gamma new: ' + str(self.__gamma[numtx]))
-
-    def get_caldata(self, numtx=0):
-        """Returns the calibrated RSM params."""
-        return self.__alpha[numtx], self.__gamma[numtx]
-
-
-
-
-
-    def map_path_ekf(self, x0, h_func_select, bplot=True, blog=False, bprintdata=False):
-        """ map/track the position of the mobile node using an EKF
-
-        Keyword arguments:
-        :param x0 -- initial estimate of the mobile node position
-        :param h_func_select:
-        :param bplot -- Activate/Deactivate liveplotting the data (True/False)
-        :param blog -- activate data logging to file (default: False)
-        :param bprintdata - activate data print to console(default: False)
-        """
-
-        # measurement function
-        def h_dist(x, txpos, numtx):
-            tx_pos = txpos[numtx]  # position of the transceiver
-            # r = sqrt((x-x_tx)^2+(y-y_tx)^2)
-            y_dist = np.sqrt((x[0]-tx_pos[0])**2+(x[1]-tx_pos[1])**2)
-            return y_dist
-
-        # jacobian of the measurement function
-        def h_dist_jacobian(x_est, txpos, numtx):
-            tx_pos = txpos[numtx]  # position of the transceiver
-            factor = 0.5/np.sqrt((x_est[0]-tx_pos[0])**2+(x_est[1]-tx_pos[1])**2)
-            h_dist_jac = np.array([factor*2*(x_est[0]-tx_pos[0]), factor*2*(x_est[1]-tx_pos[1])])  # = [dh/dx1, dh/dx2]
-            return h_dist_jac
-
-        def h_rss(x, tx_param, numtx):
-            tx_param_temp = tx_param[numtx]
-            tx_pos = tx_param_temp[0]  # position of the transceiver
-            alpha = tx_param_temp[1]
-            gamma = tx_param_temp[2]
-
-            # r = sqrt((x - x_tx) ^ 2 + (y - y_tx) ^ 2)
-            r_dist = np.sqrt((x[0] - tx_pos[0])**2 + (x[1] - tx_pos[1])**2)
-            y_rss = -20 * np.log10(r_dist) - alpha * r_dist - gamma
-
-            return y_rss
-
-        def h_rss_jacobian(x_est, tx_param, numtx):
-            tx_param_temp = tx_param[numtx]
-            tx_pos = tx_param_temp[0]  # position of the transceiver
-            alpha = tx_param_temp[1]
-            # gamma = tx_param_temp[2]  # not used here
-
-            R_dist = np.sqrt((x_est[0] - tx_pos[0])**2 + (x_est[1] - tx_pos[1])**2)
-
-            # dh / dx1
-            h_rss_jac_x = -20 * (x_est[0] - tx_pos[0]) / (np.log(10) * R_dist**2) - alpha * (x_est[0] - tx_pos[0]) / R_dist
-            # dh / dx2
-            h_rss_jac_y = -20 * (x_est[1] - tx_pos[1]) / (np.log(10) * R_dist**2) - alpha * (x_est[1] - tx_pos[1]) / R_dist
-
-            h_rss_jac = np.array([[h_rss_jac_x], [h_rss_jac_y]])
-
-            return h_rss_jac
-
-        if h_func_select == 'h_dist':
-            h = h_dist
-            h_jacobian = h_dist_jacobian
-        elif h_func_select == 'h_rss':
-            h = h_rss
-            h_jacobian = h_rss_jacobian
-        else:
-            print ('You need to select to a measurement function "h" like "h_rss" or "h_dist"!')
-            print ('exit...')
-            return True
-
-        txpos = self.__txpos
-        """ setup figure """
-        if bplot:
-            plt.ion()
-            fig1 = plt.figure(1)
-            ax = fig1.add_subplot(111)
-
-            x_min = -500.0
-            x_max = 3000.0
-            y_min = -500.0
-            y_max = 2000.0
-            plt.axis([x_min, x_max, y_min, y_max])
-
-            plt.grid()
-            plt.xlabel('x-Axis [mm]')
-            plt.ylabel('y-Axis [mm]')
-
-            for i in range(self.__numoftx):
-                txpos_single = txpos[i]
-                ax.plot(txpos_single[0], txpos_single[1], 'ro')
-
-            # init measurement circles and add them to the plot
-            circle_meas = []
-            circle_meas_est = []
-            for i in range(self.__numoftx):
-                txpos_single = txpos[i]
-                circle_meas.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='r', fill=False))
-                ax.add_artist(circle_meas[i])
-                circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
-                ax.add_artist(circle_meas_est[i])
-        """ initialize tracking setup """
-        print(str(self.__txalpha))
-        print(str(self.__txgamma))
-        print(str(self.__txpos))
-        tx_param = []
-        for itx in range(self.__numoftx):
-            tx_param.append([txpos[itx],self.__txalpha[itx], self.__txgamma[itx]])
-        print(str(np.asarray(tx_param)))
-        """ initialize EKF """
-        # standard deviations
-        sig_x1 = 500
-        sig_x2 = 500
-        p_mat = np.array(np.diag([sig_x1 ** 2, sig_x2 ** 2]))
-
-        # process noise
-        sig_w1 = 50
-        sig_w2 = 50
-        q_mat = np.array(np.diag([sig_w1 ** 2, sig_w2 ** 2]))
-
-        # measurement noise
-        sig_r = 10
-        r_mat = sig_r ** 2
-
-        # initial values and system dynamic (=eye)
-        x_log = np.array([[x0[0]], [x0[1]]])
-        x_est = x_log
-
-        i_mat = np.eye(2)
-
-        z_meas = np.zeros(self.__numoftx)
-        y_est = np.zeros(self.__numoftx)
-
-        """ Start EKF-loop"""
-        tracking = True
-        while tracking:
-            try:
-                # iterate through all tx-rss-values
-                freq_den_max, rss = self.get_rss_peaks()
-                x_est[:, 0] = x_log[:, -1]
-
-                z_meas = rss
-                for itx in range(self.__numoftx):
-
-                    """ prediction """
-                    x_est = x_est  #+ np.random.randn(2, 1) * 1  # = I * x_est
-
-                    p_mat_est = i_mat.dot(p_mat.dot(i_mat)) + q_mat
-
-                    # print('x_est: ' + str(x_est))
-
-                    """ update """
-                    # estimate measurement from x_est
-                    y_est[itx] = h(x_est, tx_param, itx)
-                    y_tild = z_meas[itx] - y_est[itx]
-
-                    # calc K-gain
-                    h_jac_mat = h_jacobian(x_est[:, 0], tx_param, itx)
-                    s_mat = np.dot(h_jac_mat.transpose(), np.dot(p_mat, h_jac_mat)) + r_mat  # = H^t * P * H + R
-                    k_mat = np.dot(p_mat, h_jac_mat / s_mat)  # 1/s_scal since s_mat is dim = 1x1
-
-                    x_est = x_est + k_mat * y_tild  # = x_est + k * y_tild
-                    p_mat = (i_mat - np.dot(k_mat, h_jac_mat.transpose())) * p_mat_est  # = (I-KH)*P
-
-                x_log = np.append(x_log, x_est, axis=1)
-                print(str(z_meas-y_est))
-                """ update figure / plot after all measurements are processed """
-                if bplot:
-                    # add new x_est to plot
-                    ax.plot(x_est[0, -1], x_est[1, -1], 'bo')
-                    # update measurement circles around tx-nodes
-
-                    #for i in range(self.__numoftx):
-                    #    circle_meas[i].set_radius(z_meas[i])
-                    #    circle_meas_est[i].set_radius(y_est[i])
-
-                    # update figure 1
-                    fig1.canvas.draw()
-                    plt.pause(0.001)  # pause to allow for keyboard inputs
-
-                if bprintdata:
-                    print(str(x_est) + ', ' + str(p_mat))  # print data to console
-
-            except KeyboardInterrupt:
-                print ('Localization interrupted by user')
-                tracking = False
-
-        if blog:
-            print ('Logging mode enabled')
-            print ('TODO: implement code to write data to file')
-            # write_to_file(x_log, 'I am a log file')
-
-        if bplot:
-            fig2 = plt.figure(2)
-            ax21 = fig2.add_subplot(211)
-            ax21.grid()
-            ax21.set_ylabel('x-position [mm]')
-            ax21.plot(x_log[0, :], 'b-')
-
-            ax22 = fig2.add_subplot(212)
-            ax22.grid()
-            ax22.set_ylabel('y-position [mm]')
-            ax22.plot(x_log[1, :], 'b-')
-
-            fig2.canvas.draw()
-
-            raw_input('Press Enter to close the figure and terminate the method!')
-
-        return x_est
-
     def lambertloc(self, rss, numtx=0):
-        """Inverse function of the RSM. Returns estimated range in [cm].
+        """Inverse function of the RSM. Returns estimated range in [mm].
 
         Keyword arguments:
         :param rss -- received power values [dB]
@@ -849,69 +545,5 @@ class RfEar(object):
             np.log(10) * self.__alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + self.__gamma[numtx])))
         return z.real  # [mm]
 
-    def plot_txdist_live(self,freqspan=2e4, numofplottedsamples=250):
-        """ Live plot for the measured distances from each tx using rss
 
-        :param freqspan: width of the frequencyspan around the tracked frq
-        :param numofplottedsamples: number of displayed samples (default= 250)
-        :return: 0
-        """
-
-        freq = 0  # for later access through a parameter. In this version all freqtx are tracked
-        if freq == 0:
-            freq = self.__freqtx
-
-        numoftx = self.__numoftx
-        if numoftx > 7:
-            print('Number of tracked tx needs to be <=7!') # see length of colorvec
-            print('Terminate method!')
-            return True
-
-        rdist = np.zeros((numoftx, 1))
-        temp = np.zeros((numoftx, 1))
-
-        plt.ion()  # turn interactive mode on
-        colorvec = ['b', 'r', 'g', 'm', 'c', 'k', 'y']  # all colors which can be used in the plot
-
-        cnt = 0
-        drawing = True
-        while drawing:
-            try:
-                # Busy-wait for keyboard interrupt (Ctrl+C)
-                cnt += 1
-                # find maximum power peaks in spectrum
-                freq_found, pxx_den_max = self.get_max_rss_in_freqspan(freq, freqspan)
-
-                for i in range(numoftx):
-                    temp[i, 0] = self.lambertloc(pxx_den_max[i], i)
-                rdist = np.append(rdist, temp, axis=1)
-
-                # plot data for all tx
-                plt.clf()
-                firstdata = 1  # set max number of plotted points per tx
-                if cnt > numofplottedsamples:
-                    firstdata = cnt - numofplottedsamples
-
-                for i in range(numoftx):
-                    plt.plot(rdist[i, firstdata:-1], str(colorvec[i])+'.-',
-                             label="Freq = " + str(freq_found[i] / 1e6) + ' MHz')
-                plt.ylim(-100, 3000)
-                plt.ylabel('R [mm]')
-                plt.grid()
-                plt.legend(loc='upper right')
-                plt.pause(0.001)
-
-            except KeyboardInterrupt:
-                print ('Liveplot interrupted by user')
-                drawing = False
-        return True
-
-    def rfear_type(self):
-        """Return a string representing the type of RfEar this is."""
-        print ('RfEar,')
-        print ('Number of TX: ' + str(self.__numoftx))
-        print ('Alpha: ' + str(self.__alpha) + ', gamma: ' + str(self.__gamma))
-        print ('Tuned to:' + str(self.get_freq()) + ' MHz,')
-        self.get_srate()
-        print ('Reads ' + str(self.get_size()) + '*1024 8-bit I/Q-samples from SDR device.')
 

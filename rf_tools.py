@@ -11,7 +11,6 @@ import hippocampus_toolbox as hc_tools
 independent methods related to the gantry
 """
 
-
 def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], grid_dxdy=[50, 50], timemeas=10.0, show_plot=False):
     """
     :param wp_filename:

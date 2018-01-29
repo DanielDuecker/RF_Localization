@@ -13,7 +13,7 @@ import rf
 
 
 class ExtendedKalmanFilter(object):
-    def __init__(self, x0=[500, 500]):
+    def __init__(self, x0=[1000, 1000]):
 
         self.__tx_freq = []
         self.__tx_pos = []
@@ -127,6 +127,7 @@ class ExtendedKalmanFilter(object):
                 self.__p_mat[0, 1]) + " " + str(self.__p_mat[1, 0]) + " " + str(self.__p_mat[1, 1]))
         f_EKF.close
         return True
+
 
     # jacobian of the measurement function
     def h_rss_jacobian(self, x, tx_param):

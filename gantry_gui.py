@@ -200,15 +200,13 @@ class StartPage(Tk.Frame):
         button_max_speed_spindle = ttk.Button(self, text='set max Speed Spindle (<=9000!)', command=lambda: self.__gt.set_new_max_speed_y(1*abs(int(entry_max_speed_spindle.get()))))
         button_max_speed_spindle.grid(row=4, column=5, sticky='W', pady=4)
 
-        """
-        Quit-Button
-        """
+
         button_home_seq = ttk.Button(self, text='Initialize Home Position', command=lambda: self.__gt.start_go_home_seq_xy())
         button_home_seq.grid(row=15, column=3, sticky='W', pady=4)
 
-
-
-
+        """
+        Quit-Button
+        """
         button_quit = ttk.Button(self, text='Quit', command=self.quit)
         button_quit.grid(row=15, column=4, sticky='W', pady=4)
 
