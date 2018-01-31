@@ -1,7 +1,7 @@
 import socket_server
 import estimator_plot_tools
 import estimator
-
+import numpy as np
 tx_6pos = [[520, 430],
            [1540, 430],
            [2570, 430],
@@ -10,6 +10,15 @@ tx_6pos = [[520, 430],
            [520, 1230]]
 
 ekf_plotter = estimator_plot_tools.EKF_Plot(tx_6pos, True)
+
+wp_list = np.array([[1200, 500], [600, 900]])
+wprad_list = [800, 900]
+ekf_plotter.plot_way_points(wp_list, wprad_list)
+
+"""
+WARNING!!!!!!
+IF YOU CHANGE THE ALPHA + GAMMA VALUES IN EKF YOU HAVE!!!! to change them here MANUALLY!!!
+"""
 
 tx_alpha = [0.01149025464796399, 0.016245419273983631, 0.011352095690562954, 0.012125937076390217, 0.0092717529591962722, 0.01295918160582895]
 tx_gamma = [-8.5240925102693872, -11.670560994925006, -8.7169295956676116, -8.684528288347666, -5.1895194577206665, -9.8124742816198918]
@@ -39,18 +48,11 @@ while True:
 
     EKF.ekf_prediction()
     EKF.ekf_update()
+
     msg_x_est = EKF.get_x_est()
-    #ekf_plotter.add_data_to_plot(msg_x_est, 'bo')
-    #ekf_plotter.plot_meas_circles(msg_z_meas, msg_y_est, tx_alpha, tx_gamma)
-    #ekf_plotter.update_plot()
+    msg_y_est = EKF.get_y_est()
+    msg_z_meas = EKF.get_z_meas()
 
+    ekf_plotter.update_meas_circles(msg_z_meas, tx_alpha, tx_gamma, True, msg_y_est)
+    ekf_plotter.plot_ekf_pos_live(msg_x_est[0], msg_x_est[1], 100)
 
-    #print('k = ' + str(msg_k) + ', x_est  = ' + str([msg_x_est[0], msg_x_est[1]]))
-    #print(', x_est  = ' + str([msg_x_est[0], msg_x_est[1]]), 'y_est = ' + str(msg_y_est))
-    #msg_x_est = np.array([1000, 1000])
-    wplist = np.array([[1200, 500], [600, 900]])
-    radlist = [800, 900]
-    ekf_plotter.add_data_to_plot_list(msg_x_est[0], msg_x_est[1])
-
-    ekf_plotter.update_live(100, True, wplist, radlist)
-    #ekf_plotter.plot_way_points(wplist, radlist)

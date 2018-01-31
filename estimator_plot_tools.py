@@ -9,8 +9,8 @@ class EKF_Plot(object):
         self.__tx_pos = tx_pos
         self.__tx_num = len(tx_pos)
         plt.ion()
-        self.__fig1 = plt.figure(1)
-        self.__ax = self.__fig1.gca()#self.__fig1.add_subplot(111)
+        (self.__fig1, self.__ax1) = plt.subplots()  # get figure/axis handles
+
         self.__x1_list = []
         self.__x2_list = []
 
@@ -22,11 +22,12 @@ class EKF_Plot(object):
         x_max = 3100.0
         y_min = -500.0
         y_max = 2000.0
-        plt.axis([x_min, x_max, y_min, y_max])
+        #self.__ax1.axis([x_min, x_max, y_min, y_max])
+        self.__ax1.axis('equal')
 
-        plt.grid()
-        plt.xlabel('x-Axis [mm]')
-        plt.ylabel('y-Axis [mm]')
+        self.__ax1.grid()
+        self.__ax1.set_xlabel('x-Axis [mm]')
+        self.__ax1.set_ylabel('y-Axis [mm]')
 
         self.plot_beacons()
 
@@ -36,121 +37,93 @@ class EKF_Plot(object):
             self.__circle_meas_est = []
             for i in range(self.__tx_num):
                 txpos_single = self.__tx_pos[i]
-                self.__circle_meas.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='r', fill=False))
-                self.__ax.add_artist(self.__circle_meas[i])
-                self.__circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
-                self.__ax.add_artist(self.__circle_meas_est[i])
+                self.__circle_meas.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.1, color='r', fill=False))
+                self.__ax1.add_artist(self.__circle_meas[i])
+                self.__circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.1, color='g', fill=False))
+                self.__ax1.add_artist(self.__circle_meas_est[i])
 
     def plot_beacons(self):
         # plot beacons
         for i in range(self.__tx_num):
             txpos_single = self.__tx_pos[i]
-            self.__ax.plot(txpos_single[0], txpos_single[1], 'ro')
-            #plt.plot(txpos_single[0], txpos_single[1], 'ro')
+            self.__ax1.plot(txpos_single[0], txpos_single[1], 'ko')
 
-    def clear_plot(self):
-        self.__fig1.clf()
-        self.init_plot()
 
-    def switch_b_plot_circles(self):
-        if self.__bplot_circles:
-            self.__bplot_circles = False
-        else:
-            self.__bplot_circles = True
 
-    def add_data_to_plot(self, data_point, marker='bo'):
-        self.__ax.plot(data_point[0], data_point[1], marker)
-        return True
+    def plot_way_points(self, wp_list=np.array([0,0]), wp_rad=[0], b_plot_circles=False):
+        x1_wp = wp_list[:, 0]
+        x2_wp = wp_list[:, 1]
+        self.__ax1.plot(x1_wp, x2_wp, 'go', label="Way - Point")
+        num_wp = len(wp_rad)
+        circle_wp = []
+        if b_plot_circles:
+            for i in range(num_wp):
 
-    def update_plot(self):
-        # update figure 1
-        self.__fig1.canvas.draw()
-        plt.pause(0.001)  # pause to allow for keyboard inputs
-        return True
+                circle_wp.append(plt.Circle((x1_wp[i], x2_wp[i]), wp_rad[i], color='g', fill=False))
+                self.__ax1.add_artist(circle_wp[i])
 
-    def plot_meas_circles(self, z_meas, y_est, tx_alpha, tx_gamma):
-        numtx = len(tx_alpha)
+    def update_meas_circles(self, z_meas, alpha, gamma, b_plot_yest=False, y_est=[], rsm_model='log'):
+        """
 
-        if self.__bplot_circles:
-            for itx in range(numtx):
-                #z_meas_itx = z_meas[itx]
-                z_dist_itx = self.lambertloc(z_meas[itx], itx, tx_alpha, tx_gamma)
-                # update measurement circles around tx-nodes
-                self.__circle_meas[itx].set_radius(z_dist_itx)
-                self.__circle_meas_est[itx].set_radius(y_est[itx])
-        else:
-            for itx in range(numtx):
-                self.__circle_meas[itx].set_radius(1)
-                self.__circle_meas_est[itx].set_radius(1)
+        :param z_meas:
+        :param b_plot_yest:
+        :param y_est:
+        :param alpha:
+        :param gamma:
+        :return:
+        """
+        for itx in range(self.__tx_num):
+            z_dist = self.inverse_rsm(z_meas[itx], alpha[itx], gamma[itx], rsm_model)
+            self.__circle_meas[itx].set_radius(z_dist)
+            if b_plot_yest:
+                z_est = self.inverse_rsm(y_est[itx], alpha[itx], gamma[itx], rsm_model)
+                self.__circle_meas_est[itx].set_radius(z_est)
+                print('y_tild=' + str(z_meas-y_est))
 
-    def lambertloc(self, rss, numtx, alpha, gamma):
+    def inverse_rsm(self, rss, alpha, gamma, rsm_model_type):
             """Inverse function of the RSM. Returns estimated range in [mm].
 
             Keyword arguments:
             :param rss -- received power values [dB]
-            :param numtx  -- number of the tx which rss is processed. Required to use the corresponding alpha and gamma-values.
+            :param alpha
+            :param gamma
+            :param rsm_model_type
             """
-            z_dist = 20 / (np.log(10) * alpha[numtx]) * lambertw(
-                np.log(10) * alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + gamma[numtx])))
+            if rsm_model_type == 'log':
+                z_dist = 20 / (np.log(10) * alpha) * lambertw(
+                    np.log(10) * alpha / 20 * np.exp(-np.log(10) / 20 * (rss + gamma)))
+            elif rsm_model_type == 'lin':
+                z_dist = 0  # plug in inverse linear model here
+
             return z_dist.real  # [mm]
 
-    def plot_way_points(self, wp_list, rad_list):
-        #for i in range(self.__tx_num):
-            #txpos_single = self.__tx_pos[i]
-            #self.__ax.plot(txpos_single[0], txpos_single[1], 'ro')
-        print('wplist: ' + str(wp_list))
-        x1_wp = wp_list[:, 0]
-        x2_wp = wp_list[:, 1]
-        self.__ax.plot(x1_wp, x2_wp, 'go')
+    def plot_ekf_pos_live(self, x1, x2, numofplottedsamples=50):
+        """
+        This function must be the last plot function due to the ugly 'delete' workaround
+        :param x1:
+        :param x2:
+        :param numofplottedsamples:
+        :return:
+        """
 
-        num_wp = len(rad_list)
-        circle_wp = []
-
-        for i in range(num_wp):
-            # txpos_single = self.__tx_pos[i]
-            circle_wp.append(plt.Circle((x1_wp[i], x2_wp[i]), rad_list[i], color='g', fill=False))
-            self.__ax.add_artist(circle_wp[i])
-            # self.__circle_wp[i].set_radius(rad_list[i])
-
-    def add_data_to_plot_list(self, x1, x2):
-        print(str(x1[0]))
         self.__x1_list.append(x1[0])
         self.__x2_list.append(x2[0])
-        #print(str(self.__x1_list))
-        #print(np.shape(self.__x1_list))
-
-    def update_live(self, numofplottedsamples=50, b_plot_wp=False, wp_list=np.array([0,0]), wp_rad=[0]):
-        # plot data for all tx
-        self.__fig1.clf()
-        #plt.clf()
-
-
-        x1_wp = wp_list[:, 0]
-        x2_wp = wp_list[:, 1]
-        self.__ax.plot(x1_wp, x2_wp, 'go')
-        num_wp = len(wp_rad)
-        circle_wp = []
-
-        for i in range(num_wp):
-            # txpos_single = self.__tx_pos[i]
-            circle_wp.append(plt.Circle((x1_wp[i], x2_wp[i]), wp_rad[i], color='g', fill=False))
-            self.__ax.add_artist(circle_wp[i])
 
         firstdata = 0  # set max number of plotted points
         cnt = len(self.__x1_list)
         if cnt > numofplottedsamples:
             firstdata = cnt - numofplottedsamples
 
-
-
         if cnt > numofplottedsamples:
             firstdata = cnt - numofplottedsamples
+        if len(self.__x1_list) > 1:
+            del self.__ax1.lines[-1]
+            del self.__ax1.lines[-1]
+        self.__ax1.plot(self.__x1_list[firstdata:-1], self.__x2_list[firstdata:-1], 'b.-')
+        self.__ax1.plot(self.__x1_list[-1], self.__x2_list[-1], 'ro',
+                        label="x_k= " + str([int(self.__x1_list[-1]), int(self.__x2_list[-1])]))
+        self.__ax1.legend(loc='upper right')
 
-        self.__ax.plot(self.__x1_list[firstdata:-1], self.__x2_list[firstdata:-1], 'b.-', label="x_k= " + str([int(self.__x1_list[-1]), int(self.__x2_list[-1])]))
-
-        plt.grid()
-        plt.legend(loc='upper right')
-        self.plot_beacons()
         plt.pause(0.001)
 
 
