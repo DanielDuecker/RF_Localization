@@ -10,7 +10,7 @@ class EKF_Plot(object):
         self.__tx_num = len(tx_pos)
         plt.ion()
         self.__fig1 = plt.figure(1)
-        self.__ax = self.__fig1.add_subplot(111)
+        self.__ax = self.__fig1.gca()#self.__fig1.add_subplot(111)
         self.__x1_list = []
         self.__x2_list = []
 
@@ -38,16 +38,15 @@ class EKF_Plot(object):
                 txpos_single = self.__tx_pos[i]
                 self.__circle_meas.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='r', fill=False))
                 self.__ax.add_artist(self.__circle_meas[i])
-                self.__circle_meas_est.append(
-                    plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
+                self.__circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
                 self.__ax.add_artist(self.__circle_meas_est[i])
 
     def plot_beacons(self):
         # plot beacons
         for i in range(self.__tx_num):
             txpos_single = self.__tx_pos[i]
-            #self.__ax.plot(txpos_single[0], txpos_single[1], 'ro')
-            plt.plot(txpos_single[0], txpos_single[1], 'ro')
+            self.__ax.plot(txpos_single[0], txpos_single[1], 'ro')
+            #plt.plot(txpos_single[0], txpos_single[1], 'ro')
 
     def clear_plot(self):
         self.__fig1.clf()
@@ -102,7 +101,7 @@ class EKF_Plot(object):
         print('wplist: ' + str(wp_list))
         x1_wp = wp_list[:, 0]
         x2_wp = wp_list[:, 1]
-        plt.plot(x1_wp, x2_wp, 'go')
+        self.__ax.plot(x1_wp, x2_wp, 'go')
 
         num_wp = len(rad_list)
         circle_wp = []
@@ -120,25 +119,34 @@ class EKF_Plot(object):
         #print(str(self.__x1_list))
         #print(np.shape(self.__x1_list))
 
-    def update_live(self, numofplottedsamples=50):
+    def update_live(self, numofplottedsamples=50, b_plot_wp=False, wp_list=np.array([0,0]), wp_rad=[0]):
         # plot data for all tx
         self.__fig1.clf()
+        #plt.clf()
 
-        firstdata = 0  # set max number of plotted points per tx
+
+        x1_wp = wp_list[:, 0]
+        x2_wp = wp_list[:, 1]
+        self.__ax.plot(x1_wp, x2_wp, 'go')
+        num_wp = len(wp_rad)
+        circle_wp = []
+
+        for i in range(num_wp):
+            # txpos_single = self.__tx_pos[i]
+            circle_wp.append(plt.Circle((x1_wp[i], x2_wp[i]), wp_rad[i], color='g', fill=False))
+            self.__ax.add_artist(circle_wp[i])
+
+        firstdata = 0  # set max number of plotted points
         cnt = len(self.__x1_list)
         if cnt > numofplottedsamples:
             firstdata = cnt - numofplottedsamples
-        #print(self.__x1_list[firstdata:-1])
 
-        #for i in range(numoftx):
-        #self.__ax.plot(self.__x_list[firstdata:-1], 'bo-',)
 
-        plt.clf()
-        firstdata = 1  # set max number of plotted points per tx
+
         if cnt > numofplottedsamples:
             firstdata = cnt - numofplottedsamples
 
-        plt.plot(self.__x1_list[firstdata:-1], self.__x2_list[firstdata:-1], 'b.-', label="x_k= " + str([int(self.__x1_list[-1]), int(self.__x2_list[-1])]))
+        self.__ax.plot(self.__x1_list[firstdata:-1], self.__x2_list[firstdata:-1], 'b.-', label="x_k= " + str([int(self.__x1_list[-1]), int(self.__x2_list[-1])]))
 
         plt.grid()
         plt.legend(loc='upper right')
