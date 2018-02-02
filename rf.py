@@ -24,7 +24,7 @@ class RfEar(object):
 
     #__metaclass__ = ABCMeta
 
-    def __init__(self, center_freq, freqspan=2e4):
+    def __init__(self, center_freq, freqspan=2e5):
         """
         init-method
         :param center_freq: [Hz] Defines the center frequency where to listen (between 27MHz and 1.7GHz)
@@ -237,7 +237,7 @@ class RfEar(object):
         rss_peaks = []
 
         # loop for all tx-frequencies
-        for ifreq in range(len(freqtx)):
+        for ifreq in range(self.__numoftx):
             startindex = 0
             endindex = len(freq_spectrum)
             i = 0
@@ -453,7 +453,7 @@ class RfEar(object):
             print('Terminate method!')
             return True
 
-        rdist = np.zeros((numoftx, 1))
+        rss = np.zeros((numoftx, 1))
         temp = np.zeros((numoftx, 1))
 
         plt.ion()  # turn interactive mode on
@@ -470,8 +470,7 @@ class RfEar(object):
 
                 for i in range(numoftx):
                     temp[i, 0] = pxx_den_max[i]
-                rdist = np.append(rdist, temp, axis=1)
-
+                rss = np.append(rss, temp, axis=1)
                 # plot data for all tx
                 plt.clf()
                 firstdata = 1  # set max number of plotted points per tx
@@ -479,8 +478,8 @@ class RfEar(object):
                     firstdata = cnt - numofplottedsamples
 
                 for i in range(numoftx):
-                    plt.plot(rdist[i, firstdata:-1], str(colorvec[i])+'.-',
-                             label="Freq = " + str(round(freq_found[i] / 1e6, 2)) + ' MHz' + '@ ' + str(round(rdist[i, -1], 2)) + 'dBm')
+                    plt.plot(rss[i, firstdata:-1], str(colorvec[i])+'.-',
+                             label="Freq = " + str(round(freq_found[i] / 1e6, 2)) + ' MHz' + '@ ' + str(round(rss[i, -1], 2)) + 'dBm')
                 plt.ylim(-120, 10)
                 plt.ylabel('RSS [dB]')
                 plt.grid()

@@ -292,6 +292,7 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
         def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
             """Range Sensor Model (RSM) structure."""
             return -20 * np.log10(dist_rsm) - alpha_rsm * dist_rsm - gamma_rsm  # rss in db
+            #return alpha_rsm*dist_rsm  +gamma_rsm  # rss in db
 
         alpha = []
         gamma = []
