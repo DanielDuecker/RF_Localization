@@ -3,16 +3,10 @@ import socket_server
 import time
 import numpy as np
 
+host_ip = '192.168.88.128'
+host_port = 50008
 
-# def loop_on_hippo(b_soc_transmission = True, b_client_connected = True,server_ip = '192.168.1.1',server_port = 50007):
-b_soc_transmission = True
-server_ip = '192.168.1.1'
-server_port = 50008
-
-if b_soc_transmission:
-    soc_server = socket_server.SocServer(server_ip, server_port)
-    # print('wait for 5 seconds')
-    # time.sleep(5)
+soc_client = socket_server.SocClient(host_ip, host_port)
 
 EKF = estimator.ExtendedKalmanFilter()
 t0 = time.time()
@@ -22,15 +16,12 @@ while True:
     k = k + 1
     EKF.ekf_prediction()
     EKF.ekf_update()
+    EKF.check_valid_position_estimate()
+    EKF.save_to_txt()
 
-    # temp = EKF.get_x_est()
-    # print(temp)
-    # print(np.tostring(temp))
     """ Data Transmission to base station """
-    # format: clientid:time:k: x_est:z_meas
 
-    #data = str(runtime) + ':' + str(k) + ':' + str(EKF.get_x_est()) + ':' + str(EKF.get_z_meas())
-    data_list = [runtime, k, EKF.get_x_est(), EKF.get_z_meas()]
+    data_list = [runtime, k, EKF.get_x_est(), EKF.get_z_meas(), EKF.get_y_est()]
     print(k)
-    soc_server.soc_process_request(data_list)
+    soc_client.soc_process_server_request(data_list)
 

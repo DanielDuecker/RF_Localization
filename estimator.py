@@ -13,7 +13,7 @@ import rf
 
 
 class ExtendedKalmanFilter(object):
-    def __init__(self, x0=[500, 500]):
+    def __init__(self, x0=[1000, 1000]):
 
         self.__tx_freq = []
         self.__tx_pos = []
@@ -85,7 +85,10 @@ class ExtendedKalmanFilter(object):
         return self.__p_mat
 
     def get_z_meas(self):
-        return  self.__z_meas
+        return self.__z_meas
+
+    def get_y_est(self):
+        return self.__y_est
 
     def get_tx_num(self):
         return self.__tx_num
@@ -93,17 +96,38 @@ class ExtendedKalmanFilter(object):
     def get_tx_pos(self):
         return self.__tx_pos
 
+    def get_tx_alpha(self):
+        return self.__tx_alpha
+
+    def get_tx_gamma(self):
+        return self.__tx_gamma
+
     # measurement function
     def h_rss(self, x, tx_param):
         tx_pos = tx_param[0]  # position of the transceiver
         alpha = tx_param[1]
         gamma = tx_param[2]
 
-        # r = sqrt((x - x_tx) ^ 2 + (y - y_tx) ^ 2)
+        # r = sqrt((x - x_tx) ^ 2 + (y - y_tx) ^ 2)S
         r_dist = np.sqrt((x[0] - tx_pos[0]) ** 2 + (x[1] - tx_pos[1]) ** 2)
         y_rss = -20 * np.log10(r_dist) - alpha * r_dist - gamma
 
         return y_rss, r_dist
+
+        # Save on Raspberry
+
+    def save_to_txt(self):
+
+        Position = np.matrix('0 0; 0 0')
+        Position[0, 0] = self.__x_est[0];
+        Position[0, 1] = self.__x_est[1];
+        f_EKF = open("/home/pi/src/RF_Localization/EKF.txt", "w")
+        f_EKF.write(
+            str(Position[0, 0]) + " " + str(Position[0, 1]) + " " + str(self.__p_mat[0, 0]) + " " + str(
+                self.__p_mat[0, 1]) + " " + str(self.__p_mat[1, 0]) + " " + str(self.__p_mat[1, 1]))
+        f_EKF.close
+        return True
+
 
     # jacobian of the measurement function
     def h_rss_jacobian(self, x, tx_param):
@@ -167,6 +191,8 @@ class ExtendedKalmanFilter(object):
         self.__p_mat = self.__i_mat.dot(self.__p_mat.dot(self.__i_mat)) + self.__q_mat
         return True
 
+
+
     def ekf_update(self,rss_low_lim=-120):
         """ innovation """
 
@@ -197,7 +223,7 @@ class ExtendedKalmanFilter(object):
             self.__p_mat = (self.__i_mat - np.dot(k_mat, h_jac_mat.transpose())) * self.__p_mat  # = (I-KH)*P
         return True
 
-    def check_valid_position_estimate(self,x_field_begin=[0 ,0], x_field_end=[3500, 2000]):
+    def check_valid_position_estimate(self,x_field_begin=[-250 ,-250], x_field_end=[3500, 2400]):
         if x_field_begin[0] > self.__x_est[0] or x_field_end[0] < self.__x_est[0]:
             self.reset_ekf()
             print('EKF: Position estimate out of range --> reset EKF')
