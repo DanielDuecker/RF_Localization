@@ -349,9 +349,8 @@ class GantryControl(object):
 
         return True
 
-    def follow_wp_path_opt_take_measurements(self, b_take_meas=False, b_send_pos=False, tol=10 ,start_wp=[600, 600], sample_size=32):
+    def follow_wp_path_opt_take_measurements(self, num_plot_points=250, model_type='log', b_take_meas=False, b_log_data=False ,tol=10 ,start_wp=[1000, 1000], sample_size=32):
         """
-
         :param b_take_meas:
         :param start_wp:
         :param sample_size:
@@ -367,31 +366,20 @@ class GantryControl(object):
         wp_append_list = []
         with open(wplist_filename, 'r') as wpfile:
             for i, line in enumerate(wpfile):
-                print('line = ' + line)
-                print(line.split(','))
+                #print('line = ' + line)
+                #print(line.split(','))
                 temp_list = line.split(',')
                 wp_append_list.append(map(float, temp_list[0:-1]))
 
-        print(str(np.asarray(wp_append_list)))
+#        print(str(np.asarray(wp_append_list)))
         wp_list = np.asarray(wp_append_list)
-
-
-        measdata_filename = hc_tools.save_as_dialog()
-        print(measdata_filename)
+        if b_log_data:
+            measdata_filename = hc_tools.save_as_dialog()
+ #       print(measdata_filename)
 
         num_wp = len(wp_list)
         print('Number of way points: ' + str(num_wp))
         start_time = t.time()
-
-        #self.set_target_wp(start_wp)
-        #self.start_moving_gantry_to_target()
-        #print('Moving to start position = ' + str(start_wp))
-        #while not self.confirm_arrived_at_target_wp():
-        #    t.sleep(0.2)
-        #print('Arrived at start point')
-
-        #t.sleep(0.5)
-        #print('Start following way point sequence')
 
         data_list = []
         meas_counter = 0
@@ -402,12 +390,9 @@ class GantryControl(object):
         b_ekf = True
         if b_ekf is True:
             # init EKF
-            EKF = estimator.ExtendedKalmanFilter()
-            EKF_Plotter = estimator.EKF_Plot(EKF.get_tx_pos(), EKF.get_tx_num())
-
-
-
-
+            EKF = estimator.ExtendedKalmanFilter(model_type)
+            import estimator_plot_tools
+            EKF_plotter = estimator_plot_tools.EKF_Plot(EKF.get_tx_pos(), model_type)
 
         # follow wp sequence
         for wp in wp_list:
@@ -426,12 +411,15 @@ class GantryControl(object):
 
                 if b_ekf is True:
                     EKF.ekf_prediction()
-                    EKF.ekf_update(-80)
-                    EKF.check_valid_position_estimate()
-
-                    EKF_Plotter.add_data_to_plot([EKF.get_x_est()[0, -1], EKF.get_x_est()[1, -1]], 'bo')
-                    EKF_Plotter.add_data_to_plot([pos_x_mm,pos_y_mm], 'go')
-                    EKF_Plotter.update_plot()
+                    EKF.ekf_update(-85)
+                    # EKF.check_valid_position_estimate()
+                    # print(EKF.get_x_est())
+                    EKF_plotter.add_x_est_to_plot(EKF.get_x_est())
+                    EKF_plotter.update_meas_circles(EKF.get_z_meas(), EKF.get_tx_alpha(), EKF.get_tx_gamma(), True, EKF.get_y_est())
+                    EKF_plotter.plot_gantry_pos([pos_x_mm, pos_y_mm])
+                    EKF_plotter.plot_ekf_pos_live(True, num_plot_points)
+                    # EKF_plotter.add_p_cov_to_plot(EKF.get_p_mat())
+                    #EKF_plotter.plot_p_cov(num_plot_points)
 
 
                 if b_take_meas is True:
@@ -452,31 +440,32 @@ class GantryControl(object):
             meas_freq = meas_counter / time_elapsed
             print('Logging with avg. ' + str(meas_freq) + ' Hz')
 
-        with open(measdata_filename, 'w') as measfile:
-            measfile.write('Measurement file for trajectory following\n')
-            measfile.write('Measurement was taken on ' + t.ctime() + '\n')
-            measfile.write('### begin grid settings\n')
-            if b_take_meas is True:
-                measfile.write('sample size = ' + str(sample_size) + ' [*1024]\n')
-                measfile.write('avg. meas frequency = ' + str(meas_freq) + ' Hz\n')
-            measfile.write('start_point =' + str(start_wp) + '\n')
-            measfile.write('wp_list =' + str(wp_list) + '\n')
-            if b_take_meas is True:
-                measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max\n')
-            else:
-                measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm]\n')
+        if b_log_data:
+            with open(measdata_filename, 'w') as measfile:
+                measfile.write('Measurement file for trajectory following\n')
+                measfile.write('Measurement was taken on ' + t.ctime() + '\n')
+                measfile.write('### begin grid settings\n')
+                if b_take_meas is True:
+                    measfile.write('sample size = ' + str(sample_size) + ' [*1024]\n')
+                    measfile.write('avg. meas frequency = ' + str(meas_freq) + ' Hz\n')
+                measfile.write('start_point =' + str(start_wp) + '\n')
+                measfile.write('wp_list =' + str(wp_list) + '\n')
+                if b_take_meas is True:
+                    measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm], pxx_den_max\n')
+                else:
+                    measfile.write('data format = [meas_counter, time_elapsed, pos_x_mm, pos_y_mm]\n')
 
-            measfile.write('### begin data log\n')
+                measfile.write('### begin data log\n')
 
-            data_mat = np.asarray(data_list)
-            for row in data_mat:
-                row_string = ''
-                for i in range(len(row)):
-                    row_string += str(row[i]) + ','
-                row_string += '\n'
-                measfile.write(row_string)
+                data_mat = np.asarray(data_list)
+                for row in data_mat:
+                    row_string = ''
+                    for i in range(len(row)):
+                        row_string += str(row[i]) + ','
+                    row_string += '\n'
+                    measfile.write(row_string)
 
-            measfile.close()
+                measfile.close()
 
         return True
 
@@ -650,9 +639,14 @@ class GantryControl(object):
             plt.plot(wp_data_mat[:, 1], wp_data_mat[:, 2], 'b.-')
             plt.xlabel('Distance in mm (belt-drive)')
             plt.ylabel('Distance in mm (spindle-drive)')
-            plt.xlim(x0[0]-10, xn[0]+100)
-            plt.ylim(x0[1]-10, xn[1]+100)
+            plt.xlim(-100, 3100)
+            plt.ylim(-100, 1800)
+            #plt.xlim(x0[0]-10, xn[0]+100)
+            #plt.ylim(x0[1]-10, xn[1]+100)
             plt.grid()
+            for i in range(len(tx_abs_pos)):
+                txpos_single = tx_abs_pos[i]
+                plt.plot(txpos_single[0], txpos_single[1], 'ro')
             plt.show()
 
             totnumofwp = np.shape(wp_data_mat)
@@ -669,6 +663,18 @@ class GantryControl(object):
                 new_target_wp = [new_target_wpx, new_target_wpy]  # find a solution for this uggly workaround...
                 meastime = row[3]
 
+                # estimate time left for plot title
+                if numwp == 0:
+                    starttime = float(t.time())
+                    t_left_h = 0
+                    t_left_m = 0
+                    t_left_s = 0
+                else:
+                    time_per_point = (float(t.time()) - starttime) / (numwp + 1)  # as numwp starts at 0
+                    time_left_sec = time_per_point * (totnumofwp-numwp+1)
+                    m, t_left_s = divmod(time_left_sec, 60)
+                    t_left_h, t_left_m = divmod(m, 60)
+
                 if self.transmit_wp_to_gantry(new_target_wp):
                     if self.move_gantry_to_target():
                         if self.confirm_arrived_at_target_wp():
@@ -678,7 +684,7 @@ class GantryControl(object):
                             print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
                             plt.plot(new_target_wp[0], new_target_wp[1], 'go')
                             plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +
-                                      '- measurement sequence was started at ' + str(self.get_starttime()))
+                                      '- Time left: %d:%02d:%02d' % (t_left_h, t_left_m, t_left_s))
                             #dataseq = self.__oCal.take_measurement(meastime)
                             dataseq = self.__oRf.take_measurement(meastime)
 
@@ -718,23 +724,16 @@ class GantryControl(object):
 
         return True
 
-
-
-
-
-
-
-
-    def start_RfEar(self, center_freq=434.2e6, freqspan=2e4):
+    def start_RfEar(self, center_freq=434.2e6, freqspan=1e5):
         import rf
         self.__oRf = rf.RfEar(center_freq, freqspan)
-        #freqtx = [433.9e6, 434.15e6, 434.40e6, 434.65e6]
-        #tx_pos = [[790, 440],
+        # freqtx = [433.9e6, 434.15e6, 434.40e6, 434.65e6]
+        # tx_pos = [[790, 440],
         #          [2530, 460],
         #          [2530, 1240],
         #          [790, 1230]]
-        #self.__oRf.set_txparams(freqtx, tx_pos)
-        freq6tx = [434.00e6,  434.15e6,434.30e6, 434.45e6, 434.65e6, 433.90e6]
+        # self.__oRf.set_txparams(freqtx, tx_pos)
+        freq6tx = [434.00e6,  434.15e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
         """
         tx_6pos = [[700, 440],
            [1560,450],
@@ -751,16 +750,6 @@ class GantryControl(object):
                    [1540, 1230],
                    [530, 1230]]
         self.__oRf.set_txparams(freq6tx, tx_6pos)
-        return True
-
-    def start_CalEar(self, freqtx=434.2e6, freqspan=2e4):
-        import rf
-        self.__oCal = rf.CalEar(freqtx, freqspan)
-        return True
-
-    def start_LocEar(self, alpha, xi, txpos, freqtx, freqspan=2e4):
-        import rf
-        self.__oLoc = rf.LocEar(alpha, xi, txpos, freqtx, freqspan)
         return True
 
 

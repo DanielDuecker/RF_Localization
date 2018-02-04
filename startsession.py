@@ -4,25 +4,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
-#"""
-wp_filename = 'wp_list_6tx_Partfield2_25mm_2018.txt'
-x0 = [100,100]
-xn = [2900, 1500]
-dxdy = [25, 25]
+"""
+wp_filename = 'wp_list_6tx_innerfield_100mm_2018.txt'
+x0 = [600, 500]
+xn = [2500, 1200]
+dxdy = [100, 100]
+rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 3, True)
+"""
 
-#rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 3, True)
-#"""
 
-txpos_offset = np.array([0, 0])
-
-txpos_tuning = [[0, 0],  # 433.9MHz
-                [0, 0],  # 434.1MHz
-                [0, 0],  # 434.3MHz
-                [0, 0]]  # 434.5MHz
-
-analyze_tx = [1, 2, 3, 4]
-
-#rf_tools.analyse_measdata_from_file(analyze_tx, txpos_tuning)
+rf_tools.analyze_measdata_from_file('lin')
 
 
 
@@ -49,7 +40,7 @@ Rf.set_samplesize(32)
 #Rf.map_path_ekf([600,600], 'h_rss')
 #
 #Rf.plot_power_spectrum_density()
-Rf.plot_txrss_live()
+#Rf.plot_txrss_live()
 
 
 

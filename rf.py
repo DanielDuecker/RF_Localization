@@ -21,7 +21,7 @@ from scipy.special import lambertw
 # define classes
 class RfEar(object):
     """A simple class to compute PSD with a DVBT-dongle."""
-    def __init__(self, center_freq, freqspan=2e5):
+    def __init__(self, center_freq, freqspan=1e5):
         """
         init-method
         :param center_freq: [Hz] Defines the center frequency where to listen (between 27MHz and 1.7GHz)

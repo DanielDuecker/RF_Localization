@@ -172,17 +172,20 @@ class StartPage(Tk.Frame):
         button_manual_mode_spindle = ttk.Button(man_contrl_frame, text=' Manual Mode Spindle', command=lambda: oSpindle.start_manual_mode())
         button_manual_mode_spindle.grid(row=firstrow_spindle+2, column=3)
 
-
-
         """
         EKF_Path Button
         """
-        button_ekf_path = ttk.Button(self, text='EKF-Path', command=lambda: self.__gt.follow_wp_and_take_measurements())
+        button_ekf_path = ttk.Button(self, text='EKF-Path (old)', command=lambda: self.__gt.follow_wp_and_take_measurements())
         button_ekf_path.grid(row=1, column=2)
 
-        button_path = ttk.Button(self, text='WP-Path Following', command=lambda: self.__gt.follow_wp_path_opt_take_measurements())
+        entry_num_plot_points = ttk.Entry(self)
+        entry_num_plot_points.insert(0, '1000')
+        entry_num_plot_points.grid(row=1, column=4)
+        entry_log_lin_ekf = ttk.Entry(self)
+        entry_log_lin_ekf.insert(0, 'log')
+        entry_log_lin_ekf.grid(row=2, column=4)
+        button_path = ttk.Button(self, text='WP-Path Following', command=lambda: self.__gt.follow_wp_path_opt_take_measurements(int(entry_num_plot_points.get()), entry_log_lin_ekf.get()))
         button_path.grid(row=1, column=3)
-
 
         """
         Settings
@@ -220,8 +223,11 @@ class StartPage(Tk.Frame):
                                              command=lambda: self.__gt.start_field_measurement_file_select())
         button_start_field_meas.grid(row=8, column=5, sticky='W', pady=4)
 
+        entry_log_lin_analyze = ttk.Entry(self)
+        entry_log_lin_analyze.insert(0, 'log')
+        entry_log_lin_analyze.grid(row=8, column=7)
         button_analyze_data = ttk.Button(self, text='Analyze Data',
-                                     command=lambda: rf_tools.analyze_measdata_from_file())
+                                     command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get()))
         button_analyze_data.grid(row=8, column=6, sticky='W', pady=4)
 
 

@@ -130,7 +130,7 @@ def write_measfile_header(ofile, file_description, x0, xn, grid_dxdy, timemeas, 
     return True
 
 
-def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
+def analyze_measdata_from_file(model_type='log',analyze_tx=[1,2,3,4,5,6],  meantype='db_mean'):
     """
 
     :param analyze_tx:
@@ -238,60 +238,56 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
                 num_tx = int(meas_data_mat_line[3])
                 num_meas = int(meas_data_mat_line[4])
 
-
                 first_rss = 5 + num_tx
 
                 meas_data_mat_rss = meas_data_mat_line[first_rss:]
 
-                rss_mat = meas_data_mat_rss.reshape([num_tx, num_meas])
+                rss_mat_raw = meas_data_mat_rss.reshape([num_tx, num_meas])
+
+                def reject_outliers(data, m=5.):
+                    d = np.abs(data - np.median(data))
+                    mdev = np.median(d)
+                    s = d / mdev if mdev else 0.
+                    #print('kicked out samples' + str([s < m]))
+                    return data[s < m]
 
                 if meantype is 'lin':
-                    rss_mat_lin = 10**(rss_mat/10)
+                    rss_mat_lin = 10**(rss_mat_raw/10)
                     mean_lin = np.mean(rss_mat_lin, axis=1)
                     var_lin = np.var(rss_mat_lin, axis=1)
                     mean = 10 * np.log10(mean_lin)
                     var = 10 * np.log10(var_lin)
                 else:
-                    mean = np.mean(rss_mat, axis=1)
-                    var = np.var(rss_mat, axis=1)
+                    mean = np.zeros([numtx])
+                    var = np.zeros([numtx])
+                    for itx in range(numtx):
+                        rss_mat_row = reject_outliers(rss_mat_raw[itx, :])
+                        # print('kicked out samples:' + str(len(rss_mat_raw[itx, :]) - len(rss_mat_row)))
+                        mean[itx] = np.mean(rss_mat_row)
+                        var[itx] = np.var(rss_mat_row)
                     # print('var = ' + str(var))
                 wp_pos = [meas_data_mat_line[0], meas_data_mat_line[1]]
 
-                #print(str(wp_pos))
-                #print(str(mean))
-                #print(str(var))
-                #print(str(np.concatenate((wp_pos, mean, var), axis=0)))
                 plotdata_line = np.concatenate((wp_pos, mean, var), axis=0)
-
-
                 plotdata_mat_lis.append(plotdata_line)
-                #print (str(plotdata_mat_lis))
-
-
 
         measfile.close()
 
-        # print('shape_from_file ' + str(data_shape_file))
         data_shape = [data_shape_file[1], data_shape_file[0]]
-
-        # print('shape : ' + str(np.shape(x)))
-
-        # totnumwp = data_shape[0] * data_shape[1] #num_wp + 1  # counting starts with zero
-
         plotdata_mat = np.asarray(plotdata_mat_lis)
-        #print(str(plotdata_mat))
-        #print('Number of gridpoints: ' + str(plotdata_mat.shape[0]))
-
-
 
         """
         Model fit
         """
+        if model_type=='log':
+            def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
+                """Range Sensor Model (RSM) structure."""
+                return -20 * np.log10(dist_rsm) - alpha_rsm * dist_rsm - gamma_rsm  # rss in db
 
-        def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
-            """Range Sensor Model (RSM) structure."""
-            return -20 * np.log10(dist_rsm) - alpha_rsm * dist_rsm - gamma_rsm  # rss in db
-            #return alpha_rsm*dist_rsm  +gamma_rsm  # rss in db
+        elif model_type=='lin':
+            def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
+                """Range Sensor Model (RSM) structure."""
+                return alpha_rsm * dist_rsm + gamma_rsm  # rss in db
 
         alpha = []
         gamma = []
@@ -303,7 +299,6 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos|
 
             rssdata = plotdata_mat[:, 2+itx]  # rss-mean for each wp
-
             popt, pcov = curve_fit(rsm_model, rdist_temp, rssdata)
             del pcov
 
@@ -313,10 +308,15 @@ def analyze_measdata_from_file(analyze_tx=[1,2,3,4,5,6], meantype='db_mean'):
             rdist.append(rdist_temp)
 
         rdist_temp = np.reshape(rdist, [num_tx, totnumwp])
+        if model_type == 'log':
+            print('\nVectors for convenient copy/paste')
+            print('alpha_log = ' + str(alpha))
+            print('gamma_log = ' + str(gamma))
 
-        print('\nVectors for convenient copy/paste')
-        print('alpha = ' + str(alpha))
-        print('gamma = ' + str(gamma))
+        elif model_type=='lin':
+            print('\nVectors for convenient copy/paste')
+            print('alpha_lin = ' + str(alpha))
+            print('gamma_lin = ' + str(gamma))
 
         """
         Plots
