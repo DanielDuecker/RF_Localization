@@ -724,6 +724,7 @@ class GantryControl(object):
 
         return True
 
+
     def start_RfEar(self, center_freq=434.2e6, freqspan=1e5):
         import rf
         self.__oRf = rf.RfEar(center_freq, freqspan)
