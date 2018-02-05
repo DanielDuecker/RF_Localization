@@ -733,7 +733,7 @@ class GantryControl(object):
         #          [2530, 1240],
         #          [790, 1230]]
         # self.__oRf.set_txparams(freqtx, tx_pos)
-        freq6tx = [434.00e6,  434.15e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
+        freq6tx = [434.00e6,  434.1e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
         """
         tx_6pos = [[700, 440],
            [1560,450],

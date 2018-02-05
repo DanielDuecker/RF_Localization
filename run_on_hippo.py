@@ -3,7 +3,7 @@ import socket_server
 import time
 import numpy as np
 
-host_ip = '192.168.88.128'
+host_ip = '192.168.1.23'
 host_port = 50008
 
 soc_client = socket_server.SocClient(host_ip, host_port)

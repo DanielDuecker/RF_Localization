@@ -4,24 +4,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
-"""
-wp_filename = 'wp_list_6tx_innerfield_100mm_2018.txt'
-x0 = [600, 500]
-xn = [2500, 1200]
+
+wp_filename = 'wp_list_6tx_innerfield_left_180_half_100mm_2018.txt'
+x0 = [80, 500]
+xn = [1500, 1200]
 dxdy = [100, 100]
-rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 3, True)
-"""
-
-
-rf_tools.analyze_measdata_from_file('lin')
+#rf_tools.wp_generator(wp_filename, x0, xn, dxdy, 3, True)
 
 
 
-Rf = rf.RfEar(434.2e6, 1e5)
+#rf_tools.analyze_measdata_from_file('lin')
 
 
 
-freq6tx = [434.00e6, 434.15e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
+Rf = rf.RfEar(434.2e6, 8e4)
+
+
+
+freq6tx = [434.00e6, 434.1e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
 
 tx_6pos = [[520, 430],
            [1540, 430],
@@ -40,7 +40,7 @@ Rf.set_samplesize(32)
 #Rf.map_path_ekf([600,600], 'h_rss')
 #
 #Rf.plot_power_spectrum_density()
-#Rf.plot_txrss_live()
+Rf.plot_txrss_live()
 
 
 

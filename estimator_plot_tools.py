@@ -4,7 +4,7 @@ import numpy as np
 
 
 class EKF_Plot(object):
-    def __init__(self, tx_pos, model_type='log', bplot_circles=True, b_p_cov_plot=True):
+    def __init__(self, tx_pos, model_type='log', bplot_circles=True, b_p_cov_plot=False):
         """ setup figure """
         self.__tx_pos = tx_pos
         self.__tx_num = len(tx_pos)

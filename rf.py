@@ -294,6 +294,8 @@ class RfEar(object):
         while elapsed_time < meastime:
             start_calctime = t.time()
             freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(self.get_freqtx())
+            # print('get_freqtx= ' + str(self.get_freqtx()))
+            # print('freq_found = ' + str(freq_den_max))
 
             dataseq.append(pxx_den_max)
 

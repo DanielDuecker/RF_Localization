@@ -220,7 +220,6 @@ def analyze_measdata_from_file(model_type='log',analyze_tx=[1,2,3,4,5,6],  meant
                 xpos = np.linspace(startx, endx, stepx)
                 ypos = np.linspace(starty, endy, stepy)
 
-
                 wp_matx, wp_maty = np.meshgrid(xpos, ypos)
 
                 #print(xpos)
@@ -294,8 +293,9 @@ def analyze_measdata_from_file(model_type='log',analyze_tx=[1,2,3,4,5,6],  meant
         rdist = []
 
         for itx in analyze_tx:
-            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # r_wp -r_txpos
-
+            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # + [250 , 30] # r_wp -r_txpos
+            if itx == 5:
+                print('r_dist ' + str(rdist_vec) )
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos|
 
             rssdata = plotdata_mat[:, 2+itx]  # rss-mean for each wp
@@ -415,7 +415,7 @@ def analyze_measdata_from_file(model_type='log',analyze_tx=[1,2,3,4,5,6],  meant
                 ax.errorbar(rdist, rss_mean, yerr=rss_var,
                             fmt='ro',markersize='1', ecolor='g', label='Original Data')
 
-                rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
+                rdata = np.linspace(50 , np.max(rdist), num=1000)
                 ax.plot(rdata, rsm_model(rdata, alpha[itx], gamma[itx]), label='Fitted Curve')
                 ax.legend(loc='upper right')
                 ax.grid()

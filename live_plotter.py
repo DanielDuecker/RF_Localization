@@ -29,7 +29,7 @@ IF YOU CHANGE THE ALPHA + GAMMA VALUES IN EKF YOU HAVE!!!! to change them here M
 """
 
 
-server_ip = '192.168.88.128'
+server_ip = '192.168.1.23'
 server_port = 50008
 #soc_server = socket_server.SocServer(server_ip, server_port)
 import numpy as np
