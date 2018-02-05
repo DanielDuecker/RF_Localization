@@ -8,13 +8,13 @@ http://sdr.osmocom.org/trac/wiki/rtl-sdr
 """
 
 # import modules
-from abc import ABCMeta, abstractmethod
 import time as t
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from rtlsdr import *
 from scipy import signal
-from scipy.optimize import curve_fit
 from scipy.special import lambertw
 
 
