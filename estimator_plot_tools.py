@@ -101,11 +101,11 @@ class EKF_Plot(object):
             :param gamma
             :param rsm_model_type
             """
-            if rsm_model_type == 'log':
-                z_dist = 20 / (np.log(10) * alpha) * lambertw(
+            #if rsm_model_type == 'log':
+            z_dist = 20 / (np.log(10) * alpha) * lambertw(
                     np.log(10) * alpha / 20 * np.exp(-np.log(10) / 20 * (rss + gamma)))
-            elif rsm_model_type == 'lin':
-                z_dist = (rss - gamma) / alpha
+            #elif rsm_model_type == 'lin':
+            #    z_dist = (rss - gamma) / alpha
 
             return z_dist.real  # [mm]
 
