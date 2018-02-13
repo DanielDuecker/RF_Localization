@@ -28,7 +28,8 @@ IF YOU CHANGE THE ALPHA + GAMMA VALUES IN EKF YOU HAVE!!!! to change them here M
 """
 
 
-server_ip = '192.168.1.23'
+server_ip = '192.168.0.100'  # thinkpad ethernet
+server_ip = '192.168.0.101'  # thinkpad wifi-intern
 server_port = 50007
 soc_server = socket_server.SocServer(server_ip, server_port)
 import numpy as np

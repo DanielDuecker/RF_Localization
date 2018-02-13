@@ -3,7 +3,8 @@ import socket_server
 import time
 import numpy as np
 
-host_ip = '192.168.1.23'
+host_ip = '192.168.0.100'  # thinkpad ethernet
+host_ip = '192.168.0.101'  # thinkpad wifi-intern
 host_port = 50008
 
 soc_client = socket_server.SocClient(host_ip, host_port)
