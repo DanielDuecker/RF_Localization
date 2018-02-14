@@ -264,10 +264,10 @@ class ExtendedKalmanFilter(object):
     def check_valid_position_estimate(self,x_field_begin=[-500 ,-500], x_field_end=[3700, 2600]):
         if x_field_begin[0] > self.__x_est[0] or x_field_end[0] < self.__x_est[0]:
             self.reset_ekf()
-            print('EKF: Position estimate out of range --> reset EKF')
+            #print('EKF: Position estimate out of range --> reset EKF')
         elif x_field_begin[1] > self.__x_est[1] or x_field_end[1] < self.__x_est[1]:
             self.reset_ekf()
-            print('EKF: Position estimate out of range --> reset EKF')
+            #print('EKF: Position estimate out of range --> reset EKF')
         return True
 
 

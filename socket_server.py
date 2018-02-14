@@ -127,7 +127,7 @@ class SocClient(object):
         if self.soc_wait_for_data_request():  # received_msg == 'req_data':
             self.soc_send_data_to_server(newdata_list)
             self.__start_time = time.time()
-            print('Client: data sent')
+            #print('Client: data sent')
             return True
         else:
             print('Client: no data request')
