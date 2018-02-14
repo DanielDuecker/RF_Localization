@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
+#from matplotlib.patches import Arrow
 from scipy.special import lambertw
 import numpy as np
+import time as t
 
 
 class EKF_Plot(object):
@@ -13,6 +15,8 @@ class EKF_Plot(object):
         (self.__fig1, self.__ax1) = plt.subplots()  # get figure/axis handles
         if b_p_cov_plot:
             (self.__fig2, self.__ax2) = plt.subplots()  # get figure/axis handles
+
+        self.__act_time = 0.0  # time to calc plot update frequency
 
         self.__x1_list = []
         self.__x2_list = []
@@ -30,15 +34,18 @@ class EKF_Plot(object):
             # self.__ax2.set_ylabel
             self.__ax2.grid()
         x_min = -500.0
-        x_max = 3100.0
+        x_max = 3800.0
         y_min = -500.0
         y_max = 2000.0
-        #self.__ax1.axis([x_min, x_max, y_min, y_max])
+        self.__ax1.axis([x_min, x_max, y_min, y_max])
         self.__ax1.axis('equal')
 
         self.__ax1.grid()
         self.__ax1.set_xlabel('x-Axis [mm]')
         self.__ax1.set_ylabel('y-Axis [mm]')
+
+        tank_frame = np.array([[-250, -150], [3750, -150], [3750, 1850], [-250, 1850], [-250, -150]])
+        self.__ax1.plot(tank_frame[:, 0], tank_frame[:, 1], 'k-')
 
         self.plot_beacons()
 
@@ -64,7 +71,7 @@ class EKF_Plot(object):
     def plot_way_points(self, wp_list=np.array([0,0]), wp_rad=[0], b_plot_circles=False):
         x1_wp = wp_list[:, 0]
         x2_wp = wp_list[:, 1]
-        self.__ax1.plot(x1_wp, x2_wp, 'go', label="Way - Point")
+        self.__ax1.plot(x1_wp, x2_wp, 'g.-', label="Way - Point")
         num_wp = len(wp_rad)
         circle_wp = []
         if b_plot_circles:
@@ -139,12 +146,17 @@ class EKF_Plot(object):
 
         plt.pause(0.001)
 
+
     def plot_ekf_pos_live(self, b_plot_gantry=False, numofplottedsamples=50):
         """
         This function must be the last plot function due to the ugly 'delete' workaround
         :param numofplottedsamples:
         :return:
         """
+        new_time = float(t.time())
+        self.__ax1.set_title('Vehicle postition [update with ' + str(int(1 / (new_time - self.__act_time))) + ' Hz]')
+        self.__act_time = new_time
+
 
         firstdata = 0  # set max number of plotted points
         cnt = len(self.__x1_list)
@@ -169,22 +181,17 @@ class EKF_Plot(object):
 
         plt.pause(0.001)
 
+    def plot_yaw_angle_live(self, yaw_angle_rad=0):
+        x1_pos = self.__x1_list[-1]
+        x2_pos = self.__x2_list[-1]
+        if len(self.__x1_list) > 1:
+            self.__yaw_arrow.remove()
 
+        self.__yaw_arrow = self.__ax1.arrow(x1_pos[0], x2_pos[0], 400 * np.cos(yaw_angle_rad), 400 * np.sin(yaw_angle_rad),
+                                            head_width=40, head_length=150, fc='k', ec='k')
 
-
-
-
-
-    """
-    # init measurement circles and add them to the plot
-    circle_meas = []
-    circle_meas_est = []
-    for i in range(EKF.get_tx_num()):
-        txpos_single = EKF.get_tx_pos()[i]
-        circle_meas.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='r', fill=False))
-        ax.add_artist(circle_meas[i])
-        circle_meas_est.append(plt.Circle((txpos_single[0], txpos_single[1]), 0.01, color='g', fill=False))
-        ax.add_artist(circle_meas_est[i])
-
-  
-    """
+    #def plot_next_target_wp(self, next_wp):
+        #if len(self.__x1_list) > 1:
+        #    self.__yaw_arrow.remove()
+        #self.__ax1.plot(next_wp[0], next_wp[1], 'go',
+        #                label="x_wp= " + str([int(next_wp[0]), int(next_wp[1])]))

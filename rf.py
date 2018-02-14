@@ -10,8 +10,8 @@ http://sdr.osmocom.org/trac/wiki/rtl-sdr
 # import modules
 import time as t
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
+import matplotlib  # comment this out when not on raspPi
+matplotlib.use('Agg')  # comment this out when not on raspPi
 import matplotlib.pyplot as plt
 from rtlsdr import *
 from scipy import signal
