@@ -190,7 +190,7 @@ class ExtendedKalmanFilter(object):
         #rss_max_lim = [-42, -42, -42, -42, -42, -42]*0
         if -35 < rss_noise_model or r_dist >= 1900:
             r_sig = 100
-            print('Meas_Cov_Model: itx = ' + str(itx) + ' r_sig set to ' + str(r_sig))
+            #print('Meas_Cov_Model: itx = ' + str(itx) + ' r_sig set to ' + str(r_sig))
 
         else:
             if rss_noise_model >= -55:
