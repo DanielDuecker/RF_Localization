@@ -134,8 +134,8 @@ class EKF_Plot(object):
             return z_dist.real  # [mm]
 
     def add_x_est_to_plot(self, x_est, yaw_rad):
-
-        self.__x_list.append([x_est[0][0], x_est[0][0]])
+        self.__x_list.append([x_est[0], x_est[1]])
+        #self.__x_list.append([x_est[0][0], x_est[0][0]])
         self.__yaw_rad = yaw_rad
 
     def update_next_wp(self, next_wp):
@@ -201,12 +201,11 @@ class EKF_Plot(object):
         # self.__plt_pos.set_data(x_temp[-1,0], x_temp[-1,1])
 
         if b_yaw:
-            yaw_angle_rad = 0
-            yaw_arrow = [400 * np.cos(yaw_angle_rad), 400 * np.sin(yaw_angle_rad)]
+            yaw_arrow = [400 * np.cos(self.__yaw_rad), 400 * np.sin(self.__yaw_rad)]
             self.__plt_pos_yaw.set_data([x_temp[-1, 0], x_temp[-1, 0]+yaw_arrow[0]], [x_temp[-1, 1], x_temp[-1, 1]+yaw_arrow[1]])
 
         if b_next_wp:
-            self.__plt_pos_to_wp.set_data([x_temp[-1, 0], self.__next_wp[0]],[x_temp[-1, 0], self.__next_wp[1]])
+            self.__plt_pos_to_wp.set_data([x_temp[-1, 0], self.__next_wp[0]],[x_temp[-1, 1], self.__next_wp[1]])
 
         self.__fig1.canvas.restore_region(self.__fig1background)
         self.__ax1.draw_artist(self.__plt_pos_tail)
