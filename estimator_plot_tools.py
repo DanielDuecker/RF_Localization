@@ -39,10 +39,16 @@ class EKF_Plot(object):
             # self.__ax2.set_xlabel
             # self.__ax2.set_ylabel
             self.__ax2.grid()
-        x_min = -500.0
-        x_max = 3800.0
-        y_min = -500.0
-        y_max = 2000.0
+        # x_min = -500.0
+        # x_max = 3800.0
+        # y_min = -500.0
+        # y_max = 2000.0
+
+        x_min = -1000.0
+        x_max = 4000.0
+        y_min = -1000.0
+        y_max = 3000.0
+
         self.__ax1.axis([x_min, x_max, y_min, y_max])
         self.__ax1.axis('equal')
 
@@ -50,8 +56,8 @@ class EKF_Plot(object):
         self.__ax1.set_xlabel('x-Axis [mm]')
         self.__ax1.set_ylabel('y-Axis [mm]')
 
-        tank_frame = np.array([[-250, -150], [3750, -150], [3750, 1850], [-250, 1850], [-250, -150]])
-        self.__ax1.plot(tank_frame[:, 0], tank_frame[:, 1], 'k-')
+        # tank_frame = np.array([[-250, -150], [3750, -150], [3750, 1850], [-250, 1850], [-250, -150]])
+        # self.__ax1.plot(tank_frame[:, 0], tank_frame[:, 1], 'k-')
 
         self.plot_beacons()
 

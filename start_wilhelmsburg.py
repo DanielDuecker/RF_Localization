@@ -1,32 +1,22 @@
 import rf
 import rf_tools
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.mlab as mlab
-import gantry_control as gc
 
-#Rf = rf.RfEar(434.2e6, 1e5)
-
-freq_1tx = [433.88e6]
-tx_1pos = [0,0]
-#Rf.set_txparams(freq_1tx, tx_1pos)
-
-tx_alpha = [0.01149]
-tx_gamma = [-8.52409]
-#Rf.set_calparams(tx_alpha, tx_gamma)
+Rf = rf.RfEar(434.2e6, 8e4)
 
 
-#Rf.plot_power_spectrum_density()
-#Rf.plot_txrss_live()
+freq6tx = [434.00e6, 434.1e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
+
+""" TX position StillWasserBecker """
+# tx_6pos = [[520.0, 430.0], [1540.0, 430.0], [2570.0, 430.0], [2570.0, 1230.0], [1540.0, 1230.0], [530.0, 1230.0]]
+""" TX position - origin at Beacon #1 """
+tx_6pos = tx_6pos = [[0, 0], [1000, 0], [2000, 0], [2000, 900], [1000, 900], [0, 900]]
 
 
-#Rf.manual_calibration_for_one_tx('2018_01_18_messun_06.txt', 20)  # meastime = 5s
+Rf.set_txparams(freq6tx, tx_6pos)
 
-#def analyze_measdata_from_file_1tx():
+Rf.set_samplesize(32)
 
-
-my
-
-
+# Rf.plot_power_spectrum_density()
+# Rf.plot_txrss_live()
 
 

@@ -1,5 +1,6 @@
 import numpy as np
 import rf
+import rf_tools
 
 """ map/track the position of the mobile node using an EKF
 
@@ -13,7 +14,7 @@ import rf
 
 
 class ExtendedKalmanFilter(object):
-    def __init__(self, set_model_type='log', x0=[1000, 1000]):
+    def __init__(self, tx_pos, set_model_type='log', x0=[1000, 1000]):
         self.__model_type = set_model_type
         self.__tx_freq = []
         self.__tx_pos = []
@@ -22,20 +23,23 @@ class ExtendedKalmanFilter(object):
 
         self.__tx_freq = [4.3400e+08,   4.341e+08,   4.3430e+08,   4.3445e+08,   4.3465e+08,   4.3390e+08]
 
-        self.__tx_pos = [[520.0, 430.0], [1540.0, 430.0], [2570.0, 430.0], [2570.0, 1230.0], [1540.0, 1230.0], [530.0, 1230.0]]
+        self.__tx_pos = tx_pos
 
         if self.__model_type == 'log':
             """ parameter for log model """
-            # self.__tx_alpha = [0.01149025464796399, 0.016245419273983631, 0.011352095690562954, 0.012125937076390217, 0.0092717529591962722, 0.01295918160582895]
-            # self.__tx_gamma = [-8.5240925102693872, -11.670560994925006, -8.7169295956676116, -8.684528288347666, -5.1895194577206665, -9.8124742816198918]
-            #self.__tx_alpha = [0.011642589483319907, 0.011685691737764401, 0.014099893627736611, 0.015162833988041791, 0.0083400148281428735, 0.012403542797734512]
-            #self.__tx_gamma = [-7.6249148771258346, -7.570030144546223, -9.0942464068699564, -7.790184590771303, -2.1396926871992643, -6.964599659891995]
 
-            self.__tx_alpha = [0.011100059337162281, 0.014013732682386724, 0.011873535003719441, 0.013228415946149144,
-                         0.010212580857184312, 0.010286057191882235]
-            self.__tx_gamma = [-0.49471304043015696, -1.2482393190627841, -0.17291318936462172, -0.61587988305564456,
-                         0.99831151034040444, 0.85711994311461936]
+            b_file_param = True
+            if b_file_param:
+                (self.__tx_alpha, self.__tx_gamma) = rf_tools.get_cal_param_from_file(param_filename='cal_param.txt')
+                print('Take alpha/gamma from cal-file')
+                print('alpha = ' + str(self.__tx_alpha))
+                print('gamma = ' + str(self.__tx_gamma))
 
+            else:
+                self.__tx_alpha = [0.011100059337162281, 0.014013732682386724, 0.011873535003719441, 0.013228415946149144,
+                             0.010212580857184312, 0.010286057191882235]
+                self.__tx_gamma = [-0.49471304043015696, -1.2482393190627841, -0.17291318936462172, -0.61587988305564456,
+                             0.99831151034040444, 0.85711994311461936]
 
         elif self.__model_type == 'lin':
             """ parameter for linear model """

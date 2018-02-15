@@ -11,7 +11,13 @@ import numpy as np
 
 #soc_client = socket_server.SocClient(host_ip, host_port)
 
-EKF = estimator.ExtendedKalmanFilter()
+
+""" TX position StillWasserBecker """
+tx_pos = [[520.0, 430.0], [1540.0, 430.0], [2570.0, 430.0], [2570.0, 1230.0], [1540.0, 1230.0], [530.0, 1230.0]]
+""" TX position - origin at Beacon #1 """
+tx_pos = tx_6pos = [[0, 0], [1000, 0], [2000, 0], [2000, 900], [1000, 900], [0, 900]]
+
+EKF = estimator.ExtendedKalmanFilter(tx_pos)
 t0 = time.time()
 k = 0
 while True:
