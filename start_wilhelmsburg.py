@@ -25,8 +25,6 @@ tx_gamma = [-8.52409]
 #def analyze_measdata_from_file_1tx():
 
 
-my
-
 
 
 

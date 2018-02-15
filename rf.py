@@ -369,6 +369,85 @@ class RfEar(object):
             print('Measurement file ' + measdata_filename + ' closed :-)')
         return True
 
+    def manual_calibration_for_6_tx(self, point_list, measdata_filename='meas_data_wburg.txt', meastime=3):
+        """
+        :return:
+        """
+
+        print('Manual calibration started!')
+        # read data from waypoint file
+        freqtx = self.__freqtx
+        #wplist_filename = hc_tools.select_file()
+        #wp_data_mat, x0, xn, grid_dxdy, timemeas = rf_tools.read_data_from_wp_list_file(wplist_filename)
+        meas_mean = []
+        meas_var = []
+        dist_list = []
+
+        str_input = raw_input('To close this program and proceed to the parameter calculation directly enter >exit<')
+        if str_input == 'exit':
+            print('Close collecting calibration data')
+            return
+
+        with open(measdata_filename, 'w') as measfile:
+            meas_counter = 0
+            b_new_measurement = True
+            # loop over all way-points
+            while b_new_measurement:
+                try:
+                    meas_point_select_input = raw_input('\nStart measurement at WP? (0-13)')
+                    meas_point_select = int(meas_point_select_input)
+                    if meas_point_select in range(14):
+                        print('Selected WP #' + str(meas_point_select) + ' at position '+ str(point_list[meas_point_select]))
+                        print('Type >s< + ENTER to start measurement.')
+                        print('Type >stop< + ENTER to stop measurements and calculate cal-parameter')
+                        start_meas = raw_input('Entry:')
+                        if start_meas == 's':
+                            meas_counter = meas_counter + 1
+                            numwp = meas_point_select
+                            meas_point = point_list[meas_point_select]
+
+                            #dist_list.append(input_dist)
+
+                            print('Measuring at Way-Point #' + str(numwp) + '...')
+
+                            dataseq = self.take_measurement(meastime)
+
+                            [nummeas, numtx] = np.shape(dataseq)
+
+                            # way point data - structure 'wp_x, wp_y, num_wp, num_tx, num_meas'
+                            str_base_data = str(meas_point[0]) + ', ' + str(meas_point[1]) + ', ' +\
+                                            str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
+                            # freq data
+                            str_freqs = ', '.join(map(str, freqtx)) + ', '
+
+                            # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
+                            # print('data ' + str(dataseq))
+                            str_rss = ''
+                            for i in range(numtx):
+                                str_rss = str_rss + ', '.join(map(str, dataseq[:, i])) + ', '
+                            # print('Measurements taken: ' + str(nummeas) + ' at sample-size ' + str(self.__samplesize))
+
+                            measfile.write(str_base_data + str_freqs + str_rss + '\n')
+
+                            #meas_mean.append(np.mean(dataseq, axis=0))
+                            #meas_var.append(np.var(dataseq, axis=0))
+
+                            #print('input_dist = ' + input_dist)
+                            #if b_plotting:
+                            #    self.cal_plot(dist_list, meas_mean, meas_var)
+                        elif start_meas == 'stop':
+                            print('Finish Measurements and Close Program')
+                            break
+                    else:
+                        print('Enter a valid point number (0-13)!')
+                        continue
+                except:
+                    print('Enter a valid point number (0-13)!')
+
+            measfile.close()
+            print('Measurement file ' + measdata_filename + ' closed :-)')
+        return True
+
     """
 
     Plotting methods
