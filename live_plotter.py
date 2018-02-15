@@ -4,14 +4,12 @@ import estimator_plot_tools
 import numpy as np
 import time as t
 
-tx_6pos = [[520, 430],
-           [1540, 430],
-           [2570, 430],
-           [2570, 1230],
-           [1540, 1230],
-           [520, 1230]]
+""" TX position StillWasserBecker """
+#tx_pos = [[520.0, 430.0], [1540.0, 430.0], [2570.0, 430.0], [2570.0, 1230.0], [1540.0, 1230.0], [530.0, 1230.0]]
+""" TX position - origin at Beacon #1 """
+tx_pos = tx_6pos = [[0, 0], [1000, 0], [2000, 0], [2000, 900], [1000, 900], [0, 900]]
 
-ekf_plotter = estimator_plot_tools.EKF_Plot(tx_6pos, bplot_circles=False)
+ekf_plotter = estimator_plot_tools.EKF_Plot(tx_pos, bplot_circles=False)
 
 
 

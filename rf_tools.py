@@ -528,6 +528,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1,2,3,4,5,6],  mean
 """
 Onboard Calibration 
 """
+
+
 def onboard_cal_param(tx_pos, measdata_filename='meas_data_wburg.txt', param_filename='cal_param.txt'):
 
     with open(measdata_filename, 'r') as measfile:
@@ -605,7 +607,6 @@ def onboard_cal_param(tx_pos, measdata_filename='meas_data_wburg.txt', param_fil
         plotdata_mat = np.asarray(plotdata_mat_lis)
         #print('Plot data mat =' + str(plotdata_mat))
 
-
         """
         Model fit
         """
@@ -613,7 +614,6 @@ def onboard_cal_param(tx_pos, measdata_filename='meas_data_wburg.txt', param_fil
         def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
             """Range Sensor Model (RSM) structure."""
             return -20 * np.log10(dist_rsm) - alpha_rsm * dist_rsm - gamma_rsm  # rss in db
-
 
         alpha = []
         gamma = []
@@ -632,6 +632,7 @@ def onboard_cal_param(tx_pos, measdata_filename='meas_data_wburg.txt', param_fil
             gamma.append(round(popt[1], 4))
             # print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' gamma= ' + str(gamma[itx]))
             rdist.append(rdist_temp)
+            #print('itx = ' + str(itx))
         #print('rdist = ' + str(rdist))
 
         with open(param_filename, 'w') as paramfile:
@@ -676,10 +677,4 @@ def lambertloc(rss, alpha, gamma):
     """
     z = 20 / (np.log(10) * alpha) * lambertw(np.log(10) * alpha / 20 * np.exp(-np.log(10) / 20 * (rss + gamma)))
     return z.real  # [mm]
-
-
-"""
-TCP - Communication
-"""
-
 
