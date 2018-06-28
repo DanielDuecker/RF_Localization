@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 from rtlsdr import *
 from scipy import signal
 from scipy.special import lambertw
-
+import SoapySDR #####
+from SoapySDR import * #SOAPY_SDR_ constants #####
 
 # define classes
 class RfEar(object):
@@ -28,7 +29,8 @@ class RfEar(object):
         :param freqspan: [Hz] span within the the algorithm is looking for amplitude peaks
         """
         # connect to sdr
-        self.__sdr = RtlSdr()
+        args = dict(driver="airspy") #####
+        self.__sdr = SoapySDR.Device(args)  # RtlSdr() #####
         self.__sdr.gain = 1
         self.__sdr.sample_rate = 2.048e6  # 2.048 MS/s
 

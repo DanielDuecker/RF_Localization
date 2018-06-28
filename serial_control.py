@@ -4,13 +4,13 @@ import serial
 
 class MotorCommunication(object):
 
-    def __init__(self, portname, name, baudrate, drivetype, travelling_distance_mm, extreme_pos_inc):  #
+    def __init__(self, portname, name, baudrate, drivetype, travelling_distance_mmrad, extreme_pos_inc):  #
         self.__oserial = []
         self.__portname = portname
         self.__name = name
         self.__baudrate = baudrate
         self.__drivetype = drivetype
-        self.__travelling_distance_mm = float(travelling_distance_mm)
+        self.__travelling_distance_mmrad = float(travelling_distance_mmrad)
         self.__isopen = False
         self.__timewritewait = 0.02  # [s]
         self.__timereadwait = 0.02  # [s]
@@ -27,8 +27,8 @@ class MotorCommunication(object):
 
         self.__posinc = []
         self.__tposinc = []
-        self.__posmm = []
-        self.__tposmm = []
+        self.__posmmrad = []
+        self.__tposmmrad = []
         self.__rpm = []
         self.__target_speed_rpm = 0
 
@@ -116,19 +116,22 @@ class MotorCommunication(object):
         elif drivetype == 'spindle':
             self.__rpmmax = 7000
             self.__findingspeed = 2500
+        elif drivetype == 'driveshaft':
+            self.__rpmmax = 1233
+            self.__findingspeed = 123
         else:
             print('Unknown drive type!')
             print('drive types known "belt" and "spindle"')
             print('exiting application')
             exit()
 
-    def convert_mm2inc(self, pos_mm):
-        pos_inc = int(pos_mm * (self.__posincmax/self.__travelling_distance_mm))
+    def convert_mmrad2inc(self, pos_mmrad):
+        pos_inc = int(pos_mmrad * (self.__posincmax/self.__travelling_distance_mmrad))
         return pos_inc
 
-    def convert_inc2mm(self, pos_inc):
-        pos_mm = pos_inc * (self.__travelling_distance_mm/self.__posincmax)
-        return pos_mm
+    def convert_inc2mmrad(self, pos_inc):
+        pos_mmrad = pos_inc * (self.__travelling_distance_mmrad/self.__posincmax)
+        return pos_mmrad
 
     def write_on_port(self, strcommand):
         self.__oserial.write(strcommand + '\r\n')
@@ -141,7 +144,7 @@ class MotorCommunication(object):
     def get_rpm(self):
         self.write_on_port('GN')
         self.listen_to_port('rpm')
-        #print(str(self.__tempval))
+        # print(str(self.__tempval))
         if abs(self.__tempval) < 12000:  # max motor speed = 7000rpm
             self.__rpm = self.__tempval
         return self.__rpm
@@ -151,26 +154,26 @@ class MotorCommunication(object):
 
     def get_posinc(self):
         """
-        gets the actual position and updates the member variables for position (both [inc] and [mm])
+        gets the actual position and updates the member variables for position (both [inc] and [mm] or [rad])
         :return: pos_inc [inc]
         """
         self.write_on_port('POS')
         self.listen_to_port('pos')
         self.__posinc = self.__tempval
         if self.__posincmax != []:
-            self.__posmm = self.convert_inc2mm(self.__posinc)
+            self.__posmmrad = self.convert_inc2mmrad(self.__posinc)
         return self.__posinc
 
-    def get_posmm(self):
+    def get_posmmrad(self):
         """
         gets the actual position and updates the member variables for position (both [inc] and [mm])
-        :return: pos_mm [mm]
+        :return: pos_mmrad [mm] or [rad]
         """
         self.write_on_port('POS')
         self.listen_to_port('pos')
         self.__posinc = self.__tempval
-        self.__posmm = self.convert_inc2mm(self.__posinc)
-        return self.__posmm
+        self.__posmmrad = self.convert_inc2mmrad(self.__posinc)
+        return self.__posmmrad
 
     def set_target_speed_rpm(self, target_speed_rpm):
         self.__target_speed_rpm = target_speed_rpm
@@ -181,11 +184,11 @@ class MotorCommunication(object):
     def set_target_posinc(self, target_posinc):
         self.__tposinc = target_posinc
 
-    def set_target_posmm(self, target_posmm):
-        self.__tposmm = target_posmm
+    def set_target_posmmrad(self, target_posmmrad):
+        self.__tposmmrad = target_posmmrad
 
-    def get_target_posmm(self):
-        return self.__tposmmp
+    def get_target_posmmrad(self):
+        return self.__tposmmradp
 
     def is_home_pos_known(self):
         return self.__homeknown
@@ -219,14 +222,14 @@ class MotorCommunication(object):
             self.__ismoving = True
             return True
 
-    def get_dist_to(self, target_pos_mm):
+    def get_dist_to(self, target_pos_mmrad):
         """
-        Calculates the distance [mm] from the actual position to the target position
-        :param target_pos_mm
-        :return: target_pos_mm - drive_pos_mm
+        Calculates the distance [mm] or [rad] from the actual position to the target position
+        :param target_pos_mmrad
+        :return: target_pos_mmrad - drive_pos_mmrad
         """
-        drive_pos_mm = self.get_posmm()
-        return target_pos_mm - drive_pos_mm
+        drive_pos_mmrad = self.get_posmmrad()
+        return target_pos_mmrad - drive_pos_mmrad
 
     def check_arrival_signal(self):
         self.update_data()
@@ -257,7 +260,7 @@ class MotorCommunication(object):
         print('PosIncMax: ' + str(self.__posincmax))
         print('TPosInc: ' + str(self.__tposinc))
         print('PosInc: ' + str(self.__posinc))
-        print('PosMM: ' + str(self.__posmm))
+        print('PosMM/RAD: ' + str(self.__posmmrad))
         print('RPM: ' + str(self.__rpm))
 
     def enter_manual_init_data(self):
@@ -338,8 +341,8 @@ class MotorCommunication(object):
         self.write_on_port(command)
         return True
 
-    def go_to_delta_pos_mm(self, delta_pos_mm):  # move relative from actual position
-        delta_pos_inc = self.convert_mm2inc(delta_pos_mm)
+    def go_to_delta_pos_mmrad(self, delta_pos_mmrad):  # move relative from actual position
+        delta_pos_inc = self.convert_mmrad2inc(delta_pos_mmrad)
 
         moving_seq = ['LR'+str(delta_pos_inc),  # set relative target position in [inc]
                       'NP',  # activate 'NotifyPosition' --> sends 'p' if position is reached
@@ -352,8 +355,7 @@ class MotorCommunication(object):
             print('Warning: new position can only be set IF gantry is NOT moving!')
         return True
 
-
-    def go_to_pos_mm(self, tposmm):
+    def go_to_pos_mmrad(self, tposmmrad):
         """
 
         :param tposinc: absolute target position in [inc]
@@ -362,9 +364,9 @@ class MotorCommunication(object):
         if self.check_initialization_status() is False:
             return False
 
-        tposinc = self.convert_mm2inc(tposmm)
+        tposinc = self.convert_mmrad2inc(tposmmrad)
         self.set_target_posinc(tposinc)
-        self.set_target_posmm(tposmm)
+        self.set_target_posmmrad(tposmmrad)
 
         moving_seq = ['LA'+str(tposinc),  # set absolute target position in [inc]
                       'NP',  # activate 'NotifyPosition' --> sends 'p' if position is reached
@@ -478,7 +480,7 @@ class MotorCommunication(object):
 
                 time.sleep(1)
 
-                self.go_to_pos_mm(0)
+                self.go_to_pos_mmrad(0)
 
                 barrived = False
                 while barrived is False:

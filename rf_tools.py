@@ -11,7 +11,8 @@ import hippocampus_toolbox as hc_tools
 independent methods related to the gantry
 """
 
-def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], grid_dxdy=[50, 50], timemeas=10.0, show_plot=False):
+
+def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, np.pi], grid_dxdyda=[50, 50, (np.pi * (1/100))], timemeas=12.0, show_plot=False):
     """
     :param wp_filename:
     :param x0: [x0,y0] - start position of the grid
@@ -20,7 +21,7 @@ def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], grid_dxdy=[50, 50], ti
     :param timemeas: - time [s] to wait at each position for measurements
     :return: wp_mat [x, y, t]
     """
-    steps = [(xn[0]-x0[0])/grid_dxdy[0]+1, (xn[1]-x0[1])/grid_dxdy[1]+1]
+    steps = [(xn[0]-x0[0])/grid_dxdyda[0]+1, (xn[1]-x0[1])/grid_dxdyda[1]+1, (xn[2]-x0[2])/grid_dxdyda[2]+1]
     print('wp-grid_shape = ' + str(steps))
 
     startx = x0[0]
@@ -31,24 +32,30 @@ def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], grid_dxdy=[50, 50], ti
     endy = xn[1]
     stepy = steps[1]
 
+    starta = x0[2]
+    enda = xn[2]
+    stepa = steps[2]
+
     xpos = np.linspace(startx, endx, stepx)
     ypos = np.linspace(starty, endy, stepy)
+    apos = np.linspace(starta, enda, stepa)
 
-    wp_matx, wp_maty = np.meshgrid(xpos, ypos)
-    wp_vecx = np.reshape(wp_matx, (len(xpos)*len(ypos), 1))
-    wp_vecy = np.reshape(wp_maty, (len(ypos)*len(xpos), 1))
-    wp_time = np.ones((len(xpos)*len(ypos), 1)) * timemeas
+    wp_matx, wp_maty, wp_mata = np.meshgrid(xpos, ypos, apos)
+    wp_vecx = np.reshape(wp_matx, (len(xpos)*len(ypos)*len(apos), 1))
+    wp_vecy = np.reshape(wp_maty, (len(ypos)*len(apos)*len(xpos), 1))
+    wp_veca = np.reshape(wp_mata, (len(apos)*len(xpos)*len(ypos), 1))
+    wp_time = np.ones((len(xpos)*len(ypos)*len(apos), 1)) * timemeas
 
-    wp_mat = np.append(wp_vecx, wp_vecy, axis=1)
+    wp_mat = np.append(wp_vecx, wp_vecy, wp_veca, axis=1)
     wp_mat = np.append(wp_mat, wp_time, axis=1)
 
     # wp_filename = hc_tools.save_as_dialog('Save way point list as...')
     with open(wp_filename, 'w') as wpfile:
         wpfile.write('Way point list \n')
         wpfile.write('### begin grid settings\n')
-        wpfile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' +
-                     str(xn[0]) + ', ' + str(xn[1]) + ', ' +
-                     str(grid_dxdy[0]) + ', ' + str(grid_dxdy[1]) + ', ' +
+        wpfile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' + str(x0[2]) + ', ' +
+                     str(xn[0]) + ', ' + str(xn[1]) + ', ' + str(xn[2]) + ', ' +
+                     str(grid_dxdyda[0]) + ', ' + str(grid_dxdyda[1]) + ', ' + str(grid_dxdyda[2]) + ', ' +
                      str(timemeas) +
                      '\n')
 
@@ -57,11 +64,13 @@ def wp_generator(wp_filename, x0=[0, 0], xn=[1200, 1200], grid_dxdy=[50, 50], ti
             wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + '\n')
         wpfile.close()
     if show_plot:
-        plt.figure()
-        plt.plot(wp_mat[:, 0], wp_mat[:, 1], '.-')
-        plt.show()
+        fig = plt.figure()
+        # plt.ion()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(wp_mat[:, 0], wp_mat[:, 1], wp_mat[:, 2], '.-')
+        ax.show()
     print('Way point generator terminated!')
-    return wp_filename  # file output [line#, x, y, time]
+    return wp_filename  # file output [line#, x, y, a, time]
 
 
 def read_data_from_wp_list_file(filename):
@@ -90,49 +99,49 @@ def read_data_from_wp_list_file(filename):
 
             if load_grid_settings and not load_wplist:
                 grid_settings = map(float, line.split(','))
-                x0 = [grid_settings[0], grid_settings[1]]
-                xn = [grid_settings[2], grid_settings[3]]
-                grid_dxdy = [grid_settings[4], grid_settings[5]]
-                timemeas = grid_settings[6]
+                x0 = [grid_settings[0], grid_settings[1], grid_settings[2]]
+                xn = [grid_settings[3], grid_settings[4], grid_settings[5]]
+                grid_dxdyda = [grid_settings[6], grid_settings[7], grid_settings[8]]
+                timemeas = grid_settings[9]
 
-                data_shape = [xn[0]/grid_dxdy[0]+1, xn[1]/grid_dxdy[1]+1]
+                data_shape = [xn[0]/grid_dxdyda[0]+1, xn[1]/grid_dxdyda[1]+1, xn[2]/grid_dxdyda[2]+1]
                 print('wp-grid_shape = ' + str(data_shape))
 
             if load_wplist and not load_grid_settings:
-                #print('read wplist')
+                # print('read wplist')
                 wp_append_list.append(map(float, line.split(',')))
 
         print(str(np.asarray(wp_append_list)))
         wp_data_mat = np.asarray(wp_append_list)
 
         wpfile.close()
-        return wp_data_mat, x0, xn, grid_dxdy, timemeas, data_shape
+        return wp_data_mat, x0, xn, grid_dxdyda, timemeas, data_shape
 
 
-def write_measfile_header(ofile, file_description, x0, xn, grid_dxdy, timemeas, numtx, tx_abs_pos, freqtx):
+def write_measfile_header(ofile, file_description, x0, xn, grid_dxdyda, timemeas, numtx, tx_abs_pos, freqtx):
     txdata = str(numtx) + ', '
     for itx in range(numtx):
         txpos = tx_abs_pos[itx]
-        txdata += str(txpos[0]) + ', ' + str(txpos[1]) + ', '
+        txdata += str(txpos[0]) + ', ' + str(txpos[1]) + ', ' + str(txpos[2]) + ', '
     for itx in range(numtx):
         txdata += str(freqtx[itx]) + ', '
+    # -> numtx, x1,y1,z2, x2,y2,z2, x3,y3,z3, x4,y4,z4, x5,y5,z5, x6,y6,z6, freq1, freq2, freq3, freq4, freq5, freq6
+    #      0     1                      -                               18   19                   -              24
 
     print('txdata = ' + txdata)
 
     ofile.write('Way point list \n')
     ofile.write(file_description)
     ofile.write('### begin grid settings\n')
-    ofile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' +
-                 str(xn[0]) + ', ' + str(xn[1]) + ', ' +
-                 str(grid_dxdy[0]) + ', ' + str(grid_dxdy[1]) + ', ' +
-                 str(timemeas) + ', ' + txdata +
-                 '\n')
+    ofile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' + str(x0[2]) + ', ' +
+                str(xn[0]) + ', ' + str(xn[1]) + ', ' + str(xn[2]) + ', ' +
+                str(grid_dxdyda[0]) + ', ' + str(grid_dxdyda[1]) + ', ' + str(grid_dxdyda[2]) + ', ' +
+                str(timemeas) + ', ' + txdata + '\n')
     return True
 
 
-def analyze_measdata_from_file(model_type='log', analyze_tx=[1,2,3,4,5,6],  meantype='db_mean', b_onboard=False, measfilename='path'):
+def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6],  meantype='db_mean', b_onboard=False, measfilename='path'):
     """
-
     :param analyze_tx:
     :param txpos_tuning:
     :param meantype:
@@ -160,7 +169,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1,2,3,4,5,6],  mean
         for i, line in enumerate(measfile):
 
             if line == '### begin grid settings\n':
-                #print('griddata found')
+                # print('griddata found')
                 load_description = False
                 load_grid_settings = True
                 load_measdata = False
@@ -169,38 +178,38 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1,2,3,4,5,6],  mean
                 load_description = False
                 load_grid_settings = False
                 load_measdata = True
-                #print('Measurement data found')
+                # print('Measurement data found')
                 continue
             if load_description:
-                #print('file description')
+                # print('file description')
                 print(line)
 
             if load_grid_settings and not load_measdata:
                 #print(line)
 
-                grid_settings = map(float, line[0:-3].split(','))
-                x0 = [grid_settings[0], grid_settings[1]]
-                xn = [grid_settings[2], grid_settings[3]]
-                grid_dxdy = [grid_settings[4], grid_settings[5]]
-                timemeas = grid_settings[6]
+                grid_settings = map(float, line.split(','))
+                x0 = [grid_settings[0], grid_settings[1], grid_settings[2]]
+                xn = [grid_settings[3], grid_settings[4], grid_settings[5]]
+                grid_dxdyda = [grid_settings[6], grid_settings[7], grid_settings[8]]
+                timemeas = grid_settings[9]
 
-                data_shape_file = [int((xn[0]-x0[0]) / grid_dxdy[0] + 1), int((xn[1]-x0[1]) / grid_dxdy[1] + 1)]
+                data_shape_file = [int((xn[0]-x0[0]) / grid_dxdyda[0] + 1), int((xn[1]-x0[1]) / grid_dxdyda[1] + 1), int((xn[2]-x0[2]) / grid_dxdyda[2] + 1)]
                 print('data shape  = ' + str(data_shape_file))
 
-                numtx = int(grid_settings[7])
-                txdata = grid_settings[(2+numtx):(2+numtx+3*numtx)]
+                numtx = int(grid_settings[10])
+                txdata = grid_settings[11:(11+4*numtx)]  # urspruenglich [(2+numtx):(2+numtx+3*numtx)]
 
                 # read tx positions
                 txpos_list = []
                 for itx in range(numtx):
-                    itxpos = txdata[2*itx:2*itx+2]
+                    itxpos = txdata[3*itx:3*itx+2]  # urspruenglich [2*itx:2*itx+2]
                     txpos_list.append(itxpos)
                 txpos = np.asarray(txpos_list)
 
                 # read tx frequencies
                 freqtx_list = []
                 for itx in range(numtx):
-                    freqtx_list.append(txdata[2*numtx+itx])
+                    freqtx_list.append(txdata[3*numtx+itx])  # urspruenglich (txdata[2*numtx+itx])
                 freqtx = np.asarray(freqtx_list)
 
                 # print out
@@ -209,7 +218,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1,2,3,4,5,6],  mean
                 print('x0 = ' + str(x0))
                 print('xn = ' + str(xn))
                 print('grid_shape = ' + str(data_shape_file))
-                print('steps_dxdy = ' + str(grid_dxdy))
+                print('steps_dxdyda = ' + str(grid_dxdyda))
                 print('tx_pos = ' + str(txpos_list))
                 print('freqtx = ' + str(freqtx))
 
@@ -221,15 +230,20 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1,2,3,4,5,6],  mean
                 endy = xn[1]
                 stepy = data_shape_file[1]
 
+                starta = x0[2]
+                enda = xn[2]
+                stepa = data_shape_file[2]
+
                 xpos = np.linspace(startx, endx, stepx)
                 ypos = np.linspace(starty, endy, stepy)
+                apos = np.linspace(starta, enda, stepa)
 
-                wp_matx, wp_maty = np.meshgrid(xpos, ypos)
+                wp_matx, wp_maty, wp_mata = np.meshgrid(xpos, ypos, apos)
 
-                #print(xpos)
+                # print(xpos)
 
             if load_measdata and not load_grid_settings:
-                #print('read measdata')
+                # print('read measdata')
 
                 totnumwp += 1
                 meas_data_line = map(float, line[0:-3].split(', '))
@@ -237,21 +251,21 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1,2,3,4,5,6],  mean
 
                 meas_data_mat_line = np.asarray(meas_data_line)
 
-                measured_wp_list.append(int(meas_data_mat_line[2]))
-                num_tx = int(meas_data_mat_line[3])
-                num_meas = int(meas_data_mat_line[4])
+                measured_wp_list.append(int(meas_data_mat_line[3]))
+                num_tx = int(meas_data_mat_line[4])
+                num_meas = int(meas_data_mat_line[5])
 
-                first_rss = 5 + num_tx
+                first_rss = 6 + num_tx
 
                 meas_data_mat_rss = meas_data_mat_line[first_rss:]
 
-                rss_mat_raw = meas_data_mat_rss.reshape([num_tx, num_meas])
+                rss_mat_raw = meas_data_mat_rss.reshape([num_tx, num_meas])  # mat_dim: num_tx x num_meas
 
                 def reject_outliers(data, m=5.):
                     d = np.abs(data - np.median(data))
                     mdev = np.median(d)
                     s = d / mdev if mdev else 0.
-                    #print('kicked out samples' + str([s < m]))
+                    # print('kicked out samples' + str([s < m]))
                     return data[s < m]
 
                 if meantype is 'lin':
@@ -269,35 +283,35 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1,2,3,4,5,6],  mean
                         mean[itx] = np.mean(rss_mat_row)
                         var[itx] = np.var(rss_mat_row)
                     # print('var = ' + str(var))
-                wp_pos = [meas_data_mat_line[0], meas_data_mat_line[1]]
+                wp_pos = [meas_data_mat_line[0], meas_data_mat_line[1], meas_data_mat_line[2]]
 
-                plotdata_line = np.concatenate((wp_pos, mean, var), axis=0)
+                plotdata_line = np.concatenate((wp_pos, mean, var), axis=0)  # -> x,y,a,meantx1,...,meantxn,vartx1,...vartxn
                 plotdata_mat_lis.append(plotdata_line)
 
         measfile.close()
 
-        data_shape = [data_shape_file[1], data_shape_file[0]]
+        data_shape = [data_shape_file[0], data_shape_file[1], data_shape_file[2]]  # data_shape: n_x, n_y, n_a
         plotdata_mat = np.asarray(plotdata_mat_lis)
 
         """
         Model fit
         """
-        if model_type=='log':
+        if model_type == 'log':
             def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
                 """Range Sensor Model (RSM) structure."""
                 return -20 * np.log10(dist_rsm) - alpha_rsm * dist_rsm - gamma_rsm  # rss in db
 
-        elif model_type=='lin':
+        elif model_type == 'lin':
             def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
                 """Range Sensor Model (RSM) structure."""
-                return alpha_rsm * dist_rsm + gamma_rsm  # rss in db
+                return alpha_rsm * dist_rsm + gamma_rsm  # rss in db <----???
 
         alpha = []
         gamma = []
         rdist = []
 
         for itx in analyze_tx:
-            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # + [250 , 30] # r_wp -r_txpos
+            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:3]  # + [250 , 30, 0] # r_wp -r_txpos
             if itx == 5:
                 print('r_dist ' + str(rdist_vec) )
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos|
