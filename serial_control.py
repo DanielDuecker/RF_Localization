@@ -117,8 +117,8 @@ class MotorCommunication(object):
             self.__rpmmax = 7000
             self.__findingspeed = 2500
         elif drivetype == 'driveshaft':
-            self.__rpmmax = 1233
-            self.__findingspeed = 123
+            self.__rpmmax = 123
+            self.__findingspeed = 12
         else:
             print('Unknown drive type!')
             print('drive types known "belt" and "spindle"')

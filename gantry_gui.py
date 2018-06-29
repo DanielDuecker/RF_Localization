@@ -44,6 +44,7 @@ class StartPage(Tk.Frame):
         self.__gt = gantry_control.GantryControl([0, 3100, 0, 1600], use_gui)
         oBelt = self.__gt.get_serial_x_handle()
         oSpindle = self.__gt.get_serial_y_handle()
+        oShaft = self.__gt.get_serial_a_handle()
 
 
         # Notebook
@@ -63,18 +64,12 @@ class StartPage(Tk.Frame):
         notebook_frame.add(relposcontrl_frame, text="Rel Position Control")
         notebook_frame.add(man_contrl_frame, text="Manual Control")
 
-
-
-
-
-
-
-        label_pos_xy = ttk.Label(self, text='X = ?mm\nY = ?mm')
+        label_pos_xy = ttk.Label(self, text='X = ?mm\nY = ?mm\nA = ?rad')
         label_pos_xy.grid(row=1, column=1)
 
         def get_position():
-            pos_x_mm, pos_y_mm = self.__gt.get_gantry_pos_xy_mm()
-            label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + 'mm \nY = ' + str(int(pos_y_mm)) + 'mm')
+            pos_x_mm, pos_y_mm, pos_a_rad = self.__gt.get_gantry_pos_xya_mmrad()
+            label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + 'mm \nY = ' + str(int(pos_y_mm)) + 'mm \nA = ' + str(int(pos_a_rad)) + 'rad')
             return True
 
         button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position())
@@ -135,6 +130,35 @@ class StartPage(Tk.Frame):
 
 
 
+
+        """
+        Shaft-Drive
+        """
+        firstrow_shaft = 8
+
+        label_shaft_name = ttk.Label(velcontrl_frame, text='Shaft-drive', font=LARGE_FONT)
+        label_shaft_name.grid(row=firstrow_shaft+0, column=1)
+
+        button2 = ttk.Button(velcontrl_frame, text='<-- V [-]', command=lambda: oShaft.set_drive_speed(-1*int(entry_v_shaft.get())))
+        button2.grid(row=firstrow_shaft+1, column=0)
+
+        button3 = ttk.Button(velcontrl_frame, text='STOP', command=lambda: oShaft.set_drive_speed(0))
+        button3.grid(row=firstrow_shaft+1, column=1)
+
+        button4 = ttk.Button(velcontrl_frame, text='[+] V -->', command=lambda: oShaft.set_drive_speed(1*int(entry_v_shaft.get())))
+        button4.grid(row=firstrow_shaft+1, column=2)
+
+        label_v_shaft = ttk.Label(velcontrl_frame, text='Velocity:')
+        entry_v_shaft = ttk.Entry(velcontrl_frame)
+        entry_v_shaft.insert(0, '0')
+
+        label_v_shaft.grid(row=firstrow_shaft+2, column=0)
+        entry_v_shaft.grid(row=firstrow_shaft+2, column=1)
+
+
+
+
+
         """
         Abs Postion control
         """
@@ -146,8 +170,12 @@ class StartPage(Tk.Frame):
         entry_abs_pos_spindle.insert(0, '')
         entry_abs_pos_spindle.grid(row=3, column=1)
 
-        button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y - pos [mm]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get()))))
-        button_goto_abs_pos.grid(row=4, column=1, sticky='W', pady=4)
+        entry_abs_pos_shaft = ttk.Entry(absposcontrl_frame)
+        entry_abs_pos_shaft.insert(0, '')
+        entry_abs_pos_shaft.grid(row=4, column=1)
+
+        button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/A - pos [mm]/[rad]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(int(entry_abs_pos_shaft.get()))))
+        button_goto_abs_pos.grid(row=5, column=1, sticky='W', pady=4)
 
 
         """
@@ -161,8 +189,12 @@ class StartPage(Tk.Frame):
         entry_rel_pos_spindle.insert(0, '0')
         entry_rel_pos_spindle.grid(row=3, column=1)
 
-        button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy [mm]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get())))
-        button_goto_rel_pos.grid(row=4, column=1, sticky='W', pady=4)
+        entry_rel_pos_shaft = ttk.Entry(relposcontrl_frame)
+        entry_rel_pos_shaft.insert(0, '0')
+        entry_rel_pos_shaft.grid(row=4, column=1)
+
+        button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy da [mm]/[rad]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*int(entry_rel_pos_shaft.get())))
+        button_goto_rel_pos.grid(row=5, column=1, sticky='W', pady=4)
 
         """
         Manual Control
@@ -171,6 +203,10 @@ class StartPage(Tk.Frame):
         button_manual_mode_belt.grid(row=firstrow_belt + 2, column=3)
         button_manual_mode_spindle = ttk.Button(man_contrl_frame, text=' Manual Mode Spindle', command=lambda: oSpindle.start_manual_mode())
         button_manual_mode_spindle.grid(row=firstrow_spindle+2, column=3)
+        button_manual_mode_shaft = ttk.Button(man_contrl_frame, text=' Manual Mode Shaft', command=lambda: oShaft.start_manual_mode())
+        button_manual_mode_shaft.grid(row=firstrow_shaft+2, column=3)
+
+
 
         """
         EKF_Path Button
@@ -203,8 +239,13 @@ class StartPage(Tk.Frame):
         button_max_speed_spindle = ttk.Button(self, text='set max Speed Spindle (<=9000!)', command=lambda: self.__gt.set_new_max_speed_y(1*abs(int(entry_max_speed_spindle.get()))))
         button_max_speed_spindle.grid(row=4, column=5, sticky='W', pady=4)
 
+        entry_max_speed_shaft = ttk.Entry(self)
+        entry_max_speed_shaft.insert(0, '9000')
+        entry_max_speed_shaft.grid(row=5, column=6)
+        button_max_speed_shaft = ttk.Button(self, text='set max Speed Shaft (<=123!)', command=lambda: self.__gt.set_new_max_speed_y(1*abs(int(entry_max_speed_shaft.get()))))
+        button_max_speed_shaft.grid(row=5, column=5, sticky='W', pady=4)
 
-        button_home_seq = ttk.Button(self, text='Initialize Home Position', command=lambda: self.__gt.start_go_home_seq_xy())
+        button_home_seq = ttk.Button(self, text='Initialize Home Position', command=lambda: self.__gt.start_go_home_seq_xya())
         button_home_seq.grid(row=15, column=3, sticky='W', pady=4)
 
         """
@@ -226,8 +267,7 @@ class StartPage(Tk.Frame):
         entry_log_lin_analyze = ttk.Entry(self)
         entry_log_lin_analyze.insert(0, 'log')
         entry_log_lin_analyze.grid(row=8, column=7)
-        button_analyze_data = ttk.Button(self, text='Analyze Data',
-                                     command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get()))
+        button_analyze_data = ttk.Button(self, text='Analyze Data', command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get()))
         button_analyze_data.grid(row=8, column=6, sticky='W', pady=4)
 
 
@@ -240,7 +280,9 @@ class PageOne(Tk.Frame):
         button1 = ttk.Button(self, text='Controller Menu', command=lambda: controller.show_frame(StartPage))
         button1.pack()
 
+
 app = GantryGui()
+
 
 app.mainloop()
 

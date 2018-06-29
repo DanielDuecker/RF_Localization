@@ -153,7 +153,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
     if b_onboard is True:
         measdata_filename = measfilename
     else:
-        measdata_filename = hc_tools.select_file()
+        measdata_filename = hc_tools.select_file()  # 123???todo
 
     with open(measdata_filename, 'r') as measfile:
         load_description = True
@@ -202,7 +202,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 # read tx positions
                 txpos_list = []
                 for itx in range(numtx):
-                    itxpos = txdata[3*itx:3*itx+2]  # urspruenglich [2*itx:2*itx+2]
+                    itxpos = txdata[3*itx:3*itx+3]  # urspruenglich [2*itx:2*itx+2]
                     txpos_list.append(itxpos)
                 txpos = np.asarray(txpos_list)
 
@@ -294,7 +294,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
         plotdata_mat = np.asarray(plotdata_mat_lis)
 
         """
-        Model fit
+        Model fit ---> with 3D todo: change with compensation
         """
         if model_type == 'log':
             def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
@@ -304,24 +304,25 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
         elif model_type == 'lin':
             def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
                 """Range Sensor Model (RSM) structure."""
-                return alpha_rsm * dist_rsm + gamma_rsm  # rss in db <----???
+                return alpha_rsm * dist_rsm + gamma_rsm  # rss in db
 
         alpha = []
         gamma = []
         rdist = []
 
         for itx in analyze_tx:
-            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:3]  # + [250 , 30, 0] # r_wp -r_txpos
+            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # +[250 , 30, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
+            # todo: previous line: change from 2 to 3 if z is introduced
             if itx == 5:
-                print('r_dist ' + str(rdist_vec) )
-            rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos|
+                print('r_dist ' + str(rdist_vec))
+            rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos| -> dim: num_meas x 1
 
-            rssdata = plotdata_mat[:, 2+itx]  # rss-mean for each wp
+            rssdata = plotdata_mat[:, 3+itx]  # rss-mean for each wp
             popt, pcov = curve_fit(rsm_model, rdist_temp, rssdata)
             del pcov
 
-            alpha.append(round(popt[0]),4)
-            gamma.append(round(popt[1]),4)
+            alpha.append(round(popt[0]), 4)
+            gamma.append(round(popt[1]), 4)
             # print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' gamma= ' + str(gamma[itx]))
             rdist.append(rdist_temp)
 
@@ -363,11 +364,11 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 ax.set_ylabel('RSS [dB]')
                 ax.set_title('RSM for TX# ' + str(itx + 1))
 
-                rss_mean = plotdata_mat[:, 2 + itx]
-                rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                rss_mean = plotdata_mat[:, 3 + itx]
+                rss_var = plotdata_mat[:, 3 + num_tx + itx]
 
                 rss_mat_ones = np.ones(np.shape(wp_matx)) * (-200)  # set minimum value for not measured points
-                rss_full_vec = np.reshape(rss_mat_ones, (len(xpos) * len(ypos), 1))
+                rss_full_vec = np.reshape(rss_mat_ones, (len(xpos) * len(ypos) * len(apos), 1))
 
                 measured_wp_list = np.reshape(measured_wp_list, (len(measured_wp_list), 1))
                 rss_mean = np.reshape(rss_mean, (len(rss_mean), 1))
@@ -402,8 +403,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                         pos = 111
 
                     ax = fig.add_subplot(pos, projection='3d')
-                    rss_mean = plotdata_mat[:, 2 + itx]
-                    rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                    rss_mean = plotdata_mat[:, 3 + itx]
+                    rss_var = plotdata_mat[:, 3 + num_tx + itx]
                     ax.plot_trisurf(x, y, rss_mean, cmap=plt.cm.Spectral)
                     ax.grid()
                     ax.set_xlabel('x [mm]')
@@ -421,8 +422,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                         pos = 111
 
                     ax = fig.add_subplot(pos, projection='3d')
-                    rss_mean = plotdata_mat[:, 2 + itx]
-                    rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                    rss_mean = plotdata_mat[:, 3 + itx]
+                    rss_var = plotdata_mat[:, 3 + num_tx + itx]
                     ax.plot_trisurf(x, y, rss_var, cmap=plt.cm.Spectral)
                     ax.grid()
                     ax.set_xlabel('x [mm]')
@@ -434,8 +435,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             if plot_fig3:
                 fig = plt.figure(3)
                 for itx in analyze_tx:
-                    rss_mean = plotdata_mat[:, 2 + itx]
-                    rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                    rss_mean = plotdata_mat[:, 3 + itx]
+                    rss_var = plotdata_mat[:, 3 + num_tx + itx]
 
                     rdist = np.array(rdist_temp[itx, :], dtype=float)
                     rss_mean = np.array(rss_mean, dtype=float)
@@ -460,8 +461,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             if plot_fig4:
                 fig = plt.figure(4)
                 for itx in analyze_tx:
-                    rss_mean = plotdata_mat[:, 2 + itx]
-                    rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                    rss_mean = plotdata_mat[:, 3 + itx]
+                    rss_var = plotdata_mat[:, 3 + num_tx + itx]
 
                     rdist = np.array(rdist_temp[itx, :], dtype=float)
                     rss_mean = np.array(rss_mean, dtype=float)
@@ -483,8 +484,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             if plot_fig5:
                 fig = plt.figure(5)
                 for itx in analyze_tx:
-                    rss_mean = plotdata_mat[:, 2 + itx]
-                    rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                    rss_mean = plotdata_mat[:, 3 + itx]
+                    rss_var = plotdata_mat[:, 3 + num_tx + itx]
 
                     rdist = np.array(rdist_temp[itx, :], dtype=float)
                     rss_mean = np.array(rss_mean, dtype=float)
