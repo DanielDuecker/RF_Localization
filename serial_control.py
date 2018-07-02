@@ -8,6 +8,8 @@ class MotorCommunication(object):
         self.__oserial = []
         self.__portname = portname
         self.__name = name
+        self.__isdummy = False
+        # "isdummy = True" is for emulation of non connected drives -> can run with less drives
         self.__baudrate = baudrate
         self.__drivetype = drivetype
         self.__travelling_distance_mmrad = float(travelling_distance_mmrad)
@@ -43,22 +45,29 @@ class MotorCommunication(object):
         :return:
         """
         # configure the serial connections (the parameters differs on the device you are connecting to)
-        self.__oserial = serial.Serial(
-            port=self.__portname,
-            baudrate=self.__baudrate,
-            parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS
-        )
-        self.__oserial.isOpen()  # open serial port
-        self.__isopen = True
-        print('Serial port ' + self.__portname + ' is open!')
+        try:
+            self.__oserial = serial.Serial(
+                port=self.__portname,
+                baudrate=self.__baudrate,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS
+            )
+        except serial.serialutil.SerialException as err:
+            self.__isdummy = True
+            print('Serial port' + str(self.__name) + 'is not properly connected: it has been set as a dummy DOF')
+            print('(Error message: ' + str(err) + ')')
+        else:
+            self.__oserial.isOpen()  # open serial port
+            self.__isopen = True
+            print('Serial port ' + self.__portname + ' is open!')
         return True
 
     def close_port(self):
-        self.__oserial.close()
-        self.__isopen = False
-        print('Serial port ' + self.__portname + ' closed!')
+        if not self.__isdummy:
+            self.__oserial.close()
+            self.__isopen = False
+            print('Serial port ' + self.__portname + ' closed!')
         return True
 
     def reset_signal(self):
@@ -71,37 +80,39 @@ class MotorCommunication(object):
         return self.__manualinit
 
     def listen_to_port(self, waitingfortype='rpm'):
+        if not self.__isdummy:
+            out = ''
+            time.sleep(self.__timereadwait)
 
-        out = ''
-        time.sleep(self.__timereadwait)
+            while self.__oserial.inWaiting() > 0:
+                new_data = self.__oserial.read(1)
+                out += new_data  # pure number string
 
-        while self.__oserial.inWaiting() > 0:
-            new_data = self.__oserial.read(1)
-            out += new_data  # pure number string
+            # teststring = '-2000\r\np\r\nf\r\nOK\r\n'
+            # out = teststring
 
-        # teststring = '-2000\r\np\r\nf\r\nOK\r\n'
-        # out = teststring
-
-        out_split = out.rstrip().split('\r\n')
-        for item in out_split:
-            try:
-                self.__tempval = int(item)
-                #print ('numberfound')
-            except ValueError:
-                if item == 'p':
-                    self.__signal = item
-                    # print ('Arrived at target position -> p-flag')
-                elif item == 'h':
-                    self.__signal = item
-                    print ('h found')
-                elif item == 'f':
-                    self.__signal = item
-                    print ('f found')
-                elif item == 'OK':
-                    dummy = 1
-                    #print('Debugmessage: Ignore "OK"')
-                else:
-                    print('Unknown signal found on serial port: "' + item + '"')
+            out_split = out.rstrip().split('\r\n')
+            for item in out_split:
+                try:
+                    self.__tempval = int(item)
+                    #print ('numberfound')
+                except ValueError:
+                    if item == 'p':
+                        self.__signal = item
+                        # print ('Arrived at target position -> p-flag')
+                    elif item == 'h':
+                        self.__signal = item
+                        print ('h found')
+                    elif item == 'f':
+                        self.__signal = item
+                        print ('f found')
+                    elif item == 'OK':
+                        dummy = 1
+                        #print('Debugmessage: Ignore "OK"')
+                    else:
+                        print('Unknown signal found on serial port: "' + item + '"')
+        else:
+            self.__tempval = int(0)
         # print(out_split) # just for debugging
         return True  # pure number string
 
@@ -134,8 +145,9 @@ class MotorCommunication(object):
         return pos_mmrad
 
     def write_on_port(self, strcommand):
-        self.__oserial.write(strcommand + '\r\n')
-        time.sleep(self.__timewritewait)
+        if not self.__isdummy:
+            self.__oserial.write(strcommand + '\r\n')
+            time.sleep(self.__timewritewait)
         return True
 
     def set_home_pos_known(self, bknown):

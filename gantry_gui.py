@@ -69,7 +69,7 @@ class StartPage(Tk.Frame):
 
         def get_position():
             pos_x_mm, pos_y_mm, pos_a_rad = self.__gt.get_gantry_pos_xya_mmrad()
-            label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + 'mm \nY = ' + str(int(pos_y_mm)) + 'mm \nA = ' + str(int(pos_a_rad)) + 'rad')
+            label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + 'mm \nY = ' + str(int(pos_y_mm)) + 'mm \nA = ' + str(round(float(pos_a_rad), 4)) + 'rad')
             return True
 
         button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position())
@@ -174,7 +174,7 @@ class StartPage(Tk.Frame):
         entry_abs_pos_shaft.insert(0, '')
         entry_abs_pos_shaft.grid(row=4, column=1)
 
-        button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/A - pos [mm]/[rad]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(int(entry_abs_pos_shaft.get()))))
+        button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/A - pos [mm]/[rad]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(float(entry_abs_pos_shaft.get()))))
         button_goto_abs_pos.grid(row=5, column=1, sticky='W', pady=4)
 
 
@@ -193,7 +193,7 @@ class StartPage(Tk.Frame):
         entry_rel_pos_shaft.insert(0, '0')
         entry_rel_pos_shaft.grid(row=4, column=1)
 
-        button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy da [mm]/[rad]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*int(entry_rel_pos_shaft.get())))
+        button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy da [mm]/[rad]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*float(entry_rel_pos_shaft.get())))
         button_goto_rel_pos.grid(row=5, column=1, sticky='W', pady=4)
 
         """
@@ -240,7 +240,7 @@ class StartPage(Tk.Frame):
         button_max_speed_spindle.grid(row=4, column=5, sticky='W', pady=4)
 
         entry_max_speed_shaft = ttk.Entry(self)
-        entry_max_speed_shaft.insert(0, '9000')
+        entry_max_speed_shaft.insert(0, '123')
         entry_max_speed_shaft.grid(row=5, column=6)
         button_max_speed_shaft = ttk.Button(self, text='set max Speed Shaft (<=123!)', command=lambda: self.__gt.set_new_max_speed_y(1*abs(int(entry_max_speed_shaft.get()))))
         button_max_speed_shaft.grid(row=5, column=5, sticky='W', pady=4)
