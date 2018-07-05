@@ -2,8 +2,11 @@ import Tkinter as Tk
 import ttk
 import gantry_control
 import rf_tools
+import numpy as np
 
 LARGE_FONT = ('Tahoma', 12)
+
+rad_or_deg = True  # Rad := True ; Deg := False
 
 
 class GantryGui(Tk.Tk):
@@ -41,7 +44,7 @@ class StartPage(Tk.Frame):
         Tk.Frame.__init__(self, parent)
 
         use_gui = True
-        self.__gt = gantry_control.GantryControl([0, 3100, 0, 1600], use_gui)
+        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, (2*np.pi)], use_gui)
         oBelt = self.__gt.get_serial_x_handle()
         oSpindle = self.__gt.get_serial_y_handle()
         oShaft = self.__gt.get_serial_a_handle()
@@ -64,12 +67,18 @@ class StartPage(Tk.Frame):
         notebook_frame.add(relposcontrl_frame, text="Rel Position Control")
         notebook_frame.add(man_contrl_frame, text="Manual Control")
 
-        label_pos_xy = ttk.Label(self, text='X = ?mm\nY = ?mm\nA = ?rad')
+        if rad_or_deg:
+            label_pos_xy = ttk.Label(self, text='X = ? mm\nY = ? mm\nA = ? rad')
+        else:
+            label_pos_xy = ttk.Label(self, text='X = ? mm\nY = ? mm\nA = ? deg')
         label_pos_xy.grid(row=1, column=1)
 
         def get_position():
             pos_x_mm, pos_y_mm, pos_a_rad = self.__gt.get_gantry_pos_xya_mmrad()
-            label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + 'mm \nY = ' + str(int(pos_y_mm)) + 'mm \nA = ' + str(round(float(pos_a_rad), 4)) + 'rad')
+            if rad_or_deg:
+                label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round(float(pos_a_rad), 4)) + ' rad')
+            else:
+                label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round((float(pos_a_rad)*180/np.pi), 4)) + ' deg')
             return True
 
         button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position())
@@ -174,7 +183,10 @@ class StartPage(Tk.Frame):
         entry_abs_pos_shaft.insert(0, '')
         entry_abs_pos_shaft.grid(row=4, column=1)
 
-        button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/A - pos [mm]/[rad]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(float(entry_abs_pos_shaft.get()))))
+        if rad_or_deg:
+            button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/A - pos [mm]/[rad]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(float(entry_abs_pos_shaft.get()))))
+        else:
+            button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/A - pos [mm]/[deg]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(float(entry_abs_pos_shaft.get())*np.pi/180)))
         button_goto_abs_pos.grid(row=5, column=1, sticky='W', pady=4)
 
 
@@ -193,7 +205,10 @@ class StartPage(Tk.Frame):
         entry_rel_pos_shaft.insert(0, '0')
         entry_rel_pos_shaft.grid(row=4, column=1)
 
-        button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy da [mm]/[rad]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*float(entry_rel_pos_shaft.get())))
+        if rad_or_deg:
+            button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy da [mm]/[rad]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*float(entry_rel_pos_shaft.get())))
+        else:
+            button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy da [mm]/[deg]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*float(entry_rel_pos_shaft.get())*np.pi/180))
         button_goto_rel_pos.grid(row=5, column=1, sticky='W', pady=4)
 
         """
