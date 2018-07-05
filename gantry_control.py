@@ -10,7 +10,7 @@ import sys
 
 
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, (np.pi*99/100)], use_gui=False):  # [x0 ,x1, y0, y1]
+    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, (2*np.pi)], use_gui=False):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0]  # initial position after start
         self.__target_wp_mmrad = []
@@ -25,7 +25,7 @@ class GantryControl(object):
 
         self.__oScX = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2000e3)
         self.__oScY = sc.MotorCommunication('/dev/ttyS1', 'spindle_drive', 19200, 'spindle', 1600, 945800)
-        self.__oScA = sc.MotorCommunication('/dev/ttyUSB0', 'shaft_drive', 19200, 'driveshaft', np.pi, 3715)
+        self.__oScA = sc.MotorCommunication('/dev/ttyUSB0', 'shaft_drive', 19200, 'driveshaft', (2*np.pi), 3715)
 
         self.__starttime = []
 
@@ -33,12 +33,7 @@ class GantryControl(object):
             print('Gantry Control - gui mode')
             self.__oScX.open_port()
             self.__oScY.open_port()
-            try:
-                self.__oScA.open_port()
-            except sc.serial.serialutil.SerialException as err:
-                self.__oScA.set_as_dummy()
-                print('Serial port 3 (USB) is not properly connected: it has been set as a dummy DOF')
-                print('(Error message: ' + str(err) + ')')
+            self.__oScA.open_port()
 
             # set home position known flao
             self.__oScX.set_home_pos_known(True)
