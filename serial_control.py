@@ -55,7 +55,7 @@ class MotorCommunication(object):
             )
         except serial.serialutil.SerialException as err:
             self.__isdummy = True
-            print('Serial port' + str(self.__name) + 'is not properly connected: it has been set as a dummy DOF')
+            print('Serial port ' + str(self.__name) + ' 1is not properly connected: it has been set as a dummy DOF')
             print('(Error message: ' + str(err) + ')')
         else:
             self.__oserial.isOpen()  # open serial port

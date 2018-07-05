@@ -3,7 +3,7 @@ import ttk
 import gantry_control
 import rf_tools
 
-LARGE_FONT = ('Verdana', 12)
+LARGE_FONT = ('Tahoma', 12)
 
 
 class GantryGui(Tk.Tk):
