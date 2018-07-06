@@ -21,7 +21,14 @@ def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, np.pi], grid_dxdyda=
     :param timemeas: - time [s] to wait at each position for measurements
     :return: wp_mat [x, y, t]
     """
-    steps = [(xn[0]-x0[0])/grid_dxdyda[0]+1, (xn[1]-x0[1])/grid_dxdyda[1]+1, (xn[2]-x0[2])/grid_dxdyda[2]+1]
+    steps = []
+    for i in range(3):  # range(num_dof)
+        try:
+            stepsi = (xn[i]-x0[i])/grid_dxdyda[i]+1
+        except ZeroDivisionError:
+            stepsi = 1
+        steps.append(stepsi)
+    # old: steps = [(xn[0]-x0[0])/grid_dxdyda[0]+1, (xn[1]-x0[1])/grid_dxdyda[1]+1, (xn[2]-x0[2])/grid_dxdyda[2]+1]
     print('wp-grid_shape = ' + str(steps))
 
     startx = x0[0]
@@ -46,7 +53,7 @@ def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, np.pi], grid_dxdyda=
     wp_veca = np.reshape(wp_mata, (len(apos)*len(xpos)*len(ypos), 1))
     wp_time = np.ones((len(xpos)*len(ypos)*len(apos), 1)) * timemeas
 
-    wp_mat = np.append(wp_vecx, wp_vecy, wp_veca, axis=1)
+    wp_mat = np.append(wp_vecx, np.append(wp_vecy, wp_veca, axis=1), axis=1)
     wp_mat = np.append(wp_mat, wp_time, axis=1)
 
     # wp_filename = hc_tools.save_as_dialog('Save way point list as...')
@@ -61,14 +68,14 @@ def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, np.pi], grid_dxdyda=
 
         wpfile.write('### begin wp_list\n')
         for i in range(wp_mat.shape[0]):
-            wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + '\n')
+            wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + ', '  + str(wp_mat[i, 3]) + '\n')
         wpfile.close()
     if show_plot:
         fig = plt.figure()
         # plt.ion()
         ax = fig.add_subplot(111, projection='3d')
         ax.plot(wp_mat[:, 0], wp_mat[:, 1], wp_mat[:, 2], '.-')
-        ax.show()
+        # ax.show()
     print('Way point generator terminated!')
     return wp_filename  # file output [line#, x, y, a, time]
 
@@ -193,7 +200,14 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 grid_dxdyda = [grid_settings[6], grid_settings[7], grid_settings[8]]
                 timemeas = grid_settings[9]
 
-                data_shape_file = [int((xn[0]-x0[0]) / grid_dxdyda[0] + 1), int((xn[1]-x0[1]) / grid_dxdyda[1] + 1), int((xn[2]-x0[2]) / grid_dxdyda[2] + 1)]
+                data_shape_file = []
+                for i in range(3):  # range(num_dof)
+                    try:
+                        shapei = int((xn[i]-x0[i]) / grid_dxdyda[i] + i)
+                    except ZeroDivisionError:
+                        shapei = 1
+                    data_shape_file.append(shapei)
+                # old: data_shape_file = [int((xn[0]-x0[0]) / grid_dxdyda[0] + 1), int((xn[1]-x0[1]) / grid_dxdyda[1] + 1), int((xn[2]-x0[2]) / grid_dxdyda[2] + 1)]
                 print('data shape  = ' + str(data_shape_file))
 
                 numtx = int(grid_settings[10])

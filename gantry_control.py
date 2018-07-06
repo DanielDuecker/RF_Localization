@@ -12,7 +12,7 @@ import sys
 class GantryControl(object):
     def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, (2*np.pi)], use_gui=False):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
-        self.__gantry_pos = [0, 0]  # initial position after start
+        self.__gantry_pos = [0, 0, 0]  # initial position after start
         self.__target_wp_mmrad = []
         self.__oRf = []
         #self.__oCal = []
@@ -635,7 +635,15 @@ class GantryControl(object):
                     grid_dxdyda = [grid_settings[6], grid_settings[7], grid_settings[8]]
                     timemeas = grid_settings[9]
 
-                    data_shape = [xn[0] / grid_dxdyda[0] + 1, xn[1] / grid_dxdyda[1] + 1, xn[2] / grid_dxdyda[2] + 1]
+                    data_shape = []
+                    for i in range(3):  # range(num_dof)
+                        try:
+                            shapei = int((xn[i] - x0[i]) / grid_dxdyda[i] + i)
+                        except ZeroDivisionError:
+                            shapei = 1
+                        data_shape.append(shapei)
+
+                    # old: data_shape = [xn[0] / grid_dxdyda[0] + 1, xn[1] / grid_dxdyda[1] + 1, xn[2] / grid_dxdyda[2] + 1]
 
                 if load_wplist and not load_grid_settings:
                     # print('read wplist')
@@ -675,19 +683,19 @@ class GantryControl(object):
             # plt.ion()
             ax = fig.add_subplot(111, projection='3d')
             ax.plot(wp_data_mat[:, 1], wp_data_mat[:, 2], wp_data_mat[:, 3], 'b.-')
-            ax.xlabel('Distance in mm (belt-drive)')
-            ax.ylabel('Distance in mm (spindle-drive)')
-            ax.zlabel('Angle in rad (shaft-drive)')
-            ax.xlim(-100, 3100)
-            ax.ylim(-100, 1800)
-            # ax.zlim(___, ___)
+            ax.set_xlabel('Distance in mm (belt-drive)')
+            ax.set_ylabel('Distance in mm (spindle-drive)')
+            ax.set_zlabel('Angle in rad (shaft-drive)')
+            ax.set_xlim(-100, 3100)
+            ax.set_ylim(-100, 1800)
+            # ax.set_zlim(___, ___)
             # plt.xlim(x0[0]-10, xn[0]+100)  # bei Bedarf mit ax.___
             # plt.ylim(x0[1]-10, xn[1]+100)  # bei Bedarf mit ax.___
             # plt.grid()
             for i in range(len(tx_abs_pos)):
                 txpos_single = tx_abs_pos[i]
-                ax.plot(txpos_single[0], txpos_single[1], 'ro')
-            ax.show()
+                ax.scatter(txpos_single[0], txpos_single[1],  zs=0, c='red')
+            ax.draw
 
             totnumofwp = np.shape(wp_data_mat)
 
@@ -723,9 +731,9 @@ class GantryControl(object):
 
                             print('START Measurement for ' + str(meastime) + 's')
                             print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
-                            plt.plot(new_target_wp[0], new_target_wp[1], 'go')
-                            plt.title('Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +
-                                      '- Time left: %d:%02d:%02d' % (t_left_h, t_left_m, t_left_s))
+                            ax.scatter(new_target_wp[0], new_target_wp[1], zs=new_target_wp[2], c='gold')
+                            temp_meas_title = 'Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +'- Time left: %d:%02d:%02d' % (t_left_h, t_left_m, t_left_s)
+                            ax.set_title(temp_meas_title)
                             # dataseq = self.__oCal.take_measurement(meastime)
                             dataseq = self.__oRf.take_measurement(meastime)
 
@@ -748,14 +756,14 @@ class GantryControl(object):
 
                     else:
                         print ('Error: Failed to move gantry to new way-point!')
-                        print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y = '
+                        print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y= '
                                + str(new_target_wp[1])) + ' @ position a= ' + str(new_target_wp[2])
 
                 else:
                     print ('Error: Failed to transmit new way-point to gantry!')
-                    print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y = '
+                    print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y= '
                            + str(new_target_wp[1])) + ' @ position a= ' + str(new_target_wp[2])
-                ax.pause(0.001)
+                plt.pause(0.001)
                 print
             measfile.close()
 
@@ -774,7 +782,8 @@ class GantryControl(object):
         #          [2530, 1240],
         #          [790, 1230]]
         # self.__oRf.set_txparams(freqtx, tx_pos)
-        freq6tx = [434.00e6,  434.1e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
+        #freq6tx = [434.00e6,  434.1e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
+        freq1tx = [434.45e6]
         """
         tx_6pos = [[700, 440],
            [1560,450],
@@ -782,8 +791,8 @@ class GantryControl(object):
            [2440, 1240],
            [1560, 1235],
            [700, 1230]]
-           """
-
+        """
+        '''
         tx_6pos = [[520, 430, 0],
                    [1540, 430, 0],
                    [2570, 430, 0],
@@ -791,6 +800,9 @@ class GantryControl(object):
                    [1540, 1230, 0],
                    [530, 1230, 0]]
         self.__oRf.set_txparams(freq6tx, tx_6pos)
+        '''
+        tx_1pos = [[2105, 1321]]
+        self.__oRf.set_txparams(freq1tx, tx_1pos)
         return True
 
 

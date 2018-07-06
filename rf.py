@@ -29,8 +29,8 @@ class RfEar(object):
         :param freqspan: [Hz] span within the the algorithm is looking for amplitude peaks
         """
         # connect to sdr
-        args = dict(driver="airspy") #####
-        self.__sdr = SoapySDR.Device(args)  # RtlSdr() #####
+        # args = dict(driver="airspy") todo
+        self.__sdr = RtlSdr()  # SoapySDR.Device(args) todo
         self.__sdr.gain = 1
         self.__sdr.sample_rate = 2.048e6  # 2.048 MS/s
 
