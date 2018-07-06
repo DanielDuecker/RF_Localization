@@ -10,12 +10,12 @@ import sys
 
 
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, (2*np.pi)], use_gui=False):  # [x0 ,x1, y0, y1]
+    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, (2*np.pi+1e-6)], use_gui=False):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0, 0]  # initial position after start
         self.__target_wp_mmrad = []
         self.__oRf = []
-        #self.__oCal = []
+        # self.__oCal = []
         self.__oLoc = []
         self.__oScX = []  # spindle-drive
         self.__oScY = []  # belt-drive
@@ -740,8 +740,7 @@ class GantryControl(object):
                             [nummeas, numtx] = np.shape(dataseq)
 
                             # way point data - structure 'wp_x, wp_y, wp_a, num_wp, num_tx, num_meas'
-                            str_base_data = str(new_target_wp[0]) + ', ' + str(new_target_wp[1]) + str(new_target_wp[2]) + \
-                                            ', ' + str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
+                            str_base_data = str(new_target_wp[0]) + ', ' + str(new_target_wp[1]) + ', ' + str(new_target_wp[2]) + ', ' + str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
                             # freq data
                             str_freqs = ', '.join(map(str, freqtx)) + ', '
 
