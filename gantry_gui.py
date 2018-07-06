@@ -44,7 +44,7 @@ class StartPage(Tk.Frame):
         Tk.Frame.__init__(self, parent)
 
         use_gui = True
-        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, (2*np.pi)], use_gui)
+        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, (2*np.pi+1e-6)], use_gui)
         oBelt = self.__gt.get_serial_x_handle()
         oSpindle = self.__gt.get_serial_y_handle()
         oShaft = self.__gt.get_serial_a_handle()

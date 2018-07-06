@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
-wp_filename = 'wp_list_test_07_72meas_2018.txt'
-x0 = [2400, 1000, 0]
-xn = [2400, 1000, (2*np.pi)]
+wp_filename = 'wp_list_test_2018_07_06_72meas2.txt'
+x0 = [2319, 979, 0]
+xn = [2319, 979, (2*np.pi)]
 dxdyda = [0, 0, (2*np.pi*1/72)]
 rf_tools.wp_generator(wp_filename, x0, xn, dxdyda, 3, True)
 
@@ -22,12 +22,12 @@ tx_6pos = [[520, 430, 0],
            [2570, 1230, 0],
            [1540, 1230, 0],
            [520, 1230, 0]]
-# Rf.set_txparams(freq6tx, tx_6pos)
+Rf.set_txparams(freq6tx, tx_6pos)
 
 # Rf.set_samplesize(32)
 
 # Rf.plot_power_spectrum_density()
-# Rf.plot_txrss_live()
+Rf.plot_txrss_live()
 
 
 
