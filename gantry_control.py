@@ -660,21 +660,21 @@ class GantryControl(object):
             # write header to measurement file
             file_description = 'Measurement file\n' + 'Measurement was taken on ' + t.ctime() + '\n'
 
-            txdata = str(numtx) + ', '
+            txdata = str(numtx) + ' '
             for itx in range(numtx):
                 txpos = tx_abs_pos[itx]
-                txdata += str(txpos[0]) + ', ' + str(txpos[1]) + ', '
+                txdata += str(txpos[0]) + ' ' + str(txpos[1]) + ' '
             for itx in range(numtx):
-                txdata += str(freqtx[itx]) + ', '
+                txdata += str(freqtx[itx]) + ' '
 
             print('txdata = ' + txdata)
 
             measfile.write(file_description)
             measfile.write('### begin grid settings\n')
-            measfile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' + str(x0[2]) + ', ' +
-                           str(xn[0]) + ', ' + str(xn[1]) + ', ' + str(xn[2]) + ', ' +
-                           str(grid_dxdyda[0]) + ', ' + str(grid_dxdyda[1]) + ', ' + str(grid_dxdyda[2]) + ', ' +
-                           str(timemeas) + ', ' + txdata +
+            measfile.write(str(x0[0]) + ' ' + str(x0[1]) + ' ' + str(x0[2]) + ' ' +
+                           str(xn[0]) + ' ' + str(xn[1]) + ' ' + str(xn[2]) + ' ' +
+                           str(grid_dxdyda[0]) + ' ' + str(grid_dxdyda[1]) + ' ' + str(grid_dxdyda[2]) + ' ' +
+                           str(timemeas) + ' ' + txdata +
                            '\n')
             measfile.write('### begin measurement data\n')
 
@@ -740,15 +740,15 @@ class GantryControl(object):
                             [nummeas, numtx] = np.shape(dataseq)
 
                             # way point data - structure 'wp_x, wp_y, wp_a, num_wp, num_tx, num_meas'
-                            str_base_data = str(new_target_wp[0]) + ', ' + str(new_target_wp[1]) + ', ' + str(new_target_wp[2]) + ', ' + str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
+                            str_base_data = str(new_target_wp[0]) + ' ' + str(new_target_wp[1]) + ' ' + str(new_target_wp[2]) + ' ' + str(numwp) + ' ' + str(numtx) + ' ' + str(nummeas) + ' '
                             # freq data
-                            str_freqs = ', '.join(map(str, freqtx)) + ', '
+                            str_freqs = ' '.join(map(str, freqtx)) + ' '
 
                             # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
                             # print('data ' + str(dataseq))
                             str_rss = ''
                             for i in range(numtx):
-                                str_rss = str_rss + ', '.join(map(str, dataseq[:, i])) + ', '
+                                str_rss = str_rss + ' '.join(map(str, dataseq[:, i])) + ' '
 
                             measfile.write(str_base_data + str_freqs + str_rss + '\n')
                             # print(str_base_data + str_freqs + str_rss)

@@ -60,15 +60,15 @@ def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, np.pi], grid_dxdyda=
     with open(wp_filename, 'w') as wpfile:
         wpfile.write('Way point list \n')
         wpfile.write('### begin grid settings\n')
-        wpfile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' + str(x0[2]) + ', ' +
-                     str(xn[0]) + ', ' + str(xn[1]) + ', ' + str(xn[2]) + ', ' +
-                     str(grid_dxdyda[0]) + ', ' + str(grid_dxdyda[1]) + ', ' + str(grid_dxdyda[2]) + ', ' +
+        wpfile.write(str(x0[0]) + ' ' + str(x0[1]) + ' ' + str(x0[2]) + ' ' +
+                     str(xn[0]) + ' ' + str(xn[1]) + ' ' + str(xn[2]) + ' ' +
+                     str(grid_dxdyda[0]) + ' ' + str(grid_dxdyda[1]) + ' ' + str(grid_dxdyda[2]) + ' ' +
                      str(timemeas) +
                      '\n')
 
         wpfile.write('### begin wp_list\n')
         for i in range(wp_mat.shape[0]):
-            wpfile.write(str(i) + ', ' + str(wp_mat[i, 0]) + ', ' + str(wp_mat[i, 1]) + ', ' + str(wp_mat[i, 2]) + ', '  + str(wp_mat[i, 3]) + '\n')
+            wpfile.write(str(i) + ' ' + str(wp_mat[i, 0]) + ' ' + str(wp_mat[i, 1]) + ' ' + str(wp_mat[i, 2]) + ' '  + str(wp_mat[i, 3]) + '\n')
         wpfile.close()
     if show_plot:
         fig = plt.figure()
@@ -126,12 +126,12 @@ def read_data_from_wp_list_file(filename):
 
 
 def write_measfile_header(ofile, file_description, x0, xn, grid_dxdyda, timemeas, numtx, tx_abs_pos, freqtx):
-    txdata = str(numtx) + ', '
+    txdata = str(numtx) + ' '
     for itx in range(numtx):
         txpos = tx_abs_pos[itx]
-        txdata += str(txpos[0]) + ', ' + str(txpos[1]) + ', ' + str(txpos[2]) + ', '
+        txdata += str(txpos[0]) + ' ' + str(txpos[1]) + ' ' + str(txpos[2]) + ' '
     for itx in range(numtx):
-        txdata += str(freqtx[itx]) + ', '
+        txdata += str(freqtx[itx]) + ' '
     # -> numtx, x1,y1,z2, x2,y2,z2, x3,y3,z3, x4,y4,z4, x5,y5,z5, x6,y6,z6, freq1, freq2, freq3, freq4, freq5, freq6
     #      0     1                      -                               18   19                   -              24
 
@@ -140,10 +140,10 @@ def write_measfile_header(ofile, file_description, x0, xn, grid_dxdyda, timemeas
     ofile.write('Way point list \n')
     ofile.write(file_description)
     ofile.write('### begin grid settings\n')
-    ofile.write(str(x0[0]) + ', ' + str(x0[1]) + ', ' + str(x0[2]) + ', ' +
-                str(xn[0]) + ', ' + str(xn[1]) + ', ' + str(xn[2]) + ', ' +
-                str(grid_dxdyda[0]) + ', ' + str(grid_dxdyda[1]) + ', ' + str(grid_dxdyda[2]) + ', ' +
-                str(timemeas) + ', ' + txdata + '\n')
+    ofile.write(str(x0[0]) + ' ' + str(x0[1]) + ' ' + str(x0[2]) + ' ' +
+                str(xn[0]) + ' ' + str(xn[1]) + ' ' + str(xn[2]) + ' ' +
+                str(grid_dxdyda[0]) + ' ' + str(grid_dxdyda[1]) + ' ' + str(grid_dxdyda[2]) + ' ' +
+                str(timemeas) + ' ' + txdata + '\n')
     return True
 
 
