@@ -4,11 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
-wp_filename = 'Messung6Antennen.txt'
+wp_filename = 'wp_list_test_2018_07_09_144meas_6tx_no1.txt'
 #wp_filename = 'wp_list_test_2018_07_06_72meas3.txt'
 x0 = [2319, 979, 0]
 xn = [2319, 979, (2*np.pi)]
-dxdyda = [0, 0, (2*np.pi*1/72)]
+dxdyda = [0, 0, (2*np.pi*1/144)]
 rf_tools.wp_generator(wp_filename, x0, xn, dxdyda, 3, True)
 
 # rf_tools.analyze_measdata_from_file('lin')
