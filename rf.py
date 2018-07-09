@@ -346,16 +346,16 @@ class RfEar(object):
                 [nummeas, numtx] = np.shape(dataseq)
 
                 # way point data - structure 'wp_x, wp_y, num_wp, num_tx, num_meas'
-                str_base_data = str(meas_point[0]) + ', ' + str(meas_point[1]) + ', ' +\
-                                str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
+                str_base_data = str(meas_point[0]) + ' ' + str(meas_point[1]) + ' ' +\
+                                str(numwp) + ' ' + str(numtx) + ' ' + str(nummeas) + ' '
                 # freq data
-                str_freqs = ', '.join(map(str, freqtx)) + ', '
+                str_freqs = ' '.join(map(str, freqtx)) + ' '
 
                 # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
                 # print('data ' + str(dataseq))
                 str_rss = ''
                 for i in range(numtx):
-                    str_rss = str_rss + ', '.join(map(str, dataseq[:, i])) + ', '
+                    str_rss = str_rss + ' '.join(map(str, dataseq[:, i])) + ' '
 
                 print('Measurements taken: ' + str(nummeas) + ' at sample-size ' + str(self.__samplesize))
 
@@ -417,16 +417,16 @@ class RfEar(object):
                             [nummeas, numtx] = np.shape(dataseq)
 
                             # way point data - structure 'wp_x, wp_y, num_wp, num_tx, num_meas'
-                            str_base_data = str(meas_point[0]) + ', ' + str(meas_point[1]) + ', ' +\
-                                            str(numwp) + ', ' + str(numtx) + ', ' + str(nummeas) + ', '
+                            str_base_data = str(meas_point[0]) + ' ' + str(meas_point[1]) + ' ' +\
+                                            str(numwp) + ' ' + str(numtx) + ' ' + str(nummeas) + ' '
                             # freq data
-                            str_freqs = ', '.join(map(str, freqtx)) + ', '
+                            str_freqs = ' '.join(map(str, freqtx)) + ' '
 
                             # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
                             # print('data ' + str(dataseq))
                             str_rss = ''
                             for i in range(numtx):
-                                str_rss = str_rss + ', '.join(map(str, dataseq[:, i])) + ', '
+                                str_rss = str_rss + ' '.join(map(str, dataseq[:, i])) + ' '
                             # print('Measurements taken: ' + str(nummeas) + ' at sample-size ' + str(self.__samplesize))
 
                             measfile.write(str_base_data + str_freqs + str_rss + '\n')

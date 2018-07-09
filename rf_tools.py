@@ -105,7 +105,7 @@ def read_data_from_wp_list_file(filename):
                 print(line)
 
             if load_grid_settings and not load_wplist:
-                grid_settings = map(float, line.split(','))
+                grid_settings = map(float, line.split(' '))
                 x0 = [grid_settings[0], grid_settings[1], grid_settings[2]]
                 xn = [grid_settings[3], grid_settings[4], grid_settings[5]]
                 grid_dxdyda = [grid_settings[6], grid_settings[7], grid_settings[8]]
@@ -116,7 +116,7 @@ def read_data_from_wp_list_file(filename):
 
             if load_wplist and not load_grid_settings:
                 # print('read wplist')
-                wp_append_list.append(map(float, line.split(',')))
+                wp_append_list.append(map(float, line.split(' ')))
 
         print(str(np.asarray(wp_append_list)))
         wp_data_mat = np.asarray(wp_append_list)
@@ -194,7 +194,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             if load_grid_settings and not load_measdata:
                 #print(line)
 
-                grid_settings = map(float, line.split(','))
+                grid_settings = map(float, line.split(' '))
                 x0 = [grid_settings[0], grid_settings[1], grid_settings[2]]
                 xn = [grid_settings[3], grid_settings[4], grid_settings[5]]
                 grid_dxdyda = [grid_settings[6], grid_settings[7], grid_settings[8]]
@@ -260,7 +260,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 # print('read measdata')
 
                 totnumwp += 1
-                meas_data_line = map(float, line[0:-3].split(', '))
+                meas_data_line = map(float, line[0:-3].split(' '))
                 meas_data_append_list.append(meas_data_line)
 
                 meas_data_mat_line = np.asarray(meas_data_line)
@@ -592,7 +592,7 @@ def onboard_cal_param(tx_pos, measdata_filename='meas_data_wburg.txt', param_fil
                 totnumwp += 1
 
                 # way point data - structure 'wp_x, wp_y, num_wp, num_tx, num_meas'
-                meas_data_line = map(float, line[0:-3].split(', '))
+                meas_data_line = map(float, line[0:-3].split(' '))
                 meas_data_append_list.append(meas_data_line)
                 meas_data_mat_line = np.asarray(meas_data_line)
 
@@ -666,11 +666,11 @@ def onboard_cal_param(tx_pos, measdata_filename='meas_data_wburg.txt', param_fil
 
         with open(param_filename, 'w') as paramfile:
             for itx in range(numtx):
-                paramfile.write(str(alpha[itx])+',')
+                paramfile.write(str(alpha[itx])+' ')
             paramfile.write('\n')
 
             for itx in range(numtx):
-                paramfile.write(str(gamma[itx])+',')
+                paramfile.write(str(gamma[itx])+' ')
             paramfile.write('\n')
             paramfile.close()
 
@@ -686,7 +686,7 @@ def get_cal_param_from_file(param_filename='cal_param.txt'):
         param_list = []
         for i, line in enumerate(param_file):
 
-            param_line = map(float, line[:-2].split(','))
+            param_line = map(float, line[:-2].split(' '))
 
             param_list.append(param_line)
 
