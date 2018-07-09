@@ -282,7 +282,7 @@ class StartPage(Tk.Frame):
         entry_log_lin_analyze = ttk.Entry(self)
         entry_log_lin_analyze.insert(0, 'log')
         entry_log_lin_analyze.grid(row=8, column=7)
-        button_analyze_data = ttk.Button(self, text='Analyze Data', command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get()))
+        button_analyze_data = ttk.Button(self, text='Analyze Data', command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get(), analyze_tx=[1]))
         button_analyze_data.grid(row=8, column=6, sticky='W', pady=4)
 
 
