@@ -6,7 +6,7 @@ import numpy as np
 
 LARGE_FONT = ('Tahoma', 12)
 
-rad_or_deg = True  # Rad := True ; Deg := False
+rad_or_deg = False  # Rad := True ; Deg := False
 
 
 class GantryGui(Tk.Tk):
