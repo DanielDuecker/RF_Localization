@@ -312,8 +312,8 @@ class GantryControl(object):
         with open(wplist_filename, 'r') as wpfile:
             for i, line in enumerate(wpfile):
                 print('line = ' + line)
-                print(line.split(','))
-                temp_list = line.split(',')
+                print(line.split(' '))
+                temp_list = line.split(' ')
                 wp_append_list.append(map(float, temp_list[0:-1]))
 
         print(str(np.asarray(wp_append_list)))
@@ -376,7 +376,7 @@ class GantryControl(object):
             for row in data_mat:
                 row_string = ''
                 for i in range(len(row)):
-                    row_string += str(row[i]) + ','
+                    row_string += str(row[i]) + ' '
                 row_string += '\n'
                 measfile.write(row_string)
 
@@ -402,8 +402,8 @@ class GantryControl(object):
         with open(wplist_filename, 'r') as wpfile:
             for i, line in enumerate(wpfile):
                 # print('line = ' + line)
-                # print(line.split(','))
-                temp_list = line.split(',')
+                # print(line.split(' '))
+                temp_list = line.split(' ')
                 wp_append_list.append(map(float, temp_list[0:-1]))
 
 #        print(str(np.asarray(wp_append_list)))
@@ -497,7 +497,7 @@ class GantryControl(object):
                 for row in data_mat:
                     row_string = ''
                     for i in range(len(row)):
-                        row_string += str(row[i]) + ','
+                        row_string += str(row[i]) + ' '
                     row_string += '\n'
                     measfile.write(row_string)
 
@@ -559,7 +559,7 @@ class GantryControl(object):
             for row in data_mat:
                 row_string = ''
                 for i in range(len(row)):
-                    row_string += str(row[i]) + ','
+                    row_string += str(row[i]) + ' '
                 row_string += '\n'
                 measfile.write(row_string)
 
@@ -600,7 +600,7 @@ class GantryControl(object):
                 if line == '###':
                 if i >= 3:  # ignore header (first 3 lines)
 
-            wp_data_list = [map(float, line.split(',')) for line in wpfile]
+            wp_data_list = [map(float, line.split(' ')) for line in wpfile]
             wp_data_mat = np.asarray(wp_data_list)
             wpfile.close()
         """
@@ -629,7 +629,7 @@ class GantryControl(object):
                     print(line)
 
                 if load_grid_settings and not load_wplist:
-                    grid_settings = map(float, line.split(','))
+                    grid_settings = map(float, line.split(' '))
                     x0 = [grid_settings[0], grid_settings[1], grid_settings[2]]
                     xn = [grid_settings[3], grid_settings[4], grid_settings[5]]
                     grid_dxdyda = [grid_settings[6], grid_settings[7], grid_settings[8]]
@@ -647,7 +647,7 @@ class GantryControl(object):
 
                 if load_wplist and not load_grid_settings:
                     # print('read wplist')
-                    wp_append_list.append(map(float, line.split(',')))
+                    wp_append_list.append(map(float, line.split(' ')))
 
             wp_data_mat = np.asarray(wp_append_list)
             print(str(wp_data_mat))
