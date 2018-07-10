@@ -6,7 +6,8 @@ import numpy as np
 
 LARGE_FONT = ('Tahoma', 12)
 SUPERLARGE_FONT = ('Tahoma', 50)
-tx_2_analyse = [1]  # [1, 2, 3, 4, 5, 6]
+# tx_2_analyse = [1]
+tx_2_analyse = [1, 2, 3, 4, 5, 6]
 
 rad_or_deg = True  # Rad := True ; Deg := False
 
@@ -283,11 +284,7 @@ class StartPage(Tk.Frame):
         entry_log_lin_analyze = ttk.Entry(self)
         entry_log_lin_analyze.insert(0, 'log')
         entry_log_lin_analyze.grid(row=8, column=7)
-<<<<<<< HEAD
         button_analyze_data = ttk.Button(self, text='Analyze Data', command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get(), analyze_tx=tx_2_analyse))
-=======
-        button_analyze_data = ttk.Button(self, text='Analyze Data', command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get(), analyze_tx=[1, 2, 3, 4, 5, 6]))
->>>>>>> 62b35bf3963ab8a3daea5a51e3f0084498cd322b
         button_analyze_data.grid(row=8, column=6, sticky='W', pady=4)
 
         """
