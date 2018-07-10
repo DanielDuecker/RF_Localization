@@ -25,7 +25,7 @@ class GantryControl(object):
 
         self.__oScX = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2000e3)
         self.__oScY = sc.MotorCommunication('/dev/ttyS1', 'spindle_drive', 19200, 'spindle', 1600, 945800)
-        self.__oScA = sc.MotorCommunication('/dev/ttyUSB0', 'shaft_drive', 19200, 'driveshaft', (2*np.pi), 3715)
+        self.__oScA = sc.MotorCommunication('/dev/ttyUSB2', 'shaft_drive', 19200, 'driveshaft', (2*np.pi), 3715)  # USB0 / USB1 / USB2 ...
 
         self.__starttime = []
 
@@ -629,7 +629,7 @@ class GantryControl(object):
                     print(line)
 
                 if load_grid_settings and not load_wplist:
-                    grid_settings = map(float, line[:-2].split(' '))
+                    grid_settings = map(float, line.split(' '))
                     x0 = [grid_settings[0], grid_settings[1], grid_settings[2]]
                     xn = [grid_settings[3], grid_settings[4], grid_settings[5]]
                     grid_dxdyda = [grid_settings[6], grid_settings[7], grid_settings[8]]
@@ -772,7 +772,7 @@ class GantryControl(object):
 
         return True
 
-    def start_RfEar(self, center_freq=434.2e6, freqspan=1e5):
+    def start_RfEar(self, center_freq=434.2e6, freqspan=1e6):
         import rf
         self.__oRf = rf.RfEar(center_freq, freqspan)
         # freqtx = [433.9e6, 434.15e6, 434.40e6, 434.65e6]
@@ -781,8 +781,8 @@ class GantryControl(object):
         #          [2530, 1240],
         #          [790, 1230]]
         # self.__oRf.set_txparams(freqtx, tx_pos)
-        #freq6tx = [434.00e6,  434.1e6, 434.30e6, 434.45e6, 434.65e6, 433.90e6]
-        freq1tx = [433.98e6]
+        freq6tx = [434.00e6,  434.1e6, 434.30e6, 434.45e6, 434.6e6, 433.e6]
+        #freq1tx = [433.98e6]
         """
         tx_6pos = [[700, 440],
            [1560,450],
@@ -791,7 +791,7 @@ class GantryControl(object):
            [1560, 1235],
            [700, 1230]]
         """
-        '''
+
         tx_6pos = [[520, 430, 0],
                    [1540, 430, 0],
                    [2570, 430, 0],
@@ -799,9 +799,9 @@ class GantryControl(object):
                    [1540, 1230, 0],
                    [530, 1230, 0]]
         self.__oRf.set_txparams(freq6tx, tx_6pos)
-        '''
-        tx_1pos = [[2105, 1321]]
-        self.__oRf.set_txparams(freq1tx, tx_1pos)
+
+        #tx_1pos = [[2105, 1321]]
+        #self.__oRf.set_txparams(freq1tx, tx_1pos)
         return True
 
 
