@@ -5,9 +5,10 @@ import rf_tools
 import numpy as np
 
 LARGE_FONT = ('Tahoma', 12)
+SUPERLARGE_FONT = ('Tahoma', 50)
+tx_2_analyse = [1]  # [1, 2, 3, 4, 5, 6]
 
 rad_or_deg = True  # Rad := True ; Deg := False
-
 
 class GantryGui(Tk.Tk):
 
@@ -282,8 +283,14 @@ class StartPage(Tk.Frame):
         entry_log_lin_analyze = ttk.Entry(self)
         entry_log_lin_analyze.insert(0, 'log')
         entry_log_lin_analyze.grid(row=8, column=7)
-        button_analyze_data = ttk.Button(self, text='Analyze Data', command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get(), analyze_tx=[1]))
+        button_analyze_data = ttk.Button(self, text='Analyze Data', command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get(), analyze_tx=tx_2_analyse))
         button_analyze_data.grid(row=8, column=6, sticky='W', pady=4)
+
+        """
+        Emergency-Stop-Button
+        """
+        button_stop = Tk.Button(self, text='STOP', width=6, command=(oBelt.set_drive_speed(0), oSpindle.set_drive_speed(0), oShaft.set_drive_speed(0)), background='#ff7070', activebackground='red', font=SUPERLARGE_FONT)
+        button_stop.grid(row=4, column=1, sticky='W', pady=4, ipady=30)
 
 
 class PageOne(Tk.Frame):

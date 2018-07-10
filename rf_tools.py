@@ -223,7 +223,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 # read tx frequencies
                 freqtx_list = []
                 for itx in range(numtx):
-                    freqtx_list.append(txdata[3*numtx+itx])  # urspruenglich (txdata[2*numtx+itx])
+                    freqtx_list.append(txdata[2*numtx+itx])  # urspruenglich (txdata[2*numtx+itx]) # todo change to 3*numtx for 3D
                 freqtx = np.asarray(freqtx_list)
 
                 # print out
@@ -377,8 +377,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_ylabel('RSS [dB]')
                     ax.set_title('RSM for TX# ' + str(itx + 1))
 
-                    rss_mean = plotdata_mat[:, 2 + itx]
-                    rss_var = plotdata_mat[:, 2 + num_tx + itx]
+                    rss_mean = plotdata_mat[:, 3 + itx]
+                    rss_var = plotdata_mat[:, 3 + num_tx + itx]
 
                     rss_mat_ones = np.ones(np.shape(wp_matx)) * (-200)  # set minimum value for not measured points
                     rss_full_vec = np.reshape(rss_mat_ones, (len(xpos) * len(ypos) * len(apos), 1))
@@ -399,7 +399,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                                 fmt='ro', markersize='1', ecolor='g', label='Original Data')
 
                     # CS = ax.contour(wp_matx[::2,::2], wp_maty[::2,::2], rss_full_mat[::2,::2], val_sequence) # takes every second value
-                    CS = ax.contour(wp_matx[itx], wp_maty[itx], rss_full_mat[itx], val_sequence)
+                    CS = ax.contour(wp_matx[0], wp_maty[0], rss_full_mat[0], val_sequence)
                     ax.clabel(CS, inline=0, fontsize=10)
                     for itx_plot in analyze_tx:
                         ax.plot(txpos[itx_plot - 1, 0], txpos[itx_plot - 1, 1], 'or')
@@ -561,14 +561,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
                     ax = fig.add_subplot(pos, projection='polar')
 
-                    print(len(plotdata_mat[:, 2]))
-                    print(len(plotdata_mat[:, 3]))
-                    print(plotdata_mat[:, 2])
-                    print(plotdata_mat[:, 3])
-
-                    ax.plot(plotdata_mat[:, 2], plotdata_mat[:, 3], label='Radiation Pattern')
+                    ax.plot(plotdata_mat[:, 2], plotdata_mat[:, 3+itx], label='Radiation Pattern')
                     ax.set_rmax(-40)
-                    ax.set_rmin(-80)
+                    ax.set_rmin(-60)
                     ax.grid(True)
                     ax.set_title('Radiation Pattern for TX# ' + str(itx + 1))
 
