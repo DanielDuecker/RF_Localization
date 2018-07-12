@@ -6,8 +6,8 @@ import numpy as np
 
 LARGE_FONT = ('Tahoma', 12)
 SUPERLARGE_FONT = ('Tahoma', 50)
-# tx_2_analyse = [1]
-tx_2_analyse = [1, 2, 3, 4, 5, 6]
+tx_2_analyse = [1]
+# tx_2_analyse = [1, 2, 3, 4, 5, 6]
 
 rad_or_deg = True  # Rad := True ; Deg := False
 
