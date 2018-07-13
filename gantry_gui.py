@@ -46,7 +46,7 @@ class StartPage(Tk.Frame):
         Tk.Frame.__init__(self, parent)
 
         use_gui = True
-        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, (2*np.pi+1e-6)], use_gui)
+        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, (4*np.pi+1e-1)], use_gui)
         oBelt = self.__gt.get_serial_x_handle()
         oSpindle = self.__gt.get_serial_y_handle()
         oShaft = self.__gt.get_serial_a_handle()
@@ -259,7 +259,7 @@ class StartPage(Tk.Frame):
         entry_max_speed_shaft = ttk.Entry(self)
         entry_max_speed_shaft.insert(0, '123')
         entry_max_speed_shaft.grid(row=5, column=6)
-        button_max_speed_shaft = ttk.Button(self, text='set max Speed Shaft (<=123!)', command=lambda: self.__gt.set_new_max_speed_y(1*abs(int(entry_max_speed_shaft.get()))))
+        button_max_speed_shaft = ttk.Button(self, text='set max Speed Shaft (<=123!)', command=lambda: self.__gt.set_new_max_speed_a(1*abs(int(entry_max_speed_shaft.get()))))
         button_max_speed_shaft.grid(row=5, column=5, sticky='W', pady=4)
 
         button_home_seq = ttk.Button(self, text='Initialize Home Position', command=lambda: self.__gt.start_go_home_seq_xya())

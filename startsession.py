@@ -4,11 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
-wp_filename = 'wp_list_test_2018_07_13_180meas_1tx_no1.txt'
+wp_filename = 'wp_list_2018_07_13_180meas_no1.txt'
 
 x0 = [2000, 750, 0]
 xn = [2000, 750, (2*np.pi)]
-dxdyda = [0, 0, (2*np.pi*1/180)]
+dxdyda = [0, 0, (2*np.pi/180)]
 rf_tools.wp_generator(wp_filename, x0, xn, dxdyda, 2, True)
 
 # rf_tools.analyze_measdata_from_file('lin')

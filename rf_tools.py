@@ -399,8 +399,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                                 fmt='ro', markersize='1', ecolor='g', label='Original Data')
 
                     # CS = ax.contour(wp_matx[::2,::2], wp_maty[::2,::2], rss_full_mat[::2,::2], val_sequence) # takes every second value
-                    CS = ax.contour(wp_matx[0], wp_maty[0], rss_full_mat[0], val_sequence)
-                    ax.clabel(CS, inline=0, fontsize=10)
+                    # CS = ax.contour(wp_matx[0], wp_maty[0], rss_full_mat[0], val_sequence)
+                    # ax.clabel(CS, inline=0, fontsize=10)
                     for itx_plot in analyze_tx:
                         ax.plot(txpos[itx_plot - 1, 0], txpos[itx_plot - 1, 1], 'or')
 

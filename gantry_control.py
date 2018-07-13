@@ -25,7 +25,7 @@ class GantryControl(object):
 
         self.__oScX = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2000e3)
         self.__oScY = sc.MotorCommunication('/dev/ttyS1', 'spindle_drive', 19200, 'spindle', 1600, 945800)
-        self.__oScA = sc.MotorCommunication('/dev/ttyUSB2', 'shaft_drive', 19200, 'driveshaft', (2*np.pi), 3715)  # USB0 / USB1 / USB2 ...
+        self.__oScA = sc.MotorCommunication('/dev/ttyUSB2', 'shaft_drive', 19200, 'driveshaft', (4*np.pi), 7590)   # 3715=false # USB0 / USB1 / USB2 ...
 
         self.__starttime = []
 
@@ -661,7 +661,7 @@ class GantryControl(object):
         with open(measdata_filename, 'w') as measfile:
 
             # write header to measurement file
-            file_description = 'Measurement file\n' + 'Measurement was taken on ' + t.ctime() + '\n' + 'Description: ' + meas_description
+            file_description = 'Measurement file\n' + 'Measurement was taken on ' + t.ctime() + '\n' + 'Description: ' + meas_description + '\n'
 
             txdata = str(numtx) + ' '
             for itx in range(numtx):
@@ -736,7 +736,7 @@ class GantryControl(object):
                             print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
                             ax.scatter(new_target_wp[0], new_target_wp[1], zs=new_target_wp[2], c='gold')
                             temp_meas_title = 'Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +'- Time left: %d:%02d:%02d' % (t_left_h, t_left_m, t_left_s)
-                            ax.set_title(temp_meas_title)
+                            ax.set_title(temp_meas_title, loc='left')
                             # dataseq = self.__oCal.take_measurement(meastime)
                             dataseq = self.__oRf.take_measurement(meastime)
 
