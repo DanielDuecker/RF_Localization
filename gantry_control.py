@@ -576,15 +576,18 @@ class GantryControl(object):
         measdata_filename = hc_tools.save_as_dialog()
         print(measdata_filename)
 
+        meas_description = hc_tools.write_descrition()
+        print(meas_description)
+
         self.start_RfEar()
         freqtx, numtx, tx_abs_pos = self.__oRf.get_txparams()
         print(freqtx)
         print(numtx)
         print(tx_abs_pos)
 
-        self.process_measurement_sequence(wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx)
+        self.process_measurement_sequence(wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx, meas_description)
 
-    def process_measurement_sequence(self, wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx):
+    def process_measurement_sequence(self, wplist_filename, measdata_filename, numtx, tx_abs_pos, freqtx, meas_description):
         """
         :return:
         """
@@ -658,7 +661,7 @@ class GantryControl(object):
         with open(measdata_filename, 'w') as measfile:
 
             # write header to measurement file
-            file_description = 'Measurement file\n' + 'Measurement was taken on ' + t.ctime() + '\n'
+            file_description = 'Measurement file\n' + 'Measurement was taken on ' + t.ctime() + '\n' + 'Description: ' + meas_description
 
             txdata = str(numtx) + ' '
             for itx in range(numtx):

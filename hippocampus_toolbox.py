@@ -1,5 +1,6 @@
 import Tkinter
 import tkFileDialog
+import tkSimpleDialog
 
 
 # ======== "Save as" dialog:
@@ -35,3 +36,13 @@ def select_file(myFormats=[('Text file', '*.txt')]):
     #    file.close()
     #    print "I got %d bytes from this file." % len(data)
     return filename
+
+
+# ======== Select a directory:
+def write_descrition():
+    root = Tkinter.Tk()
+    root.withdraw()  # get rid of the tk-app window in the background
+    textinput = tkSimpleDialog.askstring("Description prompt", "enter your description")
+    if textinput is not None:
+        print ('You chose: ' + textinput)
+    return textinput

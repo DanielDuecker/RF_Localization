@@ -57,7 +57,7 @@ class MotorCommunication(object):
             self.__isdummy = True
             print('~~~~~~~~ Serial port ' + str(self.__name) + ' is not properly connected: it has been set as a dummy DOF')
             print('~~~~~~~~ (Error message: ' + str(err) + ')')
-            print('Please Check the Ports.')
+            print('~~~~~~~~ Please Check the Ports.')
         else:
             self.__oserial.isOpen()  # open serial port
             self.__isopen = True
@@ -74,7 +74,7 @@ class MotorCommunication(object):
     def reset_signal(self):
         self.__signal = 0
 
-    def set_manual_init(self,bmanualinit):
+    def set_manual_init(self, bmanualinit):
         self.__manualinit = bmanualinit
 
     def get_manual_init(self):
