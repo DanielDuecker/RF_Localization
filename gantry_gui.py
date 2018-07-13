@@ -9,7 +9,7 @@ SUPERLARGE_FONT = ('Tahoma', 50)
 tx_2_analyse = [1]
 # tx_2_analyse = [1, 2, 3, 4, 5, 6]
 
-rad_or_deg = True  # Rad := True ; Deg := False
+rad_or_deg = False  # Rad := True ; Deg := False
 
 class GantryGui(Tk.Tk):
 
@@ -290,7 +290,7 @@ class StartPage(Tk.Frame):
         """
         Emergency-Stop-Button
         """
-        button_stop = Tk.Button(self, text='STOP', width=6, command=(oBelt.set_drive_speed(0), oSpindle.set_drive_speed(0), oShaft.set_drive_speed(0)), background='#ff7070', activebackground='red', font=SUPERLARGE_FONT)
+        button_stop = Tk.Button(self, text='STOP', width=6, command=lambda: (oBelt.set_drive_speed(0), oSpindle.set_drive_speed(0), oShaft.set_drive_speed(0)), background='#ff7070', activebackground='red', font=SUPERLARGE_FONT)
         button_stop.grid(row=4, column=1, sticky='W', pady=4, ipady=30)
 
 
