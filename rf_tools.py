@@ -561,9 +561,40 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
                     ax = fig.add_subplot(pos, projection='polar')
 
+                    rss_max = plotdata_mat[:, 3+itx].max()
+                    rss_max_index = np.where(plotdata_mat[:, 3+itx] == rss_max)
+
+                    rss_min = plotdata_mat[:, 3+itx].min()
+
+                    rss_hpbw = rss_max - 3
+                    rss_hpbw_indexes = np.where(plotdata_mat[:, 3+itx] > rss_hpbw)
+
+                    itx_2 = rss_max_index[0][0]
+                    while plotdata_mat[itx_2, 3 + itx] > rss_hpbw:
+                        itx_2 += 1
+                    else:
+                        rss_hpbw_positiveitx_rss = plotdata_mat[itx_2 - 1, 3 + itx]
+                        rss_hpbw_positiveitx_rad = plotdata_mat[itx_2 - 1, 2]
+
+                    itx_2 = rss_max_index[0][0]
+                    while plotdata_mat[itx_2, 3 + itx] > rss_hpbw:
+                        itx_2 -= 1
+                    else:
+                        rss_hpbw_negativeitx_rss = plotdata_mat[itx_2 + 1, 3 + itx]
+                        rss_hpbw_negativeitx_rad = plotdata_mat[itx_2 + 1, 2]
+
+                    if abs(rss_hpbw_positiveitx_rss - rss_hpbw_negativeitx_rss) > 0.5:
+                        print('~~~~~> Possible ERROR: HPBW-RSS-measurements are far apart: ' + str(abs(rss_hpbw_positiveitx_rss - rss_hpbw_negativeitx_rss)))
+
+                    print('HPBW: ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)) + ' rad / ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)*180/np.pi) + ' deg')
+
                     ax.plot(plotdata_mat[:, 2], plotdata_mat[:, 3+itx], label='Radiation Pattern')
-                    ax.set_rmax(-40)
-                    ax.set_rmin(-60)
+                    ax.set_rmax(rss_max)
+                    ax.set_rmin(rss_min)
+                    ax.set_rticks([rss_hpbw_positiveitx_rss, rss_max, rss_min])
+                    ax.set_rlabel_position(rss_hpbw_positiveitx_rad*180/np.pi)
+                    # ax.set_rticks([rss_hpbw_negativeitx_rss])  # <- alternative
+                    # ax.set_rlabel_position(rss_hpbw_negativeitx_rad*180/np.pi)  # <- alternative
                     ax.grid(True)
                     ax.set_title('Radiation Pattern for TX# ' + str(itx + 1))
 
