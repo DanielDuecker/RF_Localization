@@ -3,13 +3,44 @@ import ttk
 import gantry_control
 import rf_tools
 import numpy as np
+import time as t
 
 LARGE_FONT = ('Tahoma', 12)
 SUPERLARGE_FONT = ('Tahoma', 50)
 tx_2_analyse = [1]
 # tx_2_analyse = [1, 2, 3, 4, 5, 6]
 
-rad_or_deg = False  # Rad := True ; Deg := False
+
+class GantryController(object):
+
+    def __init__(self):
+
+        use_gui = True
+        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, 500], use_gui)
+        self.__oBelt = self.__gt.get_serial_x_handle()
+        self.__oSpindle = self.__gt.get_serial_y_handle()
+        self.__oRod = self.__gt.get_serial_z_handle()
+        self.__lastupdatetime = t.time()
+
+    def get_gt(self):
+        return self.__gt
+
+    def get_oBelt(self):
+        return self.__oBelt
+
+    def get_oSpindle(self):
+        return self.__oSpindle
+
+    def get_oRod(self):
+        return self.__oRod
+
+    def set_lastupdatetime(self):
+        self.__lastupdatetime = t.time()
+        return True
+
+    def get_lastupdatetime(self):
+        return self.__lastupdatetime
+
 
 class GantryGui(Tk.Tk):
 
@@ -35,9 +66,20 @@ class GantryGui(Tk.Tk):
 
         self.show_frame(StartPage)
 
+        gantry = GantryController()
+        gantry.set_lastupdatetime()
+        self.frames[StartPage].get_position()
+
     def show_frame(self, cont):
         frame = self.frames[cont]
         frame.tkraise()  # raise frame to the front
+
+    '''
+    def update_position(self):
+        gantry = GantryController()
+        gantry.set_lastupdatetime()
+        self.frames[StartPage].get_position()
+    '''
 
 
 class StartPage(Tk.Frame):
@@ -45,12 +87,11 @@ class StartPage(Tk.Frame):
     def __init__(self, parent, controller):
         Tk.Frame.__init__(self, parent)
 
-        use_gui = True
-        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, (4*np.pi+1e-1)], use_gui)
-        oBelt = self.__gt.get_serial_x_handle()
-        oSpindle = self.__gt.get_serial_y_handle()
-        oShaft = self.__gt.get_serial_a_handle()
-
+        self.__gantry = GantryController()
+        oBelt = self.__gantry.get_oBelt()
+        oSpindle = self.__gantry.get_oSpindle()
+        oRod = self.__gantry.get_oRod()
+        self.__gt = self.__gantry.get_gt()
 
         # Notebook
         #notebook_label = ttk.Label(self, text="Control")
@@ -69,22 +110,18 @@ class StartPage(Tk.Frame):
         notebook_frame.add(relposcontrl_frame, text="Rel Position Control")
         notebook_frame.add(man_contrl_frame, text="Manual Control")
 
-        if rad_or_deg:
-            label_pos_xy = ttk.Label(self, text='X = ? mm\nY = ? mm\nA = ? rad')
-        else:
-            label_pos_xy = ttk.Label(self, text='X = ? mm\nY = ? mm\nA = ? deg')
-        label_pos_xy.grid(row=1, column=1)
+        self.__label_pos_xyz = ttk.Label(self, text='X = ? mm\nY = ? mm\nZ = ? mm')
+        self.__label_pos_xyz.grid(row=1, column=1)
 
-        def get_position():
-            pos_x_mm, pos_y_mm, pos_a_rad = self.__gt.get_gantry_pos_xya_mmrad()
-            if rad_or_deg:
-                label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round(float(pos_a_rad), 4)) + ' rad')
-            else:
-                label_pos_xy.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round((float(pos_a_rad)*180/np.pi), 4)) + ' deg')
+        def get_position(obj):
+            pos_x_mm, pos_y_mm, pos_z_rad = self.__gt.get_gantry_pos_xyz_mmrad()
+            obj.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round(float(pos_z_rad), 4)) + ' mm' + str(round(t.time(), 2)))
             return True
 
-        button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position())
+        button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position(self))
         button_gantry_position.grid(row=1, column=0)
+
+        # lastupdatetime = GantryController.get_lastupdatetime()
 
         """
         Belt-Drive
@@ -94,8 +131,7 @@ class StartPage(Tk.Frame):
         label_spindle_name = ttk.Label(velcontrl_frame, text='Belt-drive', font=LARGE_FONT)
         label_spindle_name.grid(row=firstrow_belt + 0, column=1)
 
-        button3 = ttk.Button(velcontrl_frame, text='v-- V [-]',
-                             command=lambda: oBelt.set_drive_speed(-1 * int(entry_v_belt.get())))
+        button3 = ttk.Button(velcontrl_frame, text='v-- V [-]', command=lambda: oBelt.set_drive_speed(-1 * int(entry_v_belt.get())))
         button3.grid(row=firstrow_belt + 1, column=0)
 
         button4 = ttk.Button(velcontrl_frame, text='STOP',command=lambda: oBelt.set_drive_speed(0))
@@ -143,28 +179,28 @@ class StartPage(Tk.Frame):
 
 
         """
-        Shaft-Drive
+        Threaded-rod-Drive
         """
-        firstrow_shaft = 8
+        firstrow_rod = 8
 
-        label_shaft_name = ttk.Label(velcontrl_frame, text='Shaft-drive', font=LARGE_FONT)
-        label_shaft_name.grid(row=firstrow_shaft+0, column=1)
+        label_rod_name = ttk.Label(velcontrl_frame, text='Rod-drive', font=LARGE_FONT)
+        label_rod_name.grid(row=firstrow_rod+0, column=1)
 
-        button2 = ttk.Button(velcontrl_frame, text='<-- V [-]', command=lambda: oShaft.set_drive_speed(-1*int(entry_v_shaft.get())))
-        button2.grid(row=firstrow_shaft+1, column=0)
+        button2 = ttk.Button(velcontrl_frame, text='<-- V [-]', command=lambda: oRod.set_drive_speed(-1*int(entry_v_rod.get())))
+        button2.grid(row=firstrow_rod+1, column=0)
 
-        button3 = ttk.Button(velcontrl_frame, text='STOP', command=lambda: oShaft.set_drive_speed(0))
-        button3.grid(row=firstrow_shaft+1, column=1)
+        button3 = ttk.Button(velcontrl_frame, text='STOP', command=lambda: oRod.set_drive_speed(0))
+        button3.grid(row=firstrow_rod+1, column=1)
 
-        button4 = ttk.Button(velcontrl_frame, text='[+] V -->', command=lambda: oShaft.set_drive_speed(1*int(entry_v_shaft.get())))
-        button4.grid(row=firstrow_shaft+1, column=2)
+        button4 = ttk.Button(velcontrl_frame, text='[+] V -->', command=lambda: oRod.set_drive_speed(1*int(entry_v_rod.get())))
+        button4.grid(row=firstrow_rod+1, column=2)
 
-        label_v_shaft = ttk.Label(velcontrl_frame, text='Velocity:')
-        entry_v_shaft = ttk.Entry(velcontrl_frame)
-        entry_v_shaft.insert(0, '0')
+        label_v_rod = ttk.Label(velcontrl_frame, text='Velocity:')
+        entry_v_rod = ttk.Entry(velcontrl_frame)
+        entry_v_rod.insert(0, '0')
 
-        label_v_shaft.grid(row=firstrow_shaft+2, column=0)
-        entry_v_shaft.grid(row=firstrow_shaft+2, column=1)
+        label_v_rod.grid(row=firstrow_rod+2, column=0)
+        entry_v_rod.grid(row=firstrow_rod+2, column=1)
 
 
 
@@ -181,14 +217,11 @@ class StartPage(Tk.Frame):
         entry_abs_pos_spindle.insert(0, '')
         entry_abs_pos_spindle.grid(row=3, column=1)
 
-        entry_abs_pos_shaft = ttk.Entry(absposcontrl_frame)
-        entry_abs_pos_shaft.insert(0, '')
-        entry_abs_pos_shaft.grid(row=4, column=1)
+        entry_abs_pos_rod = ttk.Entry(absposcontrl_frame)
+        entry_abs_pos_rod.insert(0, '')
+        entry_abs_pos_rod.grid(row=4, column=1)
 
-        if rad_or_deg:
-            button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/A - pos [mm]/[rad]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(float(entry_abs_pos_shaft.get()))))
-        else:
-            button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/A - pos [mm]/[deg]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(float(entry_abs_pos_shaft.get())*np.pi/180)))
+        button_goto_abs_pos = ttk.Button(absposcontrl_frame, text='go to X/Y/Z - pos [mm]', command=lambda: self.__gt.go_to_abs_pos(1*abs(int(entry_abs_pos_belt.get())), 1*abs(int(entry_abs_pos_spindle.get())), 1*abs(float(entry_abs_pos_rod.get()))))
         button_goto_abs_pos.grid(row=5, column=1, sticky='W', pady=4)
 
 
@@ -203,14 +236,11 @@ class StartPage(Tk.Frame):
         entry_rel_pos_spindle.insert(0, '0')
         entry_rel_pos_spindle.grid(row=3, column=1)
 
-        entry_rel_pos_shaft = ttk.Entry(relposcontrl_frame)
-        entry_rel_pos_shaft.insert(0, '0')
-        entry_rel_pos_shaft.grid(row=4, column=1)
+        entry_rel_pos_rod = ttk.Entry(relposcontrl_frame)
+        entry_rel_pos_rod.insert(0, '0')
+        entry_rel_pos_rod.grid(row=4, column=1)
 
-        if rad_or_deg:
-            button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy da [mm]/[rad]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*float(entry_rel_pos_shaft.get())))
-        else:
-            button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy da [mm]/[deg]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*float(entry_rel_pos_shaft.get())*np.pi/180))
+        button_goto_rel_pos = ttk.Button(relposcontrl_frame, text='move by dx dy dz [mm]', command=lambda: self.__gt.go_to_rel_pos(1*int(entry_rel_pos_belt.get()), 1*int(entry_rel_pos_spindle.get()), 1*float(entry_rel_pos_rod.get())))
         button_goto_rel_pos.grid(row=5, column=1, sticky='W', pady=4)
 
         """
@@ -220,8 +250,8 @@ class StartPage(Tk.Frame):
         button_manual_mode_belt.grid(row=firstrow_belt + 2, column=3)
         button_manual_mode_spindle = ttk.Button(man_contrl_frame, text=' Manual Mode Spindle', command=lambda: oSpindle.start_manual_mode())
         button_manual_mode_spindle.grid(row=firstrow_spindle+2, column=3)
-        button_manual_mode_shaft = ttk.Button(man_contrl_frame, text=' Manual Mode Shaft', command=lambda: oShaft.start_manual_mode())
-        button_manual_mode_shaft.grid(row=firstrow_shaft+2, column=3)
+        button_manual_mode_rod = ttk.Button(man_contrl_frame, text=' Manual Mode Threaded-rod', command=lambda: oRod.start_manual_mode())
+        button_manual_mode_rod.grid(row=firstrow_rod+2, column=3)
 
 
 
@@ -240,36 +270,12 @@ class StartPage(Tk.Frame):
         button_path = ttk.Button(self, text='WP-Path Following', command=lambda: self.__gt.follow_wp_path_opt_take_measurements(int(entry_num_plot_points.get()), entry_log_lin_ekf.get()))
         button_path.grid(row=1, column=3)
 
-        """
-        Settings
-        """
-
-        entry_max_speed_belt = ttk.Entry(self)
-        entry_max_speed_belt.insert(0, '3000')
-        entry_max_speed_belt.grid(row=3, column=6)
-        button_max_speed_belt = ttk.Button(self, text='set max Speed Belt (<=3000!)', command=lambda: self.__gt.set_new_max_speed_x(1*abs(int(entry_max_speed_belt.get()))))
-        button_max_speed_belt.grid(row=3, column=5, sticky='W', pady=4)
-
-        entry_max_speed_spindle = ttk.Entry(self)
-        entry_max_speed_spindle.insert(0, '9000')
-        entry_max_speed_spindle.grid(row=4, column=6)
-        button_max_speed_spindle = ttk.Button(self, text='set max Speed Spindle (<=9000!)', command=lambda: self.__gt.set_new_max_speed_y(1*abs(int(entry_max_speed_spindle.get()))))
-        button_max_speed_spindle.grid(row=4, column=5, sticky='W', pady=4)
-
-        entry_max_speed_shaft = ttk.Entry(self)
-        entry_max_speed_shaft.insert(0, '123')
-        entry_max_speed_shaft.grid(row=5, column=6)
-        button_max_speed_shaft = ttk.Button(self, text='set max Speed Shaft (<=123!)', command=lambda: self.__gt.set_new_max_speed_a(1*abs(int(entry_max_speed_shaft.get()))))
-        button_max_speed_shaft.grid(row=5, column=5, sticky='W', pady=4)
-
-        button_home_seq = ttk.Button(self, text='Initialize Home Position', command=lambda: self.__gt.start_go_home_seq_xya())
-        button_home_seq.grid(row=15, column=3, sticky='W', pady=4)
 
         """
         Quit-Button
         """
         button_quit = ttk.Button(self, text='Quit', command=self.quit)
-        button_quit.grid(row=15, column=4, sticky='W', pady=4)
+        button_quit.grid(row=15, column=2, sticky='W', pady=4)
 
         label = ttk.Label(self, text='Start Page')
         label.grid(row=15, column=0)
@@ -277,31 +283,70 @@ class StartPage(Tk.Frame):
         button1 = ttk.Button(self, text='Drive Settings', command=lambda: controller.show_frame(PageOne))
         button1.grid(row=15, column=1)
 
-        button_start_field_meas = ttk.Button(self, text='Start EM-Field Measurement',
-                                             command=lambda: self.__gt.start_field_measurement_file_select())
-        button_start_field_meas.grid(row=8, column=5, sticky='W', pady=4)
+        button_start_field_meas = ttk.Button(self, text='Start EM-Field Measurement', command=lambda: self.__gt.start_field_measurement_file_select())
+        button_start_field_meas.grid(row=8, column=3, sticky='W', pady=4)
 
         entry_log_lin_analyze = ttk.Entry(self)
         entry_log_lin_analyze.insert(0, 'log')
-        entry_log_lin_analyze.grid(row=8, column=7)
+        entry_log_lin_analyze.grid(row=9, column=4)
         button_analyze_data = ttk.Button(self, text='Analyze Data', command=lambda: rf_tools.analyze_measdata_from_file(entry_log_lin_analyze.get(), analyze_tx=tx_2_analyse))
-        button_analyze_data.grid(row=8, column=6, sticky='W', pady=4)
+        button_analyze_data.grid(row=9, column=3, sticky='W', pady=4)
+
+        button_home_seq = ttk.Button(self, text='Initialize Home Position', command=lambda: self.__gt.start_go_home_seq_xyz())
+        button_home_seq.grid(row=4, column=3, sticky='W', padx=10, pady=4)
 
         """
         Emergency-Stop-Button
         """
-        button_stop = Tk.Button(self, text='STOP', width=6, command=lambda: (oBelt.set_drive_speed(0), oSpindle.set_drive_speed(0), oShaft.set_drive_speed(0)), background='#ff7070', activebackground='red', font=SUPERLARGE_FONT)
+        button_stop = Tk.Button(self, text='STOP', width=6, command=lambda: (oBelt.set_drive_speed(0), oSpindle.set_drive_speed(0), oRod.set_drive_speed(0)), background='#ff7070', activebackground='red', highlightbackground="black", font=SUPERLARGE_FONT)
         button_stop.grid(row=4, column=1, sticky='W', pady=4, ipady=30)
+
+    def get_position(self):
+
+        self.__gt = self.__gantry.get_gt()
+
+        pos_x_mm, pos_y_mm, pos_z_rad = self.__gt.get_gantry_pos_xyz_mmrad()
+        self.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round(float(pos_z_rad), 4)) + ' mm' + str(round(t.time(), 2)))
+        self.__label_pos_xyz.after(1000, self.get_position)
+        return True
 
 
 class PageOne(Tk.Frame):
     def __init__(self, parent, controller):
         Tk.Frame.__init__(self, parent)
-        label = ttk.Label(self, text='Drive Settings', font=LARGE_FONT)
-        label.pack(pady=10, padx=10)
 
-        button1 = ttk.Button(self, text='Controller Menu', command=lambda: controller.show_frame(StartPage))
-        button1.pack()
+        Gantry = GantryController()
+        oBelt = Gantry.get_oBelt()
+        oSpindle = Gantry.get_oSpindle()
+        oRod = Gantry.get_oRod()
+        self.__gt = Gantry.get_gt()
+
+        label = ttk.Label(self, text='Drive Settings', font=LARGE_FONT)
+        label.grid(row=1, column=1, pady=10, padx=10)
+
+        button1 = ttk.Button(self, text='-> back to Controller Menu', command=lambda: controller.show_frame(StartPage))
+        button1.grid(row=1,column =3)
+
+        """
+        Settings
+        """
+        entry_max_speed_belt = ttk.Entry(self)
+        entry_max_speed_belt.insert(0, '3000')
+        entry_max_speed_belt.grid(row=3, column=1, padx=10)
+        button_max_speed_belt = ttk.Button(self, text='set max Speed Belt (<=3000!)', command=lambda: self.__gt.set_new_max_speed_x(1 * abs(int(entry_max_speed_belt.get()))))
+        button_max_speed_belt.grid(row=3, column=2, sticky='W', pady=4)
+
+        entry_max_speed_spindle = ttk.Entry(self)
+        entry_max_speed_spindle.insert(0, '9000')
+        entry_max_speed_spindle.grid(row=4, column=1, padx=10)
+        button_max_speed_spindle = ttk.Button(self, text='set max Speed Spindle (<=9000!)', command=lambda: self.__gt.set_new_max_speed_y(1 * abs(int(entry_max_speed_spindle.get()))))
+        button_max_speed_spindle.grid(row=4, column=2, sticky='W', pady=4)
+
+        entry_max_speed_rod = ttk.Entry(self)
+        entry_max_speed_rod.insert(0, '101')
+        entry_max_speed_rod.grid(row=5, column=1, padx=10)
+        button_max_speed_rod = ttk.Button(self, text='set max Speed Rod (<=101!)', command=lambda: self.__gt.set_new_max_speed_z(1 * abs(int(entry_max_speed_rod.get()))))
+        button_max_speed_rod.grid(row=5, column=2, sticky='W', pady=4)
 
 
 app = GantryGui()
