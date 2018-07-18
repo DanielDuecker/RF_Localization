@@ -20,7 +20,6 @@ class GantryController(object):
         self.__oBelt = self.__gt.get_serial_x_handle()
         self.__oSpindle = self.__gt.get_serial_y_handle()
         self.__oRod = self.__gt.get_serial_z_handle()
-        self.__lastupdatetime = t.time()
 
     def get_gt(self):
         return self.__gt
@@ -33,13 +32,6 @@ class GantryController(object):
 
     def get_oRod(self):
         return self.__oRod
-
-    def set_lastupdatetime(self):
-        self.__lastupdatetime = t.time()
-        return True
-
-    def get_lastupdatetime(self):
-        return self.__lastupdatetime
 
 
 class GantryGui(Tk.Tk):
@@ -67,7 +59,6 @@ class GantryGui(Tk.Tk):
         self.show_frame(StartPage)
 
         gantry = GantryController()
-        gantry.set_lastupdatetime()
         self.frames[StartPage].get_position()
 
     def show_frame(self, cont):
@@ -302,8 +293,6 @@ class StartPage(Tk.Frame):
         button_stop.grid(row=4, column=1, sticky='W', pady=4, ipady=30)
 
     def get_position(self):
-
-        self.__gt = self.__gantry.get_gt()
 
         pos_x_mm, pos_y_mm, pos_z_rad = self.__gt.get_gantry_pos_xyz_mmrad()
         self.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round(float(pos_z_rad), 4)) + ' mm' + str(round(t.time(), 2)))
