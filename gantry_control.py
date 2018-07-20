@@ -25,7 +25,7 @@ class GantryControl(object):
 
         self.__oScX = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2000e3)
         self.__oScY = sc.MotorCommunication('/dev/ttyS1', 'spindle_drive', 19200, 'spindle', 1600, 945800)
-        self.__oScA = sc.MotorCommunication('/dev/ttyUSB2', 'shaft_drive', 19200, 'driveshaft', (4*np.pi), 7590)   # 3715=false # USB0 / USB1 / USB2 ...
+        self.__oScA = sc.MotorCommunication('/dev/ttyUSB2', 'shaft_drive', 19200, 'driveshaft', (4*np.pi), 7550)   # 3715=false # USB0 / USB1 / USB2 ...
 
         self.__starttime = []
 

@@ -4,10 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
-wp_filename = 'wp_list_2018_07_13_180meas_no1.txt'
+wp_filename = 'wp_list_2018_07_17_180meas_no3.txt'
 
-x0 = [2000, 750, 0]
-xn = [2000, 750, (2*np.pi)]
+x0 = [1750, 750, 0]
+xn = [1750, 750, (2*np.pi)]
 dxdyda = [0, 0, (2*np.pi/180)]
 rf_tools.wp_generator(wp_filename, x0, xn, dxdyda, 2, True)
 

@@ -572,6 +572,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     itx_2 = rss_max_index[0][0]
                     while plotdata_mat[itx_2, 3 + itx] > rss_hpbw:
                         itx_2 += 1
+                        if itx_2 == totnumwp:
+                            itx_2 = 0
                     else:
                         rss_hpbw_positiveitx_rss = plotdata_mat[itx_2 - 1, 3 + itx]
                         rss_hpbw_positiveitx_rad = plotdata_mat[itx_2 - 1, 2]
@@ -579,6 +581,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     itx_2 = rss_max_index[0][0]
                     while plotdata_mat[itx_2, 3 + itx] > rss_hpbw:
                         itx_2 -= 1
+                        if itx_2 == -1:
+                            itx_2 = totnumwp-1
                     else:
                         rss_hpbw_negativeitx_rss = plotdata_mat[itx_2 + 1, 3 + itx]
                         rss_hpbw_negativeitx_rad = plotdata_mat[itx_2 + 1, 2]
