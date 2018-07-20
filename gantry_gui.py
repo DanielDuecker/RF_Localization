@@ -11,7 +11,7 @@ tx_2_analyse = [1]
 # tx_2_analyse = [1, 2, 3, 4, 5, 6]
 
 
-class GantryController(object):
+class GantryControllerObj(object):
 
     def __init__(self):
 
@@ -50,15 +50,16 @@ class GantryGui(Tk.Tk):
         container.rowconfigure(0, weight=1)
         container.columnconfigure(0, weight=1)
 
+        gantrycontroller = GantryControllerObj()
+
         self.frames = {}
         for F in (StartPage, PageOne):
-            frame = F(container, self)
+            frame = F(container, self, gantrycontroller)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky='nsew')
 
         self.show_frame(StartPage)
 
-        gantry = GantryController()
         self.frames[StartPage].get_position()
 
     def show_frame(self, cont):
@@ -67,7 +68,7 @@ class GantryGui(Tk.Tk):
 
     '''
     def update_position(self):
-        gantry = GantryController()
+        gantry = GantryControllerObj()
         gantry.set_lastupdatetime()
         self.frames[StartPage].get_position()
     '''
@@ -75,14 +76,13 @@ class GantryGui(Tk.Tk):
 
 class StartPage(Tk.Frame):
 
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, gantrycontroller):
         Tk.Frame.__init__(self, parent)
 
-        self.__gantry = GantryController()
-        oBelt = self.__gantry.get_oBelt()
-        oSpindle = self.__gantry.get_oSpindle()
-        oRod = self.__gantry.get_oRod()
-        self.__gt = self.__gantry.get_gt()
+        oBelt = gantrycontroller.get_oBelt()
+        oSpindle = gantrycontroller.get_oSpindle()
+        oRod = gantrycontroller.get_oRod()
+        self.__gt = gantrycontroller.get_gt()
 
         # Notebook
         #notebook_label = ttk.Label(self, text="Control")
@@ -112,7 +112,7 @@ class StartPage(Tk.Frame):
         button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position(self))
         button_gantry_position.grid(row=1, column=0)
 
-        # lastupdatetime = GantryController.get_lastupdatetime()
+        # lastupdatetime = GantryControllerObj.get_lastupdatetime()
 
         """
         Belt-Drive
@@ -301,14 +301,13 @@ class StartPage(Tk.Frame):
 
 
 class PageOne(Tk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, gantrycontroller):
         Tk.Frame.__init__(self, parent)
 
-        Gantry = GantryController()
-        oBelt = Gantry.get_oBelt()
-        oSpindle = Gantry.get_oSpindle()
-        oRod = Gantry.get_oRod()
-        self.__gt = Gantry.get_gt()
+        oBelt = gantrycontroller.get_oBelt()
+        oSpindle = gantrycontroller.get_oSpindle()
+        oRod = gantrycontroller.get_oRod()
+        self.__gt = gantrycontroller.get_gt()
 
         label = ttk.Label(self, text='Drive Settings', font=LARGE_FONT)
         label.grid(row=1, column=1, pady=10, padx=10)
