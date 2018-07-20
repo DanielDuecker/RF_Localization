@@ -131,6 +131,9 @@ class MotorCommunication(object):
         elif drivetype == 'driveshaft':
             self.__rpmmax = 123
             self.__findingspeed = 12
+        elif drivetype == 'threadedrod':
+            self.__rpmmax = 101
+            self.__findingspeed = 12
         else:
             print('Unknown drive type!')
             print('drive types known "belt" and "spindle"')
