@@ -551,7 +551,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_xlabel('Distance to tx [mm]')
                     ax.set_ylabel('Error [mm]')
 
-            plot_fig6 = True
+            plot_fig6 = False
             if plot_fig6:
                 fig = plt.figure(6)
                 for itx in analyze_tx:

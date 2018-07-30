@@ -778,33 +778,17 @@ class GantryControl(object):
     def start_RfEar(self, center_freq=434.2e6, freqspan=1e6):
         import rf
         self.__oRf = rf.RfEar(center_freq, freqspan)
-        # freqtx = [433.9e6, 434.15e6, 434.40e6, 434.65e6]
-        # tx_pos = [[790, 440],
-        #          [2530, 460],
-        #          [2530, 1240],
-        #          [790, 1230]]
-        # self.__oRf.set_txparams(freqtx, tx_pos)
-        # freq6tx = [434.00e6,  434.1e6, 434.30e6, 434.45e6, 434.6e6, 433.e6]
-        freq1tx = [433.98e6]
-        """
-        tx_6pos = [[700, 440],
-           [1560,450],
-           [2440, 460],
-           [2440, 1240],
-           [1560, 1235],
-           [700, 1230]]
-        """
-        '''
-        tx_6pos = [[520, 430, 0],
-                   [1540, 430, 0],
-                   [2570, 430, 0],
-                   [2570, 1230, 0],
-                   [1540, 1230, 0],
-                   [530, 1230, 0]]
+
+        freq6tx = [433.975e6, 434.52e6, 434.61e6, 434.12e6, 434.275e6, 434.42e6]
+
+        tx_6pos = [[770, 432, 0],
+                   [1794, 437, 0],
+                   [2814, 447, 0],
+                   [2824, 1232, 0],
+                   [1789, 1237, 0],
+                   [774, 1227, 0]]
+
         self.__oRf.set_txparams(freq6tx, tx_6pos)
-        '''
-        tx_1pos = [[2105, 1321, 0]]
-        self.__oRf.set_txparams(freq1tx, tx_1pos)
         return True
 
 
