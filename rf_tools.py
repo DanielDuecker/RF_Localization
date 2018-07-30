@@ -12,7 +12,7 @@ independent methods related to the gantry
 """
 
 
-def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, np.pi], grid_dxdyda=[50, 50, (np.pi * (1/100))], timemeas=12.0, show_plot=False):
+def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, 0], grid_dxdyda=[50, 50, 0], timemeas=12.0, show_plot=False):
     """
     :param wp_filename:
     :param x0: [x0,y0] - start position of the grid
@@ -39,21 +39,21 @@ def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, np.pi], grid_dxdyda=
     endy = xn[1]
     stepy = steps[1]
 
-    starta = x0[2]
-    enda = xn[2]
-    stepa = steps[2]
+    startz = x0[2]
+    endz = xn[2]
+    stepz = steps[2]
 
     xpos = np.linspace(startx, endx, stepx)
     ypos = np.linspace(starty, endy, stepy)
-    apos = np.linspace(starta, enda, stepa)
+    zpos = np.linspace(startz, endz, stepz)
 
-    wp_matx, wp_maty, wp_mata = np.meshgrid(xpos, ypos, apos)
-    wp_vecx = np.reshape(wp_matx, (len(xpos)*len(ypos)*len(apos), 1))
-    wp_vecy = np.reshape(wp_maty, (len(ypos)*len(apos)*len(xpos), 1))
-    wp_veca = np.reshape(wp_mata, (len(apos)*len(xpos)*len(ypos), 1))
-    wp_time = np.ones((len(xpos)*len(ypos)*len(apos), 1)) * timemeas
+    wp_matx, wp_maty, wp_matz = np.meshgrid(xpos, ypos, zpos)
+    wp_vecx = np.reshape(wp_matx, (len(xpos)*len(ypos)*len(zpos), 1))
+    wp_vecy = np.reshape(wp_maty, (len(ypos)*len(zpos)*len(xpos), 1))
+    wp_vecz = np.reshape(wp_matz, (len(zpos)*len(xpos)*len(ypos), 1))
+    wp_time = np.ones((len(xpos)*len(ypos)*len(zpos), 1)) * timemeas
 
-    wp_mat = np.append(wp_vecx, np.append(wp_vecy, wp_veca, axis=1), axis=1)
+    wp_mat = np.append(wp_vecx, np.append(wp_vecy, wp_vecz, axis=1), axis=1)
     wp_mat = np.append(wp_mat, wp_time, axis=1)
 
     # wp_filename = hc_tools.save_as_dialog('Save way point list as...')
@@ -327,8 +327,6 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
         for itx in analyze_tx:
             rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # +[250 , 30, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
             # todo: previous line: change from 2 to 3 if z is introduced
-            if itx == 5:
-                print('r_dist ' + str(rdist_vec))
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos| -> dim: num_meas x 1
 
             rssdata = plotdata_mat[:, 3+itx]  # rss-mean for each wp
