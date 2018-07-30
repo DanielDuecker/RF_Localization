@@ -6,9 +6,9 @@ import matplotlib.mlab as mlab
 
 wp_filename = 'wp_list_2018_07_17_180meas_no3.txt'
 
-x0 = [1750, 750, 0]
-xn = [1750, 750, (2*np.pi)]
-dxdyda = [0, 0, (2*np.pi/180)]
+x0 = [200, 200, 0]
+xn = [2800, 1500, 0]
+dxdyda = [0, 0, 0]
 rf_tools.wp_generator(wp_filename, x0, xn, dxdyda, 2, True)
 
 # rf_tools.analyze_measdata_from_file('lin')

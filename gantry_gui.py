@@ -66,13 +66,6 @@ class GantryGui(Tk.Tk):
         frame = self.frames[cont]
         frame.tkraise()  # raise frame to the front
 
-    '''
-    def update_position(self):
-        gantry = GantryControllerObj()
-        gantry.set_lastupdatetime()
-        self.frames[StartPage].get_position()
-    '''
-
 
 class StartPage(Tk.Frame):
 
