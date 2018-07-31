@@ -268,7 +268,6 @@ class RfEar(object):
 
             rss_peaks.append(10 * np.log10(pxx_den[maxind]))
             freq_peaks.append(freq_spectrum[maxind])
-
         return freq_peaks, rss_peaks
 
     def get_rss_peaks(self):
@@ -298,7 +297,6 @@ class RfEar(object):
             freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(self.get_freqtx())
             # print('get_freqtx= ' + str(self.get_freqtx()))
             # print('freq_found = ' + str(freq_den_max))
-
             dataseq.append(pxx_den_max)
 
             calc_time = t.time() - start_calctime
