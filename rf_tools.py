@@ -325,7 +325,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
         rdist = []
 
         for itx in analyze_tx:
-            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2] # + [250, 30] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
+            rdist_vec = plotdata_mat[:, 0:3] - txpos[itx, 0:3] + [0, 0, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
             # todo: previous line: change from 2 to 3 if z is introduced
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos| -> dim: num_meas x 1
 
@@ -389,30 +389,39 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     rss_full_mat = np.reshape(rss_full_vec, data_shape)
 
                     # mask all points which were not measured
-                    rss_full_mat = np.ma.array(rss_full_mat, mask=rss_full_mat < -199)
+                    # rss_full_mat = np.ma.array(rss_full_mat, mask=rss_full_mat < -199)  # np.ones(np.shape(wp_maty))*(-60)
 
                     val_sequence = np.linspace(-100, -20, 80 / 5 + 1)
 
                     ax.errorbar(rdist[itx], rss_mean, yerr=rss_var,
                                 fmt='ro', markersize='1', ecolor='g', label='Original Data')
 
-                    CS = ax.contour(wp_matx[::2, ::2], wp_maty[::2, ::2], rss_full_mat[::2, ::2], val_sequence) # takes every second value
-                    CS = ax.contour(wp_matx[0], wp_maty[0], rss_full_mat[0], val_sequence)
+
+                fig = plt.figure(1)
+                for itx in analyze_tx:
+                    pos = 321 + itx
+                    if len(analyze_tx) == 1:
+                        pos = 111
+
+                    ax = fig.add_subplot(pos)
+
+                    # CS = ax.contour(wp_matx[::2, ::2], wp_maty[::2, ::2], rss_full_mat[::2, ::2], val_sequence) # takes every second value
+                    CS = ax.contour(wp_matx[:, :, 0], wp_maty[:, :, 0], rss_full_mat[:, :, 0], val_sequence)
                     ax.clabel(CS, inline=0, fontsize=10)
                     '''
                     for itx_plot in analyze_tx:
-                        ax.plot(txpos[itx_plot - 1, 0], txpos[itx_plot - 1, 1], 'or')
-
+                        ax.plot(txpos[itx_plot, 0], txpos[itx_plot, 1], 'or')
+                    '''
                     ax.grid()
                     ax.set_xlabel('x [mm]')
                     ax.set_ylabel('y [mm]')
                     ax.axis('equal')
                     ax.set_title('RSS field for TX# ' + str(itx + 1))
-                    '''
 
-            plot_fig1 = False
-            if plot_fig1:
-                fig = plt.figure(1)
+
+            plot_fig2 = False
+            if plot_fig2:
+                fig = plt.figure(2)
                 for itx in analyze_tx:
                     pos = 321 + itx
                     if len(analyze_tx) == 1:
@@ -429,9 +438,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_zlim([-110, -20])
                     ax.set_title('RSS field for TX# ' + str(itx+1))
 
-            plot_fig2 = False
-            if plot_fig2:
-                fig = plt.figure(2)
+            plot_fig3 = False
+            if plot_fig3:
+                fig = plt.figure(3)
                 for itx in analyze_tx:
                     pos = 321 + itx
                     if len(analyze_tx) == 1:
@@ -447,9 +456,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_zlabel('rss_var [dB]')
                     ax.set_title('RSS field variance for TX# ' + str(itx + 1))
 
-            plot_fig3 = False
-            if plot_fig3:
-                fig = plt.figure(3)
+            plot_fig4 = False
+            if plot_fig4:
+                fig = plt.figure(4)
                 for itx in analyze_tx:
                     rss_mean = plotdata_mat[:, 3 + itx]
                     rss_var = plotdata_mat[:, 3 + num_tx + itx]
@@ -473,9 +482,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_ylabel('RSS [dB]')
                     ax.set_title('RSM for TX# ' + str(itx + 1))
 
-            plot_fig4 = False
-            if plot_fig4:
-                fig = plt.figure(4)
+            plot_fig5 = False
+            if plot_fig5:
+                fig = plt.figure(5)
                 for itx in analyze_tx:
                     rss_mean = plotdata_mat[:, 3 + itx]
                     rss_var = plotdata_mat[:, 3 + num_tx + itx]
@@ -496,9 +505,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_ylabel('Distance [mm]')
 
 
-            plot_fig5 = False
-            if plot_fig5:
-                fig = plt.figure(5)
+            plot_fig6 = False
+            if plot_fig6:
+                fig = plt.figure(6)
                 for itx in analyze_tx:
                     rss_mean = plotdata_mat[:, 3 + itx]
                     rss_var = plotdata_mat[:, 3 + num_tx + itx]
@@ -551,9 +560,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_xlabel('Distance to tx [mm]')
                     ax.set_ylabel('Error [mm]')
 
-            plot_fig6 = False
-            if plot_fig6:
-                fig = plt.figure(6)
+            plot_fig7 = False
+            if plot_fig7:
+                fig = plt.figure(7)
                 for itx in analyze_tx:
                     pos = 321 + itx
                     if len(analyze_tx) == 1:
