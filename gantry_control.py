@@ -750,6 +750,7 @@ class GantryControl(object):
                             # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
                             # print('data ' + str(dataseq))
                             str_rss = ''
+                            #print(dataseq)
                             for i in range(numtx):
                                 str_rss = str_rss + ' '.join(map(str, dataseq[:, i])) + ' '
 
@@ -775,11 +776,11 @@ class GantryControl(object):
 
         return True
 
-    def start_RfEar(self, center_freq=434.2e6, freqspan=1e6):
+    def start_RfEar(self, center_freq=434.2e6, freqspan=1e5):
         import rf
         self.__oRf = rf.RfEar(center_freq, freqspan)
 
-        freq6tx = [433.975e6, 434.52e6, 434.61e6, 434.12e6, 434.275e6, 434.42e6]
+        freq6tx = [434.325e6, 433.89e6, 434.475e6, 434.025e6, 434.62e6, 434.175e6]
 
         tx_6pos = [[770, 432, 0],
                    [1794, 437, 0],

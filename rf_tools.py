@@ -375,6 +375,18 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_ylabel('RSS [dB]')
                     ax.set_title('RSM for TX# ' + str(itx + 1))
 
+                    ax.errorbar(rdist[itx], plotdata_mat[:, 3 + itx], yerr=plotdata_mat[:, 3 + num_tx + itx],
+                                fmt='ro', markersize='1', ecolor='g', label='Original Data')
+
+
+                fig = plt.figure(1)
+                for itx in analyze_tx:
+                    pos = 321 + itx
+                    if len(analyze_tx) == 1:
+                        pos = 111
+
+                    ax = fig.add_subplot(pos)
+
                     rss_mean = plotdata_mat[:, 3 + itx]
                     rss_var = plotdata_mat[:, 3 + num_tx + itx]
 
@@ -393,25 +405,13 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
                     val_sequence = np.linspace(-100, -20, 80 / 5 + 1)
 
-                    ax.errorbar(rdist[itx], rss_mean, yerr=rss_var,
-                                fmt='ro', markersize='1', ecolor='g', label='Original Data')
-
-
-                fig = plt.figure(1)
-                for itx in analyze_tx:
-                    pos = 321 + itx
-                    if len(analyze_tx) == 1:
-                        pos = 111
-
-                    ax = fig.add_subplot(pos)
-
                     # CS = ax.contour(wp_matx[::2, ::2], wp_maty[::2, ::2], rss_full_mat[::2, ::2], val_sequence) # takes every second value
-                    CS = ax.contour(wp_matx[:, :, 0], wp_maty[:, :, 0], rss_full_mat[:, :, 0], val_sequence)
+                    CS = ax.contour(wp_matx[:, :, 0], wp_maty[:, :, 0], rss_full_mat[:, :, 0].T, val_sequence)
                     ax.clabel(CS, inline=0, fontsize=10)
-                    '''
+
                     for itx_plot in analyze_tx:
                         ax.plot(txpos[itx_plot, 0], txpos[itx_plot, 1], 'or')
-                    '''
+
                     ax.grid()
                     ax.set_xlabel('x [mm]')
                     ax.set_ylabel('y [mm]')
