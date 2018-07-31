@@ -203,7 +203,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 data_shape_file = []
                 for i in range(3):  # range(num_dof)
                     try:
-                        shapei = int((xn[i]-x0[i]) / grid_dxdyda[i] + i)
+                        shapei = int((xn[i]-x0[i]) / grid_dxdyda[i] + 1)
                     except ZeroDivisionError:
                         shapei = 1
                     data_shape_file.append(shapei)
@@ -244,15 +244,15 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 endy = xn[1]
                 stepy = data_shape_file[1]
 
-                starta = x0[2]
-                enda = xn[2]
-                stepa = data_shape_file[2]
+                startz = x0[2]
+                endz = xn[2]
+                stepz = data_shape_file[2]
 
                 xpos = np.linspace(startx, endx, stepx)
                 ypos = np.linspace(starty, endy, stepy)
-                apos = np.linspace(starta, enda, stepa)
+                zpos = np.linspace(startz, endz, stepz)
 
-                wp_matx, wp_maty, wp_mata = np.meshgrid(xpos, ypos, apos)
+                wp_matx, wp_maty, wp_matz = np.meshgrid(xpos, ypos, zpos)
 
                 # print(xpos)
 
@@ -325,7 +325,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
         rdist = []
 
         for itx in analyze_tx:
-            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2]  # +[250 , 30, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
+            rdist_vec = plotdata_mat[:, 0:2] - txpos[itx, 0:2] # + [250, 30] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
             # todo: previous line: change from 2 to 3 if z is introduced
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos| -> dim: num_meas x 1
 
@@ -379,7 +379,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     rss_var = plotdata_mat[:, 3 + num_tx + itx]
 
                     rss_mat_ones = np.ones(np.shape(wp_matx)) * (-200)  # set minimum value for not measured points
-                    rss_full_vec = np.reshape(rss_mat_ones, (len(xpos) * len(ypos) * len(apos), 1))
+                    rss_full_vec = np.reshape(rss_mat_ones, (len(xpos) * len(ypos) * len(zpos), 1))
 
                     measured_wp_list = np.reshape(measured_wp_list, (len(measured_wp_list), 1))
                     rss_mean = np.reshape(rss_mean, (len(rss_mean), 1))
@@ -396,9 +396,10 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.errorbar(rdist[itx], rss_mean, yerr=rss_var,
                                 fmt='ro', markersize='1', ecolor='g', label='Original Data')
 
-                    # CS = ax.contour(wp_matx[::2,::2], wp_maty[::2,::2], rss_full_mat[::2,::2], val_sequence) # takes every second value
-                    # CS = ax.contour(wp_matx[0], wp_maty[0], rss_full_mat[0], val_sequence)
-                    # ax.clabel(CS, inline=0, fontsize=10)
+                    CS = ax.contour(wp_matx[::2, ::2], wp_maty[::2, ::2], rss_full_mat[::2, ::2], val_sequence) # takes every second value
+                    CS = ax.contour(wp_matx[0], wp_maty[0], rss_full_mat[0], val_sequence)
+                    ax.clabel(CS, inline=0, fontsize=10)
+                    '''
                     for itx_plot in analyze_tx:
                         ax.plot(txpos[itx_plot - 1, 0], txpos[itx_plot - 1, 1], 'or')
 
@@ -407,6 +408,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_ylabel('y [mm]')
                     ax.axis('equal')
                     ax.set_title('RSS field for TX# ' + str(itx + 1))
+                    '''
 
             plot_fig1 = False
             if plot_fig1:
