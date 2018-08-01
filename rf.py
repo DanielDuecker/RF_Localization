@@ -69,6 +69,8 @@ class RfEar(object):
             print('~~~~~ UNKNOWN SDR-DEVICE-TYPE -> check type input')
             quit()
 
+        # todo ab hier ---V---
+
         self.__btxparamsavailable = False
         self.__freqtx = 0
         self.__numoftx = 0
