@@ -326,7 +326,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
         rdist = []
 
         for itx in analyze_tx:
-            rdist_vec = plotdata_mat[:, 0:3] - txpos[itx, 0:3] + [0, 0, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
+            rdist_vec = plotdata_mat[:, 0:3] - txpos[itx, 0:3]  # + [0, 0, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
             # todo: previous line: change from 2 to 3 if z is introduced
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos| -> dim: num_meas x 1
 

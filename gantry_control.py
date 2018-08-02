@@ -10,7 +10,7 @@ import sys
 
 
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, 500], use_gui=False):  # [x0 ,x1, y0, y1]
+    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, 500], use_gui=False, sdr_type='NooElec'):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0, 0]  # initial position after start
         self.__target_wp_mmrad = []
@@ -26,6 +26,8 @@ class GantryControl(object):
         self.__oScX = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2000e3)
         self.__oScY = sc.MotorCommunication('/dev/ttyS1', 'spindle_drive', 19200, 'spindle', 1600, 945800)
         self.__oScZ = sc.MotorCommunication('/dev/ttyUSB2', 'tread_drive', 19200, 'threadedrod', 700, 7590)  # USB0 / USB1 / USB2 ...
+
+        self.__sdr_type = sdr_type
 
         self.__starttime = []
 
@@ -733,7 +735,7 @@ class GantryControl(object):
                             t.sleep(.25)  # wait to damp motion/oscillation of antenna etc
 
                             print('START Measurement for ' + str(meastime) + 's')
-                            print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
+                            print('Measuring at Way-Point #' + str(numwp+1) + ' of ' + str(totnumofwp) + ' way-points')
                             ax.scatter(new_target_wp[0], new_target_wp[1], zs=new_target_wp[2], c='gold')
                             temp_meas_title = 'Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +'- Time left: %d:%02d:%02d' % (t_left_h, t_left_m, t_left_s)
                             ax.set_title(temp_meas_title, loc='left')
@@ -778,7 +780,8 @@ class GantryControl(object):
 
     def start_RfEar(self, center_freq=434.2e6, freqspan=1e5):
         import rf
-        self.__oRf = rf.RfEar(center_freq, freqspan)
+
+        self.__oRf = rf.RfEar(self.__sdr_type, center_freq, freqspan)
 
         freq6tx = [434.325e6, 433.89e6, 434.475e6, 434.025e6, 434.62e6, 434.175e6]
 
