@@ -666,7 +666,7 @@ class GantryControl(object):
             txdata = str(numtx) + ' '
             for itx in range(numtx):
                 txpos = tx_abs_pos[itx]
-                txdata += str(txpos[0]) + ' ' + str(txpos[1]) + ' ' + str(txpos[2])
+                txdata += str(txpos[0]) + ' ' + str(txpos[1]) + ' ' + str(txpos[2]) + ' '
             for itx in range(numtx):
                 txdata += str(freqtx[itx]) + ' '
 
@@ -752,7 +752,7 @@ class GantryControl(object):
                             str_rss = ''
                             #print(dataseq)
                             for i in range(numtx):
-                                str_rss = str_rss + ' '.join(map(str, dataseq[:, i])) + ' '
+                                str_rss = str_rss + ' '.join(map(str, np.matrix.round(dataseq[:, i], decimals=3))) + ' '
 
                             measfile.write(str_base_data + str_freqs + str_rss + '\n')
                             # print(str_base_data + str_freqs + str_rss)

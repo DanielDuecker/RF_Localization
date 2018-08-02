@@ -304,7 +304,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
         measfile.close()
 
-        data_shape = [data_shape_file[0], data_shape_file[1], data_shape_file[2]]  # data_shape: n_x, n_y, n_a
+        # data_shape = [data_shape_file[0], data_shape_file[1], data_shape_file[2]]  # data_shape: n_x, n_y, n_a
+        data_shape = [data_shape_file[1], data_shape_file[0], data_shape_file[2]]  # data_shape: n_x, n_y, n_a
         plotdata_mat = np.asarray(plotdata_mat_lis)
 
         """
@@ -367,7 +368,6 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax = fig.add_subplot(pos)
 
                     rdata = np.linspace(50, np.max(rdist), num=1000)
-                    ax.plot(rdata, rsm_model(rdata, alpha[itx], gamma[itx]), label='Fitted Curve')
                     ax.legend(loc='upper right')
                     ax.grid()
                     ax.set_ylim([-110, -10])
@@ -376,8 +376,10 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_title('RSM for TX# ' + str(itx + 1))
 
                     ax.errorbar(rdist[itx], plotdata_mat[:, 3 + itx], yerr=plotdata_mat[:, 3 + num_tx + itx],
-                                fmt='ro', markersize='1', ecolor='g', label='Original Data')
+                                fmt='ro', markersize='1', ecolor='g', label='Original Data', zorder=1)
+                    ax.plot(rdata, rsm_model(rdata, alpha[itx], gamma[itx]), label='Fitted Curve', zorder=2)
 
+                    fig.subplots_adjust(hspace=0.4)
 
                 fig = plt.figure(1)
                 for itx in analyze_tx:
@@ -406,7 +408,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     val_sequence = np.linspace(-100, -20, 80 / 5 + 1)
 
                     # CS = ax.contour(wp_matx[::2, ::2], wp_maty[::2, ::2], rss_full_mat[::2, ::2], val_sequence) # takes every second value
-                    CS = ax.contour(wp_matx[:, :, 0], wp_maty[:, :, 0], rss_full_mat[:, :, 0].T, val_sequence)
+                    CS = ax.contour(wp_matx[:, :, 0], wp_maty[:, :, 0], rss_full_mat[:, :, 0], val_sequence)
                     ax.clabel(CS, inline=0, fontsize=10)
 
                     for itx_plot in analyze_tx:
@@ -417,7 +419,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_ylabel('y [mm]')
                     ax.axis('equal')
                     ax.set_title('RSS field for TX# ' + str(itx + 1))
-
+                    fig.subplots_adjust(hspace=0.4)
 
             plot_fig2 = False
             if plot_fig2:

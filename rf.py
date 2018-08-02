@@ -22,23 +22,54 @@ from SoapySDR import * #SOAPY_SDR_ constants #####
 # define classes
 class RfEar(object):
     """A simple class to compute PSD with a DVBT-dongle."""
-    def __init__(self, center_freq, freqspan=1e5):
+    def __init__(self, sdr_type, center_freq, freqspan=1e5):
         """
         init-method
         :param center_freq: [Hz] Defines the center frequency where to listen (between 27MHz and 1.7GHz)
         :param freqspan: [Hz] span within the the algorithm is looking for amplitude peaks
         """
-        # connect to sdr
-        # args = dict(driver="airspy") todo
-        self.__sdr = RtlSdr()  # SoapySDR.Device(args) todo
-        self.__sdr.gain = 1
-        self.__sdr.sample_rate = 2.048e6  # 2.048 MS/s
+        self.__sdr_type = sdr_type
 
-        self.__centerfreq = center_freq
-        self.set_sdr_centerfreq(self.__centerfreq)
+        if self.__sdr_type == 'AirSpy':
+            # connect to sdr
+            args = dict(driver="airspy")
+            self.__sdr = SoapySDR.Device(args)
 
-        self.__freqspan = freqspan
-        self.__samplesize = 32
+            # query device info
+            print(self.__sdr.listAntennas(SOAPY_SDR_RX, 0))
+            print(self.__sdr.listGains(SOAPY_SDR_RX, 0))
+            freqs = self.__sdr.getFrequencyRange(SOAPY_SDR_RX, 0)
+            for freqRange in freqs:
+                print(freqRange)
+
+            # apply settings
+            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo testweise! ursp. 1e6
+            self.__sdr.setFrequency(SOAPY_SDR_RX, 0, center_freq)
+            self.__sdr.setGain(SOAPY_SDR_RX, 0, 10)
+
+            # setup a stream (complex floats)
+            self.__rxStream = self.__sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32)
+            self.__sdr.activateStream(self.__rxStream)  # start streaming
+
+            # create a re-usable buffer for rx samples
+            self.__buff = np.array([0] * 1024, np.complex64)
+
+        elif self.__sdr_type == 'NooElec':
+            self.__sdr = RtlSdr()
+            self.__sdr.gain = 1
+            self.__sdr.sample_rate = 2.048e6  # 2.048 MS/s
+
+            self.__centerfreq = center_freq
+            self.set_sdr_centerfreq(self.__centerfreq)
+
+            self.__freqspan = freqspan
+            self.__samplesize = 32
+
+        else:
+            print('~~~~~ UNKNOWN SDR-DEVICE-TYPE -> check type input')
+            quit()
+
+        # todo ab hier ---V---
 
         self.__btxparamsavailable = False
         self.__freqtx = 0
