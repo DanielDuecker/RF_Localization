@@ -781,7 +781,13 @@ class GantryControl(object):
     def start_RfEar(self, center_freq=434.2e6, freqspan=1e5):
         import rf
 
+<<<<<<< HEAD
         self.__oRf = rf.RfEar(self.__sdr_type, center_freq, freqspan)
+=======
+        sdr_type = 'NooElec'  # 'AirSpy' / 'NooElec'
+
+        self.__oRf = rf.RfEar(sdr_type, center_freq, freqspan)
+>>>>>>> 2f992c9b2f1a2a3d76e62712c16f7f09c4d165b1
 
         freq6tx = [434.325e6, 433.89e6, 434.475e6, 434.025e6, 434.62e6, 434.175e6]
 
