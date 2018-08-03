@@ -7,6 +7,16 @@ import time as t
 
 LARGE_FONT = ('Tahoma', 12)
 SUPERLARGE_FONT = ('Tahoma', 50)
+
+"""
+Before measurements:
+-check sdr_type and enter type into GantryControllerObj constructor
+-check that correct frequencies and transmitter positions are put into "start_RFEar" method within gantry_control.py
+
+Before analysis:
+-check how many/ which antenna measurements are to be analysed and change tx_2_analyse variable list below accordingly
+"""
+
 # tx_2_analyse = [1]
 tx_2_analyse = [1, 2, 3, 4, 5, 6]
 
@@ -16,7 +26,9 @@ class GantryControllerObj(object):
     def __init__(self):
 
         use_gui = True
-        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, 500], use_gui)
+        sdr_type = 'AirSpy'  # sdr_type can be: 'AirSpy', 'NooElec'
+
+        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, 500], use_gui, sdr_type)
         self.__oBelt = self.__gt.get_serial_x_handle()
         self.__oSpindle = self.__gt.get_serial_y_handle()
         self.__oRod = self.__gt.get_serial_z_handle()

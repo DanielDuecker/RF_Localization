@@ -326,7 +326,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
         rdist = []
 
         for itx in analyze_tx:
-            rdist_vec = plotdata_mat[:, 0:3] - txpos[itx, 0:3] + [0, 0, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
+            rdist_vec = plotdata_mat[:, 0:3] - txpos[itx, 0:3]  # + [0, 0, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
             # todo: previous line: change from 2 to 3 if z is introduced
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos| -> dim: num_meas x 1
 
@@ -408,11 +408,37 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     val_sequence = np.linspace(-100, -20, 80 / 5 + 1)
 
                     # CS = ax.contour(wp_matx[::2, ::2], wp_maty[::2, ::2], rss_full_mat[::2, ::2], val_sequence) # takes every second value
-                    CS = ax.contour(wp_matx[:, :, 0], wp_maty[:, :, 0], rss_full_mat[:, :, 0], val_sequence)
+                    CS = ax.contour(wp_matx[:, :, 0], wp_maty[:, :, 0], rss_full_mat[:, :, 0], val_sequence, cmap=plt.cm.jet, label='RSS Contours')
                     ax.clabel(CS, inline=0, fontsize=10)
 
                     for itx_plot in analyze_tx:
                         ax.plot(txpos[itx_plot, 0], txpos[itx_plot, 1], 'or')
+
+                    ax.grid()
+                    ax.set_xlabel('x [mm]')
+                    ax.set_ylabel('y [mm]')
+                    ax.axis('equal')
+                    ax.set_title('RSS field for TX# ' + str(itx + 1))
+                    fig.subplots_adjust(hspace=0.4)
+
+                fig = plt.figure(8)
+                for itx in analyze_tx:
+                    pos = 321 + itx
+                    if len(analyze_tx) == 1:
+                        pos = 111
+
+                    ax = fig.add_subplot(pos, projection='3d')
+
+                    rss_2_plot = -70
+                    rss_2_plot_var = 1
+                    same_rss_indexes = np.where(np.logical_and(plotdata_mat[:, 3+itx] <= (rss_2_plot + rss_2_plot_var), plotdata_mat[:, 3+itx] >= (rss_2_plot - rss_2_plot_var)))
+                    CS = ax.scatter(plotdata_mat[same_rss_indexes[0], 0], plotdata_mat[same_rss_indexes[0], 1], plotdata_mat[same_rss_indexes[0], 2], label='Scatter 3D for same RSS')  # for coloring kwag: c=plotdata_mat[same_rss_indexes[0], 3+itx]
+
+                    # CS = ax.scatter(wp_matx[:, :, 0], wp_maty[:, :, 0], wp_matz[:, :, 0], val_sequence)
+                    ax.clabel(CS, inline=0, fontsize=10)
+
+                    for itx_plot in analyze_tx:
+                        ax.scatter(txpos[itx_plot, 0], txpos[itx_plot, 1], txpos[itx_plot, 2], 'or')
 
                     ax.grid()
                     ax.set_xlabel('x [mm]')
@@ -506,7 +532,6 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_xlabel('RSS [dB]')
                     ax.set_ylabel('Distance [mm]')
 
-
             plot_fig6 = False
             if plot_fig6:
                 fig = plt.figure(6)
@@ -539,11 +564,11 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                             bin_var_temp = np.var(data_temp)
                             bin_mean.append(bin_mean_temp)
                             bin_var.append(bin_var_temp)
-                            #print('bin_high_bound :' + str(bin[ibin]) + ' bin_mean:' + str(bin_mean_temp))
+                            # print('bin_high_bound :' + str(bin[ibin]) + ' bin_mean:' + str(bin_mean_temp))
                             data_temp = []  # reset bin
                             data_temp.append(dist_error[i])
                             ibin += 1
-                            #print('ibin ' + str(ibin))
+                            # print('ibin ' + str(ibin))
 
                     pos = 321 + itx
                     if len(analyze_tx) == 1:
@@ -551,7 +576,6 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax = fig.add_subplot(pos)
                     # rssdata = np.linspace(-10, -110, num=1000)
                     # ax.plot(rssdata, lambertloc(rssdata, alpha[itx], gamma[itx]), label='Fitted Curve')
-
 
                     # ax.errorbar(bin[1:-1], bin_mean, yerr=bin_var, fmt='ro', ecolor='g', label='Original Data')
                     ax.plot(bin[1:-1], bin_mean, '.')
@@ -563,6 +587,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_ylabel('Error [mm]')
 
             plot_fig7 = False
+            ''' Polar Directional Diagrams for Antenna measurements '''
             if plot_fig7:
                 fig = plt.figure(7)
                 for itx in analyze_tx:

@@ -43,7 +43,7 @@ class RfEar(object):
                 print(freqRange)
 
             # apply settings
-            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo testweise! ursp. 1e6
+            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo test! initially 1e6 within sample AirSpy Program
             self.__sdr.setFrequency(SOAPY_SDR_RX, 0, center_freq)
             self.__sdr.setGain(SOAPY_SDR_RX, 0, 10)
 
@@ -62,14 +62,12 @@ class RfEar(object):
             self.__centerfreq = center_freq
             self.set_sdr_centerfreq(self.__centerfreq)
 
-            self.__freqspan = freqspan
-            self.__samplesize = 32
-
         else:
             print('~~~~~ UNKNOWN SDR-DEVICE-TYPE -> check type input')
             quit()
 
-        # todo ab hier ---V---
+        self.__freqspan = freqspan
+        self.__samplesize = 32
 
         self.__btxparamsavailable = False
         self.__freqtx = 0
@@ -154,8 +152,15 @@ class RfEar(object):
 
         :return: self.__samplesize*1024 iq samples around the center frequency.
         """
-        iq_sample = self.__sdr.read_samples(self.__samplesize * 1024)
-        return iq_sample
+        if self.__sdr_type == 'AirSpy':
+            self.__sdr.deactivateStream(self.__rxStream)  # stop streaming
+            self.__sdr.activateStream(self.__rxStream)  # start streaming
+            plt.pause(0.001)
+            self.__sdr.readStream(self.__rxStream, [self.__buff], len(self.__buff))
+            return
+        elif self.__sdr_type == 'NooElec':
+            iq_sample = self.__sdr.read_samples(self.__samplesize * 1024)
+            return iq_sample
 
     def set_sdr_centerfreq(self, centerfreq):
         """Defines the center frequency where to listen (between 27MHz and 1.7GHz).
@@ -164,14 +169,20 @@ class RfEar(object):
         Keyword arguments:
         :param centerfreq -- [Hz] single frequency
         """
-        self.__sdr.center_freq = centerfreq
+        if self.__sdr_type == 'AirSpy':
+            self.__sdr.setFrequency(SOAPY_SDR_RX, 0, centerfreq)
+        elif self.__sdr_type == 'NooElec':
+            self.__sdr.center_freq = centerfreq
 
     def get_sdr_centerfreq(self):
         """
 
         :return: sdr center frequency [Hz]
         """
-        return self.__sdr.center_freq
+        if self.__sdr_type == 'AirSpy':
+            return self.__sdr.getFrequency(SOAPY_SDR_RX, 0)
+        elif self.__sdr_type == 'NooElec':
+            return self.__sdr.center_freq
 
     def set_sdr_samplingrate(self, samplingrate=2.4e6):
         """Defines the sampling rate.
@@ -179,16 +190,23 @@ class RfEar(object):
         Keyword arguments:
         :param samplingrate -- samplerate [Samples/s] (default 2.4e6)
         """
-        self.__sdr.sample_rate = samplingrate
+        if self.__sdr_type == 'AirSpy':
+            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, samplingrate)
+        elif self.__sdr_type == 'NooElec':
+            self.__sdr.sample_rate = samplingrate
 
-    def get_sdr_samplingrate(self,bprintout=False):
+    def get_sdr_samplingrate(self, bprintout=False):
         """Returns sample rate assigned to object and gives default tuner value.
         range is between 1.0 and 3.2 MHz
         """
+        if self.__sdr_type == 'AirSpy':
+            sample_rate = self.__sdr.getSampleRate(SOAPY_SDR_RX, 0)
+        elif self.__sdr_type == 'NooElec':
+            sample_rate = self.__sdr.sample_rate
         if bprintout:
             print ('Default sample rate: 2.4MHz')
             print ('Current sample rate: ' + str(self.__sdr.sample_rate / 1e6) + 'MHz')
-        return self.__sdr.sample_rate
+        return sample_rate
 
     def set_freqtx(self, freqtx_list):
         """ Defines the frequencies on which the beacons transmit power
@@ -211,7 +229,6 @@ class RfEar(object):
         :return: number of transceiver
         """
         return self.__numoftx
-
 
     def set_txpos(self, txpos):
         """ Set transceiver positions
@@ -243,10 +260,15 @@ class RfEar(object):
 
         :return: freq_sorted, pxx_density_sorted
         """
-        samples = self.get_sdr_iq_sample()
+        if self.__sdr_type == 'AirSpy':
+            self.get_sdr_iq_sample()
+            # FFT
+            freq, pxx_den = signal.periodogram(self.__buff, fs=self.get_sdr_samplingrate(), nfft=1024)
 
-        # FFT
-        freq, pxx_den = signal.periodogram(samples, fs=self.get_sdr_samplingrate(), nfft=1024)
+        elif self.__sdr_type == 'NooElec':
+            samples = self.get_sdr_iq_sample()
+            # FFT
+            freq, pxx_den = signal.periodogram(samples, fs=self.get_sdr_samplingrate(), nfft=1024)
 
         # sort the data to get increasing frequencies
         freq_sorted = np.concatenate((freq[len(freq) / 2:], freq[:len(freq) / 2]), axis=0)
@@ -499,7 +521,7 @@ class RfEar(object):
 
         """ setup plot properties """
 
-        plt.axis([center_freq - 1.1e6, center_freq + 1.1e6, -120, 0])
+        plt.axis([center_freq - 1.1e6, center_freq + 1.1e6, -140, 0])
         xlabels = np.linspace((center_freq-1.0e6)/1e6,
                               (center_freq+1.0e6)/1e6, 21)
         plt.xticks(np.linspace(min(x), max(x), 21), xlabels, rotation='vertical')
@@ -514,6 +536,8 @@ class RfEar(object):
                 # Busy-wait for keyboard interrupt (Ctrl+C)
                 freq, pxx_den = self.get_power_density_spectrum()
                 line1.set_ydata(10*np.log10(pxx_den))
+
+                # self.__sdr.setGain(SOAPY_SDR_RX, 0, (self.__sdr.getGain(SOAPY_SDR_RX, 0)+1))
 
                 # @todo annotations on the frequency peaks
                 # if known_freqtx > 0:
@@ -569,7 +593,7 @@ class RfEar(object):
                 for i in range(numoftx):
                     plt.plot(rss[i, firstdata:-1], str(colorvec[i])+'.-',
                              label="Freq = " + str(round(freq_found[i] / 1e6, 2)) + ' MHz' + '@ ' + str(round(rss[i, -1], 2)) + 'dBm')
-                plt.ylim(-120, 10)
+                plt.ylim(-140, 10)
                 plt.ylabel('RSS [dB]')
                 plt.grid()
                 plt.legend(loc='upper right')

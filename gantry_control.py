@@ -10,7 +10,7 @@ import sys
 
 
 class GantryControl(object):
-    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, 500], use_gui=False):  # [x0 ,x1, y0, y1]
+    def __init__(self, gantry_dimensions=[0, 3000, 0, 1580, 0, 500], use_gui=False, sdr_type='NooElec'):  # [x0 ,x1, y0, y1]
         self.__dimensions = gantry_dimensions
         self.__gantry_pos = [0, 0, 0]  # initial position after start
         self.__target_wp_mmrad = []
@@ -26,6 +26,8 @@ class GantryControl(object):
         self.__oScX = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2000e3)
         self.__oScY = sc.MotorCommunication('/dev/ttyS1', 'spindle_drive', 19200, 'spindle', 1600, 945800)
         self.__oScZ = sc.MotorCommunication('/dev/ttyUSB2', 'tread_drive', 19200, 'threadedrod', 700, 7590)  # USB0 / USB1 / USB2 ...
+
+        self.__sdr_type = sdr_type
 
         self.__starttime = []
 
@@ -568,7 +570,7 @@ class GantryControl(object):
         return True
 
     def start_field_measurement_file_select(self):
-        #read data from waypoint file
+        # read data from waypoint file
 
         wplist_filename = hc_tools.select_file()
         print(wplist_filename)
@@ -577,7 +579,6 @@ class GantryControl(object):
         print(measdata_filename)
 
         meas_description = hc_tools.write_descrition()
-        print(meas_description)
 
         self.start_RfEar()
         freqtx, numtx, tx_abs_pos = self.__oRf.get_txparams()
@@ -593,7 +594,7 @@ class GantryControl(object):
         """
         print('Process Measurement Sequence started')
         # read data from waypoint file
-        #wplist_filename = hc_tools.select_file()
+        # wplist_filename = hc_tools.select_file()
 
         """
         with open(wplist_filename, 'r') as wpfile:
@@ -705,6 +706,7 @@ class GantryControl(object):
             totnumofwp = totnumofwp[0]
             print ('Number of waypoints = ' + str(totnumofwp) + '\n')
 
+<<<<<<< HEAD
             z_meas = [300.0]
             import Tkinter
             import tkMessageBox
@@ -771,6 +773,59 @@ class GantryControl(object):
                             print ('Error: Failed to move gantry to new way-point!')
                             print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y= '
                                    + str(new_target_wp[1])) + ' @ position z= ' + str(new_target_wp[2])
+=======
+            # loop over all way-points
+            for row in wp_data_mat:
+
+                numwp = int(row[0])
+                new_target_wpx = row[1]
+                new_target_wpy = row[2]
+                new_target_wpz = row[3]
+                new_target_wp = [new_target_wpx, new_target_wpy, new_target_wpz]  # find a solution for this ugly workaround...
+                meastime = row[4]
+
+                # estimate time left for plot title
+                if numwp == 0:
+                    starttime = float(t.time())
+                    t_left_h = 0
+                    t_left_m = 0
+                    t_left_s = 0
+                else:
+                    time_per_point = (float(t.time()) - starttime) / (numwp + 1)  # as numwp starts at 0
+                    time_left_sec = time_per_point * (totnumofwp-numwp+1)
+                    m, t_left_s = divmod(time_left_sec, 60)
+                    t_left_h, t_left_m = divmod(m, 60)
+
+                if self.transmit_wp_to_gantry(new_target_wp):
+                    if self.move_gantry_to_target():
+                        if self.confirm_arrived_at_target_wp():
+                            t.sleep(.25)  # wait to damp motion/oscillation of antenna etc
+
+                            print('START Measurement for ' + str(meastime) + 's')
+                            print('Measuring at Way-Point #' + str(numwp+1) + ' of ' + str(totnumofwp) + ' way-points')
+                            ax.scatter(new_target_wp[0], new_target_wp[1], zs=new_target_wp[2], c='gold')
+                            temp_meas_title = 'Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +'- Time left: %d:%02d:%02d' % (t_left_h, t_left_m, t_left_s)
+                            ax.set_title(temp_meas_title, loc='left')
+                            # dataseq = self.__oCal.take_measurement(meastime)
+                            dataseq = self.__oRf.take_measurement(meastime)
+
+                            [nummeas, numtx] = np.shape(dataseq)
+
+                            # way point data - structure 'wp_x, wp_y, wp_a, num_wp, num_tx, num_meas'
+                            str_base_data = str(new_target_wp[0]) + ' ' + str(new_target_wp[1]) + ' ' + str(new_target_wp[2]) + ' ' + str(numwp) + ' ' + str(numtx) + ' ' + str(nummeas) + ' '
+                            # freq data
+                            str_freqs = ' '.join(map(str, freqtx)) + ' '
+
+                            # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
+                            # print('data ' + str(dataseq))
+                            str_rss = ''
+                            #print(dataseq)
+                            for i in range(numtx):
+                                str_rss = str_rss + ' '.join(map(str, np.matrix.round(dataseq[:, i], decimals=3))) + ' '
+
+                            measfile.write(str_base_data + str_freqs + str_rss + '\n')
+                            # print(str_base_data + str_freqs + str_rss)
+>>>>>>> b2b3201f4641aa89192bce3d513da0f463306ce0
 
                     else:
                         print ('Error: Failed to transmit new way-point to gantry!')
@@ -789,9 +844,7 @@ class GantryControl(object):
     def start_RfEar(self, center_freq=434.2e6, freqspan=1e5):
         import rf
 
-        sdr_type = 'NooElec'  # 'AirSpy' / 'NooElec'
-
-        self.__oRf = rf.RfEar(sdr_type, center_freq, freqspan)
+        self.__oRf = rf.RfEar(self.__sdr_type, center_freq, freqspan)
 
         freq6tx = [434.325e6, 433.89e6, 434.475e6, 434.025e6, 434.62e6, 434.175e6]
 
