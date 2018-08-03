@@ -705,69 +705,79 @@ class GantryControl(object):
             totnumofwp = totnumofwp[0]
             print ('Number of waypoints = ' + str(totnumofwp) + '\n')
 
-            # loop over all way-points
-            for row in wp_data_mat:
+            z_meas = [300.0]
+            import Tkinter
+            import tkMessageBox
 
-                numwp = int(row[0])
-                new_target_wpx = row[1]
-                new_target_wpy = row[2]
-                new_target_wpz = row[3]
-                new_target_wp = [new_target_wpx, new_target_wpy, new_target_wpz]  # find a solution for this ugly workaround...
-                meastime = row[4]
+            for z in z_meas:
+                tkMessageBox.showinfo("Information", "Schicht ist fertig gemessen. Bitte Z-Achse auf " + str(z) + "mm stellen und bestaetigen...")
 
-                # estimate time left for plot title
-                if numwp == 0:
-                    starttime = float(t.time())
-                    t_left_h = 0
-                    t_left_m = 0
-                    t_left_s = 0
-                else:
-                    time_per_point = (float(t.time()) - starttime) / (numwp + 1)  # as numwp starts at 0
-                    time_left_sec = time_per_point * (totnumofwp-numwp+1)
-                    m, t_left_s = divmod(time_left_sec, 60)
-                    t_left_h, t_left_m = divmod(m, 60)
+                # loop over all way-points
+                for row in wp_data_mat:
 
-                if self.transmit_wp_to_gantry(new_target_wp):
-                    if self.move_gantry_to_target():
-                        if self.confirm_arrived_at_target_wp():
-                            t.sleep(.25)  # wait to damp motion/oscillation of antenna etc
+                    numwp = int(row[0])
+                    new_target_wpx = row[1]
+                    new_target_wpy = row[2]
+                    new_target_wpz = row[3]
+                    new_target_wp = [new_target_wpx, new_target_wpy, new_target_wpz]  # find a solution for this ugly workaround...
+                    meastime = row[4]
 
-                            print('START Measurement for ' + str(meastime) + 's')
-                            print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
-                            ax.scatter(new_target_wp[0], new_target_wp[1], zs=new_target_wp[2], c='gold')
-                            temp_meas_title = 'Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +'- Time left: %d:%02d:%02d' % (t_left_h, t_left_m, t_left_s)
-                            ax.set_title(temp_meas_title, loc='left')
-                            # dataseq = self.__oCal.take_measurement(meastime)
-                            dataseq = self.__oRf.take_measurement(meastime)
+                    # estimate time left for plot title
+                    if numwp == 0:
+                        starttime = float(t.time())
+                        t_left_h = 0
+                        t_left_m = 0
+                        t_left_s = 0
+                    else:
+                        time_per_point = (float(t.time()) - starttime) / (numwp + 1)  # as numwp starts at 0
+                        time_left_sec = time_per_point * (totnumofwp-numwp+1)
+                        m, t_left_s = divmod(time_left_sec, 60)
+                        t_left_h, t_left_m = divmod(m, 60)
 
-                            [nummeas, numtx] = np.shape(dataseq)
+                    if self.transmit_wp_to_gantry(new_target_wp):
+                        if self.move_gantry_to_target():
+                            if self.confirm_arrived_at_target_wp():
+                                t.sleep(.25)  # wait to damp motion/oscillation of antenna etc
 
-                            # way point data - structure 'wp_x, wp_y, wp_a, num_wp, num_tx, num_meas'
-                            str_base_data = str(new_target_wp[0]) + ' ' + str(new_target_wp[1]) + ' ' + str(new_target_wp[2]) + ' ' + str(numwp) + ' ' + str(numtx) + ' ' + str(nummeas) + ' '
-                            # freq data
-                            str_freqs = ' '.join(map(str, freqtx)) + ' '
+                                print('START Measurement for ' + str(meastime) + 's')
+                                print('Measuring at Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points')
+                                ax.scatter(new_target_wp[0], new_target_wp[1], zs=new_target_wp[2], c='gold')
+                                temp_meas_title = 'Way-Point #' + str(numwp) + ' of ' + str(totnumofwp) + ' way-points ' +'- Time left: %d:%02d:%02d' % (t_left_h, t_left_m, t_left_s)
+                                ax.set_title(temp_meas_title, loc='left')
+                                # dataseq = self.__oCal.take_measurement(meastime)
+                                dataseq = self.__oRf.take_measurement(meastime)
 
-                            # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
-                            # print('data ' + str(dataseq))
-                            str_rss = ''
-                            #print(dataseq)
-                            for i in range(numtx):
-                                str_rss = str_rss + ' '.join(map(str, np.matrix.round(dataseq[:, i], decimals=3))) + ' '
+                                [nummeas, numtx] = np.shape(dataseq)
 
-                            measfile.write(str_base_data + str_freqs + str_rss + '\n')
-                            # print(str_base_data + str_freqs + str_rss)
+                                # way point data - structure 'wp_x, wp_y, wp_a, num_wp, num_tx, num_meas'
+                                # str_base_data = str(new_target_wp[0]) + ' ' + str(new_target_wp[1]) + ' ' + str(new_target_wp[2]) + ' ' + str(numwp) + ' ' + str(numtx) + ' ' + str(nummeas) + ' '
+
+                                str_base_data = str(new_target_wp[0]) + ' ' + str(new_target_wp[1]) + ' ' + str(z) + ' ' + str(numwp) + ' ' + str(numtx) + ' ' + str(nummeas) + ' '
+
+                                # freq data
+                                str_freqs = ' '.join(map(str, freqtx)) + ' '
+
+                                # rss data - str_rss structure: 'ftx1.1, ftx1.2, [..] ,ftx1.n, ftx2.1, ftx2.2, [..], ftx2.n
+                                # print('data ' + str(dataseq))
+                                str_rss = ''
+                                #print(dataseq)
+                                for i in range(numtx):
+                                    str_rss = str_rss + ' '.join(map(str, np.matrix.round(dataseq[:, i], decimals=3))) + ' '
+
+                                measfile.write(str_base_data + str_freqs + str_rss + '\n')
+                                # print(str_base_data + str_freqs + str_rss)
+
+                        else:
+                            print ('Error: Failed to move gantry to new way-point!')
+                            print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y= '
+                                   + str(new_target_wp[1])) + ' @ position z= ' + str(new_target_wp[2])
 
                     else:
-                        print ('Error: Failed to move gantry to new way-point!')
+                        print ('Error: Failed to transmit new way-point to gantry!')
                         print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y= '
-                               + str(new_target_wp[1])) + ' @ position a= ' + str(new_target_wp[2])
-
-                else:
-                    print ('Error: Failed to transmit new way-point to gantry!')
-                    print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y= '
-                           + str(new_target_wp[1])) + ' @ position a= ' + str(new_target_wp[2])
-                plt.pause(0.001)
-                print
+                               + str(new_target_wp[1])) + ' @ position z= ' + str(new_target_wp[2])
+                    plt.pause(0.001)
+                    print
             measfile.close()
 
             self.__oScX.close_port()

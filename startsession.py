@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from os import path
 
-wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_01_test_grid_meas_0deg_d50_2sec_no1.txt')
+wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_02_grid_meas_0deg_d50_2sec_no1.txt')
 
-x0 = [1800, 800, 0]
-xn = [2100, 1100, 0]
+x0 = [600, 500, 0]
+xn = [3000, 1200, 0]
 dxdyda = [50, 50, 0]
 rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
 

@@ -9,7 +9,7 @@ class MotorCommunication(object):
         self.__portname = portname
         self.__name = name
         self.__isdummy = False
-        # "isdummy = True" is for emulation of non connected drives -> gui can run with less drives
+        # "isdummy = True" is for emulation of non connected drives -> gui can run with less drives attached
         self.__baudrate = baudrate
         self.__drivetype = drivetype
         self.__travelling_distance_mmrad = float(travelling_distance_mmrad)
