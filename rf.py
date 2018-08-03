@@ -43,7 +43,7 @@ class RfEar(object):
                 print(freqRange)
 
             # apply settings
-            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo testweise! ursp. 1e6
+            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo test! initially 1e6 within sample AirSpy Program
             self.__sdr.setFrequency(SOAPY_SDR_RX, 0, center_freq)
             self.__sdr.setGain(SOAPY_SDR_RX, 0, 10)
 
