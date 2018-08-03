@@ -5,21 +5,13 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from os import path
 
-<<<<<<< HEAD
-wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_02_grid_meas_0deg_d50_2sec_no1.txt')
+wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_03_grid_meas_0deg_d20_2sec_no1.txt')
 
 x0 = [600, 500, 0]
-xn = [3000, 1200, 0]
-dxdyda = [50, 50, 0]
-rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
-=======
-wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_02_test_grid_meas_0deg_d0_2sec_no1.txt')
->>>>>>> b2b3201f4641aa89192bce3d513da0f463306ce0
+xn = [3000, 1180, 0]
+dxdyda = [20, 20, 0]
 
-x0 = [0, 0, 0]
-xn = [0, 0, 0]
-dxdyda = [0, 0, 0]
-sdr_type = 'AirSpy'  # 'AirSpy' / 'NooElec'
+sdr_type = 'NooElec'  # 'AirSpy' / 'NooElec'
 
 rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
 

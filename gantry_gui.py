@@ -26,7 +26,7 @@ class GantryControllerObj(object):
     def __init__(self):
 
         use_gui = True
-        sdr_type = 'AirSpy'  # sdr_type can be: 'AirSpy', 'NooElec'
+        sdr_type = 'NooElec'  # sdr_type can be: 'AirSpy', 'NooElec'
 
         self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, 500], use_gui, sdr_type)
         self.__oBelt = self.__gt.get_serial_x_handle()
