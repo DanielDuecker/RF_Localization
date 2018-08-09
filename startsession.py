@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from os import path
 
-wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_03_grid_meas_0deg_d20_2sec_no1.txt')
+wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_07_grid_meas_0deg_d50_2sec_no1.txt')
 
 x0 = [600, 500, 0]
-xn = [3000, 1180, 0]
-dxdyda = [20, 20, 0]
+xn = [3000, 1150, 0]
+dxdyda = [50, 50, 0]
 
 sdr_type = 'NooElec'  # 'AirSpy' / 'NooElec'
 
@@ -32,7 +32,7 @@ tx_6pos = [[770, 432, 0],
 
 # Rf.set_samplesize(32)
 
-Rf.plot_power_spectrum_density()
+# Rf.plot_power_spectrum_density()
 # Rf.plot_txrss_live()
 
 

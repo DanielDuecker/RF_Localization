@@ -706,7 +706,7 @@ class GantryControl(object):
             totnumofwp = totnumofwp[0]
             print ('Number of waypoints = ' + str(totnumofwp) + '\n')
 
-            z_meas = [0.0, 25.0, 50.0, 75.0, 100.0, 150.0, 200.0, 250.0, 300.0]
+            z_meas = [0.0]
             import Tkinter
             import tkMessageBox
 
@@ -772,7 +772,10 @@ class GantryControl(object):
                             print ('Error: Failed to move gantry to new way-point!')
                             print ('Way-point #' + str(numwp) + ' @ position x= ' + str(new_target_wp[0]) + ', y= '
                                    + str(new_target_wp[1])) + ' @ position z= ' + str(new_target_wp[2])
+                        plt.pause(0.001)
+                        print
 
+            '''
             # loop over all way-points
             for row in wp_data_mat:
 
@@ -831,6 +834,7 @@ class GantryControl(object):
                                + str(new_target_wp[1])) + ' @ position z= ' + str(new_target_wp[2])
                     plt.pause(0.001)
                     print
+            '''
             measfile.close()
 
             self.__oScX.close_port()
