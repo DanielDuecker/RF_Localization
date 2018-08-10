@@ -25,7 +25,7 @@ class GantryControl(object):
 
         self.__oScX = sc.MotorCommunication('/dev/ttyS0', 'belt_drive', 115200, 'belt', 3100, 2000e3)
         self.__oScY = sc.MotorCommunication('/dev/ttyS1', 'spindle_drive', 19200, 'spindle', 1600, 945800)
-        self.__oScZ = sc.MotorCommunication('/dev/ttyUSB2', 'tread_drive', 19200, 'threadedrod', 700, 7590)  # USB0 / USB1 / USB2 ...
+        self.__oScZ = sc.MotorCommunication('/dev/ttyUSB0', 'tread_drive', 19200, 'threadedrod', 700, 7590)  # USB0 / USB1 / USB2 ...
 
         self.__sdr_type = sdr_type
 
@@ -111,7 +111,7 @@ class GantryControl(object):
         return True
 
     def set_new_max_speed_z(self, max_speed):
-        rod_speed_limit = 101
+        rod_speed_limit = 1000
         if max_speed > rod_speed_limit:
             print('Warning: Not able to set max rod speed to '+str(max_speed)+' limit is ' + str(rod_speed_limit) + '!!!')
             return True
