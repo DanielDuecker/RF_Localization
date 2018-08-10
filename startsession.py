@@ -5,17 +5,21 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from os import path
 
+<<<<<<< HEAD
 wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_02_grid_meas_0deg_d50_2sec_no1.txt')
+=======
+wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_07_grid_meas_0deg_d50_2sec_no1.txt')
+>>>>>>> 7aeddf90b11b28fb02d6f1b0ff9d1c536a9bdba4
 
 x0 = [600, 500, 0]
-xn = [3000, 1200, 0]
+xn = [3000, 1150, 0]
 dxdyda = [50, 50, 0]
+<<<<<<< HEAD
 rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
+=======
+>>>>>>> 7aeddf90b11b28fb02d6f1b0ff9d1c536a9bdba4
 
-x0 = [0, 0, 0]
-xn = [0, 0, 0]
-dxdyda = [0, 0, 0]
-sdr_type = 'AirSpy'  # 'AirSpy' / 'NooElec'
+sdr_type = 'NooElec'  # 'AirSpy' / 'NooElec'
 
 rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
 
@@ -36,7 +40,7 @@ tx_6pos = [[770, 432, 0],
 
 # Rf.set_samplesize(32)
 
-Rf.plot_power_spectrum_density()
+# Rf.plot_power_spectrum_density()
 # Rf.plot_txrss_live()
 
 
