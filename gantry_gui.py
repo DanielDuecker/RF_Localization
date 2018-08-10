@@ -111,7 +111,7 @@ class StartPage(Tk.Frame):
 
         def get_position(obj):
             pos_x_mm, pos_y_mm, pos_z_rad = self.__gt.get_gantry_pos_xyz_mmrad()
-            obj.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round(float(pos_z_rad), 4)) + ' mm' + str(round(t.time(), 2)))
+            obj.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nZ = ' + str(round(float(pos_z_rad), 4)) + ' mm' + str(round(t.time(), 2)))
             return True
 
         button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position(self))
@@ -340,6 +340,8 @@ class PageOne(Tk.Frame):
         entry_max_speed_rod.grid(row=5, column=1, padx=10)
         button_max_speed_rod = ttk.Button(self, text='set max Speed Rod (<=101!)', command=lambda: self.__gt.set_new_max_speed_z(1 * abs(int(entry_max_speed_rod.get()))))
         button_max_speed_rod.grid(row=5, column=2, sticky='W', pady=4)
+
+
 
 
 app = GantryGui()

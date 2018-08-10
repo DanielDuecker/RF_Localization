@@ -47,7 +47,7 @@ def wp_generator(wp_filename, x0=[0, 0, 0], xn=[1200, 1200, 0], grid_dxdyda=[50,
     ypos = np.linspace(starty, endy, stepy)
     zpos = np.linspace(startz, endz, stepz)
 
-    wp_matx, wp_maty, wp_matz = np.meshgrid(xpos, ypos, zpos)
+    wp_maty, wp_matz, wp_matx = np.meshgrid(ypos, zpos, xpos)  # put least moving axis second, then first, then last
     wp_vecx = np.reshape(wp_matx, (len(xpos)*len(ypos)*len(zpos), 1))
     wp_vecy = np.reshape(wp_maty, (len(ypos)*len(zpos)*len(xpos), 1))
     wp_vecz = np.reshape(wp_matz, (len(zpos)*len(xpos)*len(ypos), 1))
