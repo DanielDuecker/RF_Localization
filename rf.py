@@ -43,12 +43,13 @@ class RfEar(object):
                 print(freqRange)
 
             # apply settings
-            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo test! initially 1e6 within sample AirSpy Program
+            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo test! initially 1e6 then 2.048e6 within sample AirSpy Program
             self.__sdr.setFrequency(SOAPY_SDR_RX, 0, center_freq)
-            self.__sdr.setGain(SOAPY_SDR_RX, 0, 10)
+            self.__sdr.setGain(SOAPY_SDR_RX, 0, 15)
 
             # setup a stream (complex floats)
-            self.__rxStream = self.__sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32)
+            self.__rxStream = self.__sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, [0])
+            t.sleep(1)
             self.__sdr.activateStream(self.__rxStream)  # start streaming
 
             # create a re-usable buffer for rx samples
@@ -155,8 +156,8 @@ class RfEar(object):
         if self.__sdr_type == 'AirSpy':
             self.__sdr.deactivateStream(self.__rxStream)  # stop streaming
             self.__sdr.activateStream(self.__rxStream)  # start streaming
-            plt.pause(0.001)
-            self.__sdr.readStream(self.__rxStream, [self.__buff], len(self.__buff))
+            plt.pause(0.01)
+            sr = self.__sdr.readStream(self.__rxStream, [self.__buff], len(self.__buff), 32)
             return
         elif self.__sdr_type == 'NooElec':
             iq_sample = self.__sdr.read_samples(self.__samplesize * 1024)
