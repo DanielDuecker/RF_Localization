@@ -755,10 +755,11 @@ class GantryControl(object):
                             for i in range(numtx):
                                 str_rss = str_rss + ' '.join(map(str, np.matrix.round(dataseq[:, i], decimals=3))) + ' '
 
-                            if numwp % 2000 == 0 and not numwp == 0:
+                            if numwp % 1000 == 0 and not numwp == 0:
+                                # Creating a new file for every X measurements for faster writing times
                                 measfile.close()
-                                meas_multis = numwp / 2000
-                                measfile = open(measdata_filename[:-4]+str(meas_multis)+'.txt', 'w')
+                                meas_multis = numwp / 1000
+                                measfile = open(measdata_filename[:-4]+str(meas_multis)+'k.txt', 'w')
                             measfile.write(str_base_data + str_freqs + str_rss + '\n')
                             # print(str_base_data + str_freqs + str_rss)
 
@@ -777,8 +778,16 @@ class GantryControl(object):
 
         return True
 
-    def start_RfEar(self, center_freq=434.2e6, freqspan=1e5):
+    def start_RfEar(self, freqspan=1e5):  # center freq Nooelec
         import rf
+
+        if self.__sdr_type == 'NooElec':
+            center_freq = 434.2e6
+        elif self.__sdr_type =='AirSpy':
+            center_freq = 434.0e6
+        else:
+            print '~~~~~ UNKNOWN SDR-DEVICE-TYPE -> check type input'
+            quit()
 
         self.__oRf = rf.RfEar(self.__sdr_type, center_freq, freqspan)
 

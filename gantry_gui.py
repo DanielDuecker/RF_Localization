@@ -28,7 +28,7 @@ class GantryControllerObj(object):
         use_gui = True
         sdr_type = 'NooElec'  # sdr_type can be: 'AirSpy', 'NooElec'
 
-        self.__gt = gantry_control.GantryControl([0, 3000, 0, 1580, 0, 500], use_gui, sdr_type)
+        self.__gt = gantry_control.GantryControl([0, 3100, 0, 1600, 0, 600], use_gui, sdr_type)
         self.__oBelt = self.__gt.get_serial_x_handle()
         self.__oSpindle = self.__gt.get_serial_y_handle()
         self.__oRod = self.__gt.get_serial_z_handle()
@@ -111,7 +111,7 @@ class StartPage(Tk.Frame):
 
         def get_position(obj):
             pos_x_mm, pos_y_mm, pos_z_rad = self.__gt.get_gantry_pos_xyz_mmrad()
-            obj.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nZ = ' + str(round(float(pos_z_rad), 4)) + ' mm' + str(round(t.time(), 2)))
+            obj.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nZ = ' + str(round(float(pos_z_rad), 4)) + ' mm')
             return True
 
         button_gantry_position = ttk.Button(self, text='Update Position', command=lambda: get_position(self))
