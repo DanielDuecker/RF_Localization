@@ -160,7 +160,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
     if b_onboard is True:
         measdata_filename = measfilename
     else:
-        measdata_filename = hc_tools.select_file()  # 123???todo
+        measdata_filename = hc_tools.select_file()
 
     with open(measdata_filename, 'r') as measfile:
         load_description = True
@@ -223,7 +223,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 # read tx frequencies
                 freqtx_list = []
                 for itx in range(numtx):
-                    freqtx_list.append(txdata[2*numtx+itx])  # urspruenglich (txdata[2*numtx+itx]) # todo change to 3*numtx for 3D
+                    freqtx_list.append(txdata[3*numtx+itx])  # urspruenglich (txdata[2*numtx+itx]) # todo change to 3*numtx for 3D
                 freqtx = np.asarray(freqtx_list)
 
                 # print out
@@ -253,6 +253,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 zpos = np.linspace(startz, endz, stepz)
 
                 wp_matx, wp_maty, wp_matz = np.meshgrid(xpos, ypos, zpos)
+                # todo Attention! Different meshgrid in waypoint creation! Change if necessary...
 
                 # print(xpos)
 
@@ -304,8 +305,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
         measfile.close()
 
-        # data_shape = [data_shape_file[0], data_shape_file[1], data_shape_file[2]]  # data_shape: n_x, n_y, n_a
-        data_shape = [data_shape_file[1], data_shape_file[0], data_shape_file[2]]  # data_shape: n_x, n_y, n_a
+        # data_shape = [data_shape_file[0], data_shape_file[1], data_shape_file[2]]  # data_shape: n_x, n_y, n_z
+        data_shape = [data_shape_file[1], data_shape_file[0], data_shape_file[2]]  # data_shape: n_x, n_y, n_z
         plotdata_mat = np.asarray(plotdata_mat_lis)
 
         """
@@ -357,7 +358,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             x = plotdata_mat[:, 0]
             y = plotdata_mat[:, 1]
 
-            plot_fig0 = True
+            plot_fig0 = False
             if plot_fig0:  # 2D contour plot
                 fig = plt.figure(0)
                 for itx in analyze_tx:
@@ -586,7 +587,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_xlabel('Distance to tx [mm]')
                     ax.set_ylabel('Error [mm]')
 
-            plot_fig7 = False
+            plot_fig7 = True
             ''' Polar Directional Diagrams for Antenna measurements '''
             if plot_fig7:
                 fig = plt.figure(7)
@@ -601,9 +602,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     rss_max_index = np.where(plotdata_mat[:, 3+itx] == rss_max)
 
                     rss_min = plotdata_mat[:, 3+itx].min()
+                    rss_min_index = np.where(plotdata_mat[:, 3 + itx] == rss_min)
 
                     rss_hpbw = rss_max - 3
-                    rss_hpbw_indexes = np.where(plotdata_mat[:, 3+itx] > rss_hpbw)
 
                     itx_2 = rss_max_index[0][0]
                     while plotdata_mat[itx_2, 3 + itx] > rss_hpbw:
@@ -626,17 +627,63 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     if abs(rss_hpbw_positiveitx_rss - rss_hpbw_negativeitx_rss) > 0.5:
                         print('~~~~~> Possible ERROR: HPBW-RSS-measurements are far apart: ' + str(abs(rss_hpbw_positiveitx_rss - rss_hpbw_negativeitx_rss)))
 
-                    print('HPBW: ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)) + ' rad / ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)*180/np.pi) + ' deg')
+                    print('HPBW No1: ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)) + ' rad / ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)*180/np.pi) + ' deg')
+
+                    pot_max_2 = 2*rss_min_index[0][0] - rss_max_index[0][0]
+                    if pot_max_2 < 0:
+                        pot_max_2 += totnumwp
+                    if pot_max_2 >= totnumwp:
+                        pot_max_2 -= totnumwp
+
+                    itx_3 = 0
+                    if plotdata_mat[pot_max_2, 3+itx] < plotdata_mat[pot_max_2 + 1, 3+itx]:
+                        itx_3 += 1
+                        while plotdata_mat[pot_max_2 + itx_3, 3+itx] < plotdata_mat[pot_max_2 + itx_3 + 1, 3+itx]:
+                            itx_3 += 1
+                    else:
+                        itx_3 -= 1
+                        while plotdata_mat[pot_max_2 + itx_3, 3+itx] < plotdata_mat[pot_max_2 + itx_3 - 1, 3+itx]:
+                            itx_3 -= 1
+
+                    rss_max_2 = plotdata_mat[pot_max_2 + itx_3, 3+itx]
+                    rss_max_2_index = np.where(plotdata_mat[:, 3 + itx] == rss_max_2)
+
+                    rss_hpbw_2 = rss_max_2 - 3
+
+                    itx_4 = rss_max_2_index[0][0]
+                    while plotdata_mat[itx_4, 3 + itx] > rss_hpbw_2:
+                        itx_4 += 1
+                        if itx_4 == totnumwp:
+                            itx_4 = 0
+                    else:
+                        rss_hpbw_2_positiveitx_rss = plotdata_mat[itx_4 - 1, 3 + itx]
+                        rss_hpbw_2_positiveitx_rad = plotdata_mat[itx_4 - 1, 2]
+
+                    itx_4 = rss_max_2_index[0][0]
+                    while plotdata_mat[itx_4, 3 + itx] > rss_hpbw_2:
+                        itx_4 -= 1
+                        if itx_4 == -1:
+                            itx_4 = totnumwp - 1
+                    else:
+                        rss_hpbw_2_negativeitx_rss = plotdata_mat[itx_4 + 1, 3 + itx]
+                        rss_hpbw_2_negativeitx_rad = plotdata_mat[itx_4 + 1, 2]
+
+                    if abs(rss_hpbw_2_positiveitx_rss - rss_hpbw_2_negativeitx_rss) > 0.5:
+                        print('~~~~~> Possible ERROR: HPBW-RSS-measurements are far apart: ' + str(
+                            abs(rss_hpbw_2_positiveitx_rss - rss_hpbw_2_negativeitx_rss)))
+
+                    print('HPBW No2: ' + str(abs(rss_hpbw_2_positiveitx_rad - rss_hpbw_2_negativeitx_rad)) + ' rad / ' + str(abs(rss_hpbw_2_positiveitx_rad - rss_hpbw_2_negativeitx_rad)*180/np.pi) + ' deg')
 
                     ax.plot(plotdata_mat[:, 2], plotdata_mat[:, 3+itx], label='Radiation Pattern')
                     ax.set_rmax(rss_max)
                     ax.set_rmin(rss_min)
-                    ax.set_rticks([rss_hpbw_positiveitx_rss, rss_max, rss_min])
-                    ax.set_rlabel_position(rss_hpbw_positiveitx_rad*180/np.pi)
+                    rticks = np.round(np.append(np.linspace(rss_min, rss_max, 5), rss_hpbw), 2)
+                    ax.set_rticks(rticks)  # or [rss_max, rss_min]
+                    ax.set_rlabel_position(65)
                     # ax.set_rticks([rss_hpbw_negativeitx_rss])  # <- alternative
                     # ax.set_rlabel_position(rss_hpbw_negativeitx_rad*180/np.pi)  # <- alternative
-                    ax.grid(True)
-                    ax.set_title('Radiation Pattern for TX# ' + str(itx + 1))
+
+                    # ax.set_title('Radiation Pattern for TX# ' + str(itx + 1), fontsize=20)
 
         plt.show()
 
