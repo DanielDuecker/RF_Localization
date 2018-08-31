@@ -778,20 +778,23 @@ class GantryControl(object):
 
         return True
 
-    def start_RfEar(self, freqspan=1e5):  # center freq Nooelec
+    def start_RfEar(self):  # center freq Nooelec
         import rf
 
         if self.__sdr_type == 'NooElec':
             center_freq = 434.2e6
+            freqspan = 1e5
         elif self.__sdr_type =='AirSpy':
             center_freq = 434.0e6
+            freqspan = 2e4
         else:
             print '~~~~~ UNKNOWN SDR-DEVICE-TYPE -> check type input'
             quit()
 
         self.__oRf = rf.RfEar(self.__sdr_type, center_freq, freqspan)
 
-        freq6tx = [434.325e6, 433.89e6, 434.475e6, 434.025e6, 434.62e6, 434.175e6]
+        # freq6tx = [434.325e6, 433.89e6, 434.475e6, 434.025e6, 434.62e6, 434.175e6]  # NooElec
+        freq6tx = [434.12e6, 433.96e6, 434.17e6, 434.02e6, 434.22e6, 434.07e6]  # AirSpy
 
         tx_6pos = [[770, 432, 0],
                    [1794, 437, 0],
