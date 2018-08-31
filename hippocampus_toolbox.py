@@ -38,7 +38,7 @@ def select_file(myFormats=[('Text file', '*.txt')]):
     return filename
 
 
-# ======== Select a directory:
+# ======== Writing a description for your file and pass it on:
 def write_descrition():
     root = Tkinter.Tk()
     root.withdraw()  # get rid of the tk-app window in the background

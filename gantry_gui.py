@@ -15,10 +15,11 @@ Before measurements:
 
 Before analysis:
 -check how many/ which antenna measurements are to be analysed and change tx_2_analyse variable list below accordingly
+-check "calibration_mode" within "rf_tools" and set accordingly
 """
 
-tx_2_analyse = [1]
-# tx_2_analyse = [1, 2, 3, 4, 5, 6]
+# tx_2_analyse = [1]
+tx_2_analyse = [1, 2, 3, 4, 5, 6]
 
 
 class GantryControllerObj(object):

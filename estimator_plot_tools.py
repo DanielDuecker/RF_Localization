@@ -134,6 +134,8 @@ class EKF_Plot(object):
             # if rsm_model_type == 'log':
             z_dist = 20 / (np.log(10) * alpha) * lambertw(
                     np.log(10) * alpha / 20 * np.exp(-np.log(10) / 20 * (rss + gamma)))
+
+            y_rss = -20 * np.log10(r_dist) - alpha * r_dist - gamma
             # elif rsm_model_type == 'lin':
             #    z_dist = (rss - gamma) / alpha
 
