@@ -301,7 +301,7 @@ class StartPage(Tk.Frame):
     def get_position(self):
 
         pos_x_mm, pos_y_mm, pos_z_rad = self.__gt.get_gantry_pos_xyz_mmrad()
-        self.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nA = ' + str(round(float(pos_z_rad), 4)) + ' mm')
+        self.__label_pos_xyz.configure(text='X = ' + str(int(pos_x_mm)) + ' mm \nY = ' + str(int(pos_y_mm)) + ' mm \nZ = ' + str(round(float(pos_z_rad), 4)) + ' mm')
         self.__label_pos_xyz.after(1000, self.get_position)  # update position every 1000ms
         return True
 

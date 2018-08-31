@@ -16,7 +16,7 @@ dxdyda = [50, 50, 50]
 
 sdr_type = 'AirSpy'  # 'AirSpy' / 'NooElec'
 
-rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
+# rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
 
 # rf_tools.analyze_measdata_from_file('lin')
 

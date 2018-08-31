@@ -45,7 +45,8 @@ class RfEar(object):
             # apply settings
             self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo test! initially 1e6 then 2.048e6 within sample AirSpy Program
             self.__sdr.setFrequency(SOAPY_SDR_RX, 0, center_freq)
-            self.__sdr.setGain(SOAPY_SDR_RX, 0, 15)
+            self.__sdr.setBandwidth(SOAPY_SDR_RX, 0, 1e6)
+            self.__sdr.setGain(SOAPY_SDR_RX, 0, 20)
 
             # setup a stream (complex floats)
             self.__rxStream = self.__sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, [0])
