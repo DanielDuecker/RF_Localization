@@ -160,7 +160,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
     if b_onboard is True:
         measdata_filename = measfilename
     else:
-        measdata_filename = hc_tools.select_file()  # 123???todo
+        measdata_filename = hc_tools.select_file()
 
     with open(measdata_filename, 'r') as measfile:
         load_description = True
@@ -223,7 +223,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 # read tx frequencies
                 freqtx_list = []
                 for itx in range(numtx):
-                    freqtx_list.append(txdata[2*numtx+itx])  # urspruenglich (txdata[2*numtx+itx]) # todo change to 3*numtx for 3D
+                    freqtx_list.append(txdata[3*numtx+itx])  # urspruenglich (txdata[2*numtx+itx]) # todo change to 3*numtx for 3D
                 freqtx = np.asarray(freqtx_list)
 
                 # print out
@@ -252,7 +252,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 ypos = np.linspace(starty, endy, stepy)
                 zpos = np.linspace(startz, endz, stepz)
 
-                wp_matx, wp_maty, wp_matz = np.meshgrid(xpos, ypos, zpos)
+                # wp_matx, wp_maty, wp_matz = np.meshgrid(xpos, ypos, zpos)
+                # todo Attention! Different meshgrid in waypoint creation! Change if necessary...
+                wp_maty, wp_matz, wp_matx = np.meshgrid(ypos, zpos,xpos)  # put least moving axis second, then first, then last
 
                 # print(xpos)
 
@@ -304,51 +306,64 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
         measfile.close()
 
-        # data_shape = [data_shape_file[0], data_shape_file[1], data_shape_file[2]]  # data_shape: n_x, n_y, n_a
-        data_shape = [data_shape_file[1], data_shape_file[0], data_shape_file[2]]  # data_shape: n_x, n_y, n_a
+        # data_shape = [data_shape_file[0], data_shape_file[1], data_shape_file[2]]  # data_shape: n_x, n_y, n_z
+        data_shape = [data_shape_file[1], data_shape_file[0], data_shape_file[2]]  # data_shape: n_x, n_y, n_z
         plotdata_mat = np.asarray(plotdata_mat_lis)
 
         """
-        Model fit ---> with 3D todo: change with compensation
+        Model fit
         """
         if model_type == 'log':
-            def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
+            def rsm_model(dist_rsm, lambda_rsm, gamma_rsm):
                 """Range Sensor Model (RSM) structure."""
-                return -20 * np.log10(dist_rsm) - alpha_rsm * dist_rsm - gamma_rsm  # rss in db
+                print(np.log10(directivities_t[itx] * directivity_r))
+                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(directivities_t[itx] * directivity_r)  # rss in db
 
-        elif model_type == 'lin':
-            def rsm_model(dist_rsm, alpha_rsm, gamma_rsm):
+        elif model_type == 'lin':  # todo: OLD: consider linearized Angles when use is desired
+            def rsm_model(dist_rsm, lambda_rsm, gamma_rsm):
                 """Range Sensor Model (RSM) structure."""
-                return alpha_rsm * dist_rsm + gamma_rsm  # rss in db
+                return lambda_rsm * dist_rsm + gamma_rsm  # rss in db
 
-        alpha = []
-        gamma = []
         rdist = []
+        directivities_t = [1.8]*6
+        directivity_r = 1.8
+        exps_n_t = [3.2]*6
+        exp_n_r = 3.2
+
+        calibration_mode = True  # True = measurement had a straight antenna and was performed on transmitter heights
+
+        if calibration_mode:
+            lambda_t = []
+            gamma_t = []
+        else:
+            lambda_t = []
+            gamma_t = []  # todo werte eintragen
 
         for itx in analyze_tx:
             rdist_vec = plotdata_mat[:, 0:3] - txpos[itx, 0:3]  # + [0, 0, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
-            # todo: previous line: change from 2 to 3 if z is introduced
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos| -> dim: num_meas x 1
 
-            rssdata = plotdata_mat[:, 3+itx]  # rss-mean for each wp
-            popt, pcov = curve_fit(rsm_model, rdist_temp, rssdata)
-            del pcov
+            if calibration_mode:
+                rssdata = plotdata_mat[:, 3+itx]  # rss-mean for each wp
+                popt, pcov = curve_fit(rsm_model, rdist_temp, rssdata)
+                del pcov
 
-            alpha.append(round(popt[0], 4))
-            gamma.append(round(popt[1], 4))
-            # print('tx #' + str(itx+1) + ' alpha= ' + str(alpha[itx]) + ' gamma= ' + str(gamma[itx]))
+                lambda_t.append(round(popt[0], 4))
+                gamma_t.append(round(popt[1], 4))
+                # print('tx #' + str(itx+1) + ' lambda= ' + str(lambda_t[itx]) + ' gamma= ' + str(gamma_t[itx]))
+
             rdist.append(rdist_temp)
 
         rdist_temp = np.reshape(rdist, [num_tx, totnumwp])
         if model_type == 'log':
             print('\nVectors for convenient copy/paste')
-            print('alpha_log = ' + str(alpha))
-            print('gamma_log = ' + str(gamma))
+            print('lambda_log = ' + str(lambda_t))
+            print('gamma_log = ' + str(gamma_t))
 
         elif model_type=='lin':
             print('\nVectors for convenient copy/paste')
-            print('alpha_lin = ' + str(alpha))
-            print('gamma_lin = ' + str(gamma))
+            print('lambda_lin = ' + str(lambda_t))
+            print('gamma_lin = ' + str(gamma_t))
 
         """
         Plots
@@ -377,7 +392,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
                     ax.errorbar(rdist[itx], plotdata_mat[:, 3 + itx], yerr=plotdata_mat[:, 3 + num_tx + itx],
                                 fmt='ro', markersize='1', ecolor='g', label='Original Data', zorder=1)
-                    ax.plot(rdata, rsm_model(rdata, alpha[itx], gamma[itx]), label='Fitted Curve', zorder=2)
+                    ax.plot(rdata, rsm_model(rdata, lambda_t[itx], gamma_t[itx]), label='Fitted Curve', zorder=2)
 
                     fig.subplots_adjust(hspace=0.4)
 
@@ -396,6 +411,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     rss_full_vec = np.reshape(rss_mat_ones, (len(xpos) * len(ypos) * len(zpos), 1))
 
                     measured_wp_list = np.reshape(measured_wp_list, (len(measured_wp_list), 1))
+                    measured_wp_list[:] -= measured_wp_list[0]  # In case that measurements have been selected manually and measurements are not the first ones -> first measurement is meas zero and so on
                     rss_mean = np.reshape(rss_mean, (len(rss_mean), 1))
 
                     rss_full_vec[measured_wp_list, 0] = rss_mean
@@ -408,7 +424,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     val_sequence = np.linspace(-100, -20, 80 / 5 + 1)
 
                     # CS = ax.contour(wp_matx[::2, ::2], wp_maty[::2, ::2], rss_full_mat[::2, ::2], val_sequence) # takes every second value
-                    CS = ax.contour(wp_matx[:, :, 0], wp_maty[:, :, 0], rss_full_mat[:, :, 0], val_sequence, cmap=plt.cm.jet, label='RSS Contours')
+                    CS = ax.contour(wp_matx[0, :, :], wp_maty[0, :, :], rss_full_mat[:, :, 0], val_sequence, cmap=plt.cm.jet, label='RSS Contours')
                     ax.clabel(CS, inline=0, fontsize=10)
 
                     for itx_plot in analyze_tx:
@@ -502,7 +518,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                                 fmt='ro',markersize='1', ecolor='g', label='Original Data')
 
                     rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
-                    ax.plot(rdata, rsm_model(rdata, alpha[itx], gamma[itx]), label='Fitted Curve')
+                    ax.plot(rdata, rsm_model(rdata, lambda_t[itx], gamma_t[itx]), label='Fitted Curve')
                     ax.legend(loc='upper right')
                     ax.grid()
                     ax.set_ylim([-110, -10])
@@ -526,7 +542,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                         pos = 111
                     ax = fig.add_subplot(pos)
                     rssdata = np.linspace(-10, -110, num=1000)
-                    ax.plot(rssdata, lambertloc(rssdata, alpha[itx], gamma[itx]), label='Fitted Curve')
+                    ax.plot(rssdata, lambertloc(rssdata, lambda_t[itx], gamma_t[itx]), label='Fitted Curve')
                     ax.plot(rss_mean, rdist, 'r.')
                     ax.grid()
                     ax.set_xlabel('RSS [dB]')
@@ -543,7 +559,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     rss_mean = np.array(rss_mean, dtype=float)
                     rss_var = np.array(rss_var, dtype=float)
 
-                    r_dist_est = lambertloc(rss_mean, alpha[itx], gamma[itx])
+                    r_dist_est = lambertloc(rss_mean, lambda_t[itx], gamma_t[itx])
                     sorted_indices = np.argsort(rdist)
                     r_dist_sort = rdist[sorted_indices]
                     r_dist_est_sort = r_dist_est[sorted_indices]
@@ -575,7 +591,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                         pos = 111
                     ax = fig.add_subplot(pos)
                     # rssdata = np.linspace(-10, -110, num=1000)
-                    # ax.plot(rssdata, lambertloc(rssdata, alpha[itx], gamma[itx]), label='Fitted Curve')
+                    # ax.plot(rssdata, lambertloc(rssdata, lambda_t[itx], gamma_t[itx]), label='Fitted Curve')
 
                     # ax.errorbar(bin[1:-1], bin_mean, yerr=bin_var, fmt='ro', ecolor='g', label='Original Data')
                     ax.plot(bin[1:-1], bin_mean, '.')
@@ -601,9 +617,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     rss_max_index = np.where(plotdata_mat[:, 3+itx] == rss_max)
 
                     rss_min = plotdata_mat[:, 3+itx].min()
+                    rss_min_index = np.where(plotdata_mat[:, 3 + itx] == rss_min)
 
                     rss_hpbw = rss_max - 3
-                    rss_hpbw_indexes = np.where(plotdata_mat[:, 3+itx] > rss_hpbw)
 
                     itx_2 = rss_max_index[0][0]
                     while plotdata_mat[itx_2, 3 + itx] > rss_hpbw:
@@ -626,21 +642,67 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     if abs(rss_hpbw_positiveitx_rss - rss_hpbw_negativeitx_rss) > 0.5:
                         print('~~~~~> Possible ERROR: HPBW-RSS-measurements are far apart: ' + str(abs(rss_hpbw_positiveitx_rss - rss_hpbw_negativeitx_rss)))
 
-                    print('HPBW: ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)) + ' rad / ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)*180/np.pi) + ' deg')
+                    print('HPBW No1: ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)) + ' rad / ' + str(abs(rss_hpbw_positiveitx_rad - rss_hpbw_negativeitx_rad)*180/np.pi) + ' deg')
+
+                    pot_max_2 = 2*rss_min_index[0][0] - rss_max_index[0][0]
+                    if pot_max_2 < 0:
+                        pot_max_2 += totnumwp
+                    if pot_max_2 >= totnumwp:
+                        pot_max_2 -= totnumwp
+
+                    itx_3 = 0
+                    if plotdata_mat[pot_max_2, 3+itx] < plotdata_mat[pot_max_2 + 1, 3+itx]:
+                        itx_3 += 1
+                        while plotdata_mat[pot_max_2 + itx_3, 3+itx] < plotdata_mat[pot_max_2 + itx_3 + 1, 3+itx]:
+                            itx_3 += 1
+                    else:
+                        itx_3 -= 1
+                        while plotdata_mat[pot_max_2 + itx_3, 3+itx] < plotdata_mat[pot_max_2 + itx_3 - 1, 3+itx]:
+                            itx_3 -= 1
+
+                    rss_max_2 = plotdata_mat[pot_max_2 + itx_3, 3+itx]
+                    rss_max_2_index = np.where(plotdata_mat[:, 3 + itx] == rss_max_2)
+
+                    rss_hpbw_2 = rss_max_2 - 3
+
+                    itx_4 = rss_max_2_index[0][0]
+                    while plotdata_mat[itx_4, 3 + itx] > rss_hpbw_2:
+                        itx_4 += 1
+                        if itx_4 == totnumwp:
+                            itx_4 = 0
+                    else:
+                        rss_hpbw_2_positiveitx_rss = plotdata_mat[itx_4 - 1, 3 + itx]
+                        rss_hpbw_2_positiveitx_rad = plotdata_mat[itx_4 - 1, 2]
+
+                    itx_4 = rss_max_2_index[0][0]
+                    while plotdata_mat[itx_4, 3 + itx] > rss_hpbw_2:
+                        itx_4 -= 1
+                        if itx_4 == -1:
+                            itx_4 = totnumwp - 1
+                    else:
+                        rss_hpbw_2_negativeitx_rss = plotdata_mat[itx_4 + 1, 3 + itx]
+                        rss_hpbw_2_negativeitx_rad = plotdata_mat[itx_4 + 1, 2]
+
+                    if abs(rss_hpbw_2_positiveitx_rss - rss_hpbw_2_negativeitx_rss) > 0.5:
+                        print('~~~~~> Possible ERROR: HPBW-RSS-measurements are far apart: ' + str(
+                            abs(rss_hpbw_2_positiveitx_rss - rss_hpbw_2_negativeitx_rss)))
+
+                    print('HPBW No2: ' + str(abs(rss_hpbw_2_positiveitx_rad - rss_hpbw_2_negativeitx_rad)) + ' rad / ' + str(abs(rss_hpbw_2_positiveitx_rad - rss_hpbw_2_negativeitx_rad)*180/np.pi) + ' deg')
 
                     ax.plot(plotdata_mat[:, 2], plotdata_mat[:, 3+itx], label='Radiation Pattern')
                     ax.set_rmax(rss_max)
                     ax.set_rmin(rss_min)
-                    ax.set_rticks([rss_hpbw_positiveitx_rss, rss_max, rss_min])
-                    ax.set_rlabel_position(rss_hpbw_positiveitx_rad*180/np.pi)
+                    rticks = np.round(np.append(np.linspace(rss_min, rss_max, 5), rss_hpbw), 2)
+                    ax.set_rticks(rticks)  # or [rss_max, rss_min]
+                    ax.set_rlabel_position(65)
                     # ax.set_rticks([rss_hpbw_negativeitx_rss])  # <- alternative
                     # ax.set_rlabel_position(rss_hpbw_negativeitx_rad*180/np.pi)  # <- alternative
-                    ax.grid(True)
-                    ax.set_title('Radiation Pattern for TX# ' + str(itx + 1))
+
+                    # ax.set_title('Radiation Pattern for TX# ' + str(itx + 1), fontsize=20)
 
         plt.show()
 
-    return alpha, gamma
+    return lambda_t, gamma_t
 
 
 """
