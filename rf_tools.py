@@ -160,25 +160,25 @@ def get_angle_v_on_plane(v_x, v_1main, v_2):
     return angle_x
 
 
-def get_angles(x_current, tx_pos, h_tx, z_mauv, h_mauv):
-    dh = h_mauv - h_tx
-    r = x_current - tx_pos
-    r_abs = np.linalg.norm(r)
-    phi_cap = np.arccos(r[0][0]/r_abs)
-    if r[1][0] <= 0.0:
-        phi_cap = 2*np.pi - phi_cap
-    theta_cap = np.arctan(dh / r_abs)
-    S_G_R = np.array([[np.cos(phi_cap), -np.sin(phi_cap), 0.0],
-                      [np.sin(phi_cap), np.cos(phi_cap), 0.0],
+def get_angles(x_current_anglecalc, tx_pos_anglecalc, h_tx_anglecalc, z_mauv_anglecalc, h_mauv_anglecalc):
+    dh_anglecalc = h_mauv_anglecalc - h_tx_anglecalc
+    r_anglecalc = x_current_anglecalc - tx_pos_anglecalc
+    r_abs_anglecalc = np.linalg.norm(r_anglecalc)
+    phi_cap_anglecalc = np.arccos(r_anglecalc[0][0]/r_abs_anglecalc)
+    if r_anglecalc[1][0] <= 0.0:
+        phi_cap_anglecalc = 2*np.pi - phi_cap_anglecalc
+    theta_cap_anglecalc = np.arctan(dh_anglecalc / r_abs_anglecalc)
+    S_G_R_anglecalc = np.array([[np.cos(phi_cap_anglecalc), -np.sin(phi_cap_anglecalc), 0.0],
+                      [np.sin(phi_cap_anglecalc), np.cos(phi_cap_anglecalc), 0.0],
                       [0.0, 0.0, 1.0]]).T
     # Transformationsmatrix um z & phi --- [0]=x_R.T, [1]=y_R.T, [2]=z_R.T
-    S_G_Rt = np.array([[np.cos(phi_cap) * np.cos(theta_cap), -np.sin(phi_cap), -np.cos(phi_cap) * np.sin(theta_cap)],
-                       [np.sin(phi_cap) * np.cos(theta_cap), np.cos(phi_cap), -np.sin(phi_cap) * np.sin(theta_cap)],
-                       [np.sin(theta_cap), 0.0, np.cos(theta_cap)]]).T
+    S_G_Rt_anglecalc = np.array([[np.cos(phi_cap_anglecalc) * np.cos(theta_cap_anglecalc), -np.sin(phi_cap_anglecalc), -np.cos(phi_cap_anglecalc) * np.sin(theta_cap_anglecalc)],
+                       [np.sin(phi_cap_anglecalc) * np.cos(theta_cap_anglecalc), np.cos(phi_cap_anglecalc), -np.sin(phi_cap_anglecalc) * np.sin(theta_cap_anglecalc)],
+                       [np.sin(theta_cap_anglecalc), 0.0, np.cos(theta_cap_anglecalc)]]).T
     # Transformationsmatrix um z & phi, dann y & theta --- [0]=x_Rt.T, [1]=y_Rt.T, [2]=z_Rt.T
-    psi_low = get_angle_v_on_plane(z_mauv, np.array(S_G_Rt[2])[np.newaxis].T, np.array(S_G_Rt[1])[np.newaxis].T)
-    theta_low = get_angle_v_on_plane(z_mauv, np.array(S_G_R[2])[np.newaxis].T, np.array(S_G_R[0])[np.newaxis].T)
-    return phi_cap, theta_cap, psi_low, theta_low
+    psi_low_anglecalc = get_angle_v_on_plane(z_mauv_anglecalc, np.array(S_G_Rt_anglecalc[2])[np.newaxis].T, np.array(S_G_Rt_anglecalc[1])[np.newaxis].T)
+    theta_low_anglecalc = get_angle_v_on_plane(z_mauv_anglecalc, np.array(S_G_R_anglecalc[2])[np.newaxis].T, np.array(S_G_R_anglecalc[0])[np.newaxis].T)
+    return phi_cap_anglecalc, theta_cap_anglecalc, psi_low_anglecalc, theta_low_anglecalc
 
 
 def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6],  meantype='db_mean', b_onboard=False, measfilename='path'):
@@ -334,7 +334,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     # print('var = ' + str(var))
                 wp_pos = np.array([meas_data_mat_line[0], meas_data_mat_line[1], meas_data_mat_line[2]])
 
-                antenna_orientation = np.array([[0], [0.34202014332], [0.93969262078]])  # todo: Enter antenna orientation for correct parameter calibration here!
+                antenna_orientation = np.array([[0.0], [0.64278760968], [0.76604444311]])
+                # antenna_orientation = np.array([[0.0], [0.0], [1.0]])
+                # antenna_orientation = np.array([[0], [0.34202014332], [0.93969262078]])  # todo: Enter antenna orientation for correct parameter calibration here!
                 wp_angles = [0.0]*num_tx*4
                 for itx in range(num_tx):
                     wp_angles[itx*4:itx*4+4] = get_angles(np.transpose(wp_pos[0:2][np.newaxis]), np.transpose(txpos[itx, 0:2][np.newaxis]), txpos[itx, 2], antenna_orientation, wp_pos[2])
@@ -357,17 +359,22 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             def rsm_model(rsm_params, lambda_rsm, gamma_rsm, n_t_rsm, n_r_rsm):
                 """Range Sensor Model (RSM) structure."""
                 dist_rsm, psi_low_rsm, theta_cap_rsm, theta_low_rsm = rsm_params
-                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(np.cos(psi_low_rsm)) + n_t_rsm * np.log10(np.cos(theta_cap_rsm)) + n_r_rsm * np.log10(np.cos(theta_cap_rsm + theta_low_rsm))  # rss in db
+                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(np.cos(abs(psi_low_rsm))) + n_t_rsm * np.log10(abs(np.cos(theta_cap_rsm))) + n_r_rsm * np.log10(abs(np.cos(theta_cap_rsm + theta_low_rsm)))  # rss in db
             '''
             def rsm_model(rsm_params, lambda_rsm, gamma_rsm, n_r_rsm):
                 """Range Sensor Model (RSM) structure."""
                 dist_rsm, psi_low_rsm, theta_cap_rsm, theta_low_rsm = rsm_params
-                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(np.cos(psi_low_rsm)) + n_r_rsm * np.log10(np.cos(theta_low_rsm))  # rss in db
+                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(np.cos(abs(psi_low_rsm))) + n_r_rsm * np.log10(abs(np.cos(theta_low_rsm)))  # rss in db
             '''
             def rsm_model(rsm_params, lambda_rsm, gamma_rsm, n_t_rsm):
                 """Range Sensor Model (RSM) structure."""
                 dist_rsm, theta_cap_rsm, psi_low_rsm, theta_low_rsm = rsm_params
-                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + n_t_rsm * np.log10((np.cos(theta_cap_rsm)))  # rss in db
+                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + 2 * n_t_rsm * np.log10(abs(np.cos(theta_cap_rsm)))  # rss in db
+
+            def rsm_model(rsm_params, lambda_rsm, gamma_rsm):
+                """Range Sensor Model (RSM) structure."""
+                dist_rsm, theta_cap_rsm, psi_low_rsm, theta_low_rsm = rsm_params
+                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(3.976**2) # rss in db
             '''
         elif model_type == 'lin':  # todo: OLD: consider linearized Angles when use is desired. decide to not bother linearizing and throw this out of the code.
             def rsm_model(dist_rsm, lambda_rsm, gamma_rsm):
@@ -399,12 +406,12 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 psi_low = plotdata_mat[:, 3+num_tx*2+2+itx*4]
                 theta_low = plotdata_mat[:, 3+num_tx*2+3+itx*4]
                 rsm_paramtuple = rdist_temp, theta_cap, psi_low, theta_low
-                popt, pcov = curve_fit(rsm_model, rsm_paramtuple, rssdata, bounds=([-np.inf, -np.inf, 0], np.inf))
+                popt, pcov = curve_fit(rsm_model, rsm_paramtuple, rssdata, bounds=([-np.inf, -np.inf, 0], np.inf))  #
                 del pcov
 
                 lambda_t.append(round(popt[0], 7))
                 gamma_t.append(round(popt[1], 4))
-                # n_t.append(round(popt[2], 4))
+                n_t.append(round(popt[2], 4))
                 n_r.append(round(popt[2], 4))
 
             rdist.append(rdist_temp)
@@ -414,14 +421,14 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             print('\nVectors for convenient copy/paste')
             print('lambda_t = np.array(' + str(lambda_t) + ')  # ' + measdata_filename)
             print('gamma_t = np.array(' + str(gamma_t) + ')  # ' + measdata_filename)
-            # print('tx_n = np.array(' + str(n_t) + ')  # ' + measdata_filename)
+            print('tx_n = np.array(' + str(n_t) + ')  # ' + measdata_filename)
             print('rx_n = np.array(' + str(n_r) + ')  # ' + measdata_filename)
 
         elif model_type=='lin':
             print('\nVectors for convenient copy/paste')
             print('lambda_lin = ' + str(lambda_t))
             print('gamma_lin = ' + str(gamma_t))
-
+        
         """
         Plots
         """
@@ -439,11 +446,14 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
                     ax = fig.add_subplot(pos)
 
-                    rdata = np.linspace(50, np.max(rdist), num=1000)
-                    theta_cap = np.array([0]*len(rdata))  # plotdata_mat[:, 3 + num_tx * 2 + 1 + itx * 4]
-                    psi_low = np.array([0]*len(rdata))  # plotdata_mat[:, 3 + num_tx * 2 + 2 + itx * 4]
-                    theta_low = np.array([0]*len(rdata))  # plotdata_mat[:, 3 + num_tx * 2 + 3 + itx * 4]
-                    rsm_paramtuple = rdata, theta_cap, psi_low, theta_low
+                    rdata = np.linspace(1, np.max(rdist), num=1000)
+
+                    phi_cap = np.array([0.0] * len(rdata))  # plotdata_mat[:, 3 + num_tx * 2 + 0 + itx * 4]  #
+                    theta_cap = np.array([0.0]*len(rdata))  # plotdata_mat[:, 3 + num_tx * 2 + 1 + itx * 4]  #
+                    psi_low = np.array([0.0]*len(rdata))  # plotdata_mat[:, 3 + num_tx * 2 + 2 + itx * 4]  #
+                    theta_low = np.array([0.0]*len(rdata))  # plotdata_mat[:, 3 + num_tx * 2 + 3 + itx * 4]  #
+
+
                     ax.legend(loc='upper right')
                     ax.grid()
                     ax.set_ylim([-110, -10])
@@ -453,12 +463,21 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
                     ax.errorbar(rdist[itx], plotdata_mat[:, 3 + itx], yerr=plotdata_mat[:, 3 + num_tx + itx],
                                 fmt='ro', markersize='1', ecolor='g', label='Original Data', zorder=1)
-                    # ax.plot(rdata, rsm_model(rsm_paramtuple, lambda_t[itx], gamma_t[itx], n_t[itx], n_r[itx]), label='Fitted Curve', zorder=2)  # , n_r[itx]
-                    ax.plot(rdata, rsm_model(rsm_paramtuple, lambda_t[itx], gamma_t[itx], n_r[itx]), label='Fitted Curve', zorder=2)  # , n_r[itx]
+
+                    for iter in np.linspace(0, 600, 7):
+                        height_for_plot = iter
+
+                        for i in range(len(rdata)):
+                            phi_cap[i], theta_cap[i], psi_low[i], theta_low[i] = get_angles(np.array([[txpos[itx][0]+rdata[i]], [txpos[itx][1]]]), np.array([[txpos[itx][0]], [txpos[itx][1]]]), txpos[itx][2], antenna_orientation, height_for_plot)
+
+                        rsm_paramtuple = rdata, theta_cap, psi_low, theta_low
+
+                        ax.plot(rdata, rsm_model(rsm_paramtuple, lambda_t[itx], gamma_t[itx], n_t[itx]), label='Fitted Curve', zorder=2)  # , n_r[itx]
 
                     fig.subplots_adjust(hspace=0.4)
 
                 fig = plt.figure(1, figsize=(18, 10))
+                # fig = plt.figure(1, figsize=(5,2.5))
                 for itx in analyze_tx:
                     pos = 321 + itx
                     if len(analyze_tx) == 1:
@@ -669,7 +688,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             plot_fig7 = False
             ''' Polar Directional Diagrams for Antenna measurements '''
             if plot_fig7:
-                fig = plt.figure(7)
+                fig = plt.figure(7, figsize=(6, 6))
                 for itx in analyze_tx:
                     pos = 321 + itx
                     if len(analyze_tx) == 1:
@@ -753,7 +772,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
 
                     print('HPBW No2: ' + str(abs(rss_hpbw_2_positiveitx_rad - rss_hpbw_2_negativeitx_rad)) + ' rad / ' + str(abs(rss_hpbw_2_positiveitx_rad - rss_hpbw_2_negativeitx_rad)*180/np.pi) + ' deg')
 
-                    ax.plot(plotdata_mat[:, 2], plotdata_mat[:, 3+itx], label='Radiation Pattern')
+                    ax.plot(plotdata_mat[:, 2]+np.pi*0.0, plotdata_mat[:, 3+itx], label='Radiation Pattern')
                     ax.set_rmax(rss_max)
                     ax.set_rmin(rss_min)
                     rticks = np.round(np.append(np.linspace(rss_min, rss_max, 5), rss_hpbw), 2)
