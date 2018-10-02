@@ -334,8 +334,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     # print('var = ' + str(var))
                 wp_pos = np.array([meas_data_mat_line[0], meas_data_mat_line[1], meas_data_mat_line[2]])
 
-                antenna_orientation = np.array([[0.0], [0.64278760968], [0.76604444311]])
-                # antenna_orientation = np.array([[0.0], [0.0], [1.0]])
+                # antenna_orientation = np.array([[0.0], [0.64278760968], [0.76604444311]])
+                antenna_orientation = np.array([[0.0], [0.0], [1.0]])
                 # antenna_orientation = np.array([[0], [0.34202014332], [0.93969262078]])  # todo: Enter antenna orientation for correct parameter calibration here!
                 wp_angles = [0.0]*num_tx*4
                 for itx in range(num_tx):
@@ -360,22 +360,20 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 """Range Sensor Model (RSM) structure."""
                 dist_rsm, psi_low_rsm, theta_cap_rsm, theta_low_rsm = rsm_params
                 return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(np.cos(abs(psi_low_rsm))) + n_t_rsm * np.log10(abs(np.cos(theta_cap_rsm))) + n_r_rsm * np.log10(abs(np.cos(theta_cap_rsm + theta_low_rsm)))  # rss in db
-            '''
+
             def rsm_model(rsm_params, lambda_rsm, gamma_rsm, n_r_rsm):
                 """Range Sensor Model (RSM) structure."""
                 dist_rsm, psi_low_rsm, theta_cap_rsm, theta_low_rsm = rsm_params
                 return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(np.cos(abs(psi_low_rsm))) + n_r_rsm * np.log10(abs(np.cos(theta_low_rsm)))  # rss in db
-            '''
             def rsm_model(rsm_params, lambda_rsm, gamma_rsm, n_t_rsm):
                 """Range Sensor Model (RSM) structure."""
                 dist_rsm, theta_cap_rsm, psi_low_rsm, theta_low_rsm = rsm_params
                 return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + 2 * n_t_rsm * np.log10(abs(np.cos(theta_cap_rsm)))  # rss in db
-
+            '''
             def rsm_model(rsm_params, lambda_rsm, gamma_rsm):
                 """Range Sensor Model (RSM) structure."""
                 dist_rsm, theta_cap_rsm, psi_low_rsm, theta_low_rsm = rsm_params
-                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(3.976**2) # rss in db
-            '''
+                return -20 * np.log10(dist_rsm) + lambda_rsm * dist_rsm + gamma_rsm + np.log10(3.83135740649**2) # rss in db
         elif model_type == 'lin':  # todo: OLD: consider linearized Angles when use is desired. decide to not bother linearizing and throw this out of the code.
             def rsm_model(dist_rsm, lambda_rsm, gamma_rsm):
                 """Range Sensor Model (RSM) structure."""
@@ -406,13 +404,13 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                 psi_low = plotdata_mat[:, 3+num_tx*2+2+itx*4]
                 theta_low = plotdata_mat[:, 3+num_tx*2+3+itx*4]
                 rsm_paramtuple = rdist_temp, theta_cap, psi_low, theta_low
-                popt, pcov = curve_fit(rsm_model, rsm_paramtuple, rssdata, bounds=([-np.inf, -np.inf, 0], np.inf))  #
+                popt, pcov = curve_fit(rsm_model, rsm_paramtuple, rssdata)  #, bounds=([-np.inf, -np.inf, 0], np.inf)
                 del pcov
 
                 lambda_t.append(round(popt[0], 7))
                 gamma_t.append(round(popt[1], 4))
-                n_t.append(round(popt[2], 4))
-                n_r.append(round(popt[2], 4))
+                #n_t.append(round(popt[2], 4))
+                #n_r.append(round(popt[2], 4))
 
             rdist.append(rdist_temp)
 
@@ -439,6 +437,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             plot_fig0 = True
             if plot_fig0:  # 2D contour plot
                 fig = plt.figure(0)
+                analyze_tx = [3]
                 for itx in analyze_tx:
                     pos = 321 + itx
                     if len(analyze_tx) == 1:
@@ -461,8 +460,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_ylabel('RSS [dB]')
                     ax.set_title('RSM for TX# ' + str(itx + 1))
 
-                    ax.errorbar(rdist[itx], plotdata_mat[:, 3 + itx], yerr=plotdata_mat[:, 3 + num_tx + itx],
-                                fmt='ro', markersize='1', ecolor='g', label='Original Data', zorder=1)
+                    # ax.errorbar(rdist[itx], plotdata_mat[:, 3 + itx], yerr=plotdata_mat[:, 3 + num_tx + itx], fmt='ro', markersize='1', ecolor='g', label='Original Data', zorder=1)
 
                     for iter in np.linspace(0, 600, 7):
                         height_for_plot = iter
@@ -470,9 +468,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                         for i in range(len(rdata)):
                             phi_cap[i], theta_cap[i], psi_low[i], theta_low[i] = get_angles(np.array([[txpos[itx][0]+rdata[i]], [txpos[itx][1]]]), np.array([[txpos[itx][0]], [txpos[itx][1]]]), txpos[itx][2], antenna_orientation, height_for_plot)
 
-                        rsm_paramtuple = rdata, theta_cap, psi_low, theta_low
+                        rsm_paramtuple_plot = rdata, theta_cap, psi_low, theta_low
 
-                        ax.plot(rdata, rsm_model(rsm_paramtuple, lambda_t[itx], gamma_t[itx], n_t[itx]), label='Fitted Curve', zorder=2)  # , n_r[itx]
+                        ax.plot(rdata, rsm_model(rsm_paramtuple_plot, lambda_t[itx], gamma_t[itx], n_t[itx]), label='Fitted Curve', zorder=2)  # , n_r[itx]
 
                     fig.subplots_adjust(hspace=0.4)
 
