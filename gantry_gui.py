@@ -19,7 +19,7 @@ Before analysis:
 """
 
 # tx_2_analyse = [1]
-tx_2_analyse = [1, 2, 3, 4, 5, 6]
+tx_2_analyse = [1, 2]
 
 
 class GantryControllerObj(object):

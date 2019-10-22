@@ -181,7 +181,7 @@ def get_angles(x_current_anglecalc, tx_pos_anglecalc, h_tx_anglecalc, z_mauv_ang
     return phi_cap_anglecalc, theta_cap_anglecalc, psi_low_anglecalc, theta_low_anglecalc
 
 
-def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6],  meantype='db_mean', b_onboard=False, measfilename='path'):
+def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2],  meantype='db_mean', b_onboard=False, measfilename='path'):
     """
     :param analyze_tx:
     :param txpos_tuning:
@@ -190,6 +190,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
     """
 
     analyze_tx[:] = [x - 1 for x in analyze_tx]  # substract -1 as arrays begin with index 0
+    print analyze_tx
 
     if b_onboard is True:
         measdata_filename = measfilename
@@ -395,6 +396,9 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             n_r = []
 
         for itx in analyze_tx:
+            print analyze_tx
+            print plotdata_mat[:, 0:3]
+            print txpos[itx, 0:3]
             rdist_vec = plotdata_mat[:, 0:3] - txpos[itx, 0:3]  # + [0, 0, 0] # r_wp -r_txpos -> dim: num_meas x 2or3 (3 if z is introduced)
             rdist_temp = np.asarray(np.linalg.norm(rdist_vec, axis=1))  # distance norm: |r_wp -r_txpos| -> dim: num_meas x 1
 
@@ -434,7 +438,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
             x = plotdata_mat[:, 0]
             y = plotdata_mat[:, 1]
 
-            plot_fig0 = True
+            plot_fig0 = False
             if plot_fig0:  # 2D contour plot
                 fig = plt.figure(0)
                 analyze_tx = [3]
@@ -581,7 +585,7 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                     ax.set_zlabel('rss_var [dB]')
                     ax.set_title('RSS field variance for TX# ' + str(itx + 1))
 
-            plot_fig4 = False
+            plot_fig4 = True
             if plot_fig4:
                 fig = plt.figure(4)
                 for itx in analyze_tx:
@@ -599,7 +603,8 @@ def analyze_measdata_from_file(model_type='log', analyze_tx=[1, 2, 3, 4, 5, 6], 
                                 fmt='ro',markersize='1', ecolor='g', label='Original Data')
 
                     rdata = np.linspace(np.min(rdist), np.max(rdist), num=1000)
-                    ax.plot(rdata, rsm_model(rdata, lambda_t[itx], gamma_t[itx]), label='Fitted Curve')
+                    rsm_paramtuple_plot = rdata, theta_cap, psi_low, theta_low
+                    ax.plot(rdata, rsm_model(rsm_paramtuple_plot, lambda_t[itx], gamma_t[itx]), label='Fitted Curve')
                     ax.legend(loc='upper right')
                     ax.grid()
                     ax.set_ylim([-110, -10])
