@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 from rtlsdr import *
 from scipy import signal
 from scipy.special import lambertw
-import SoapySDR #####
-from SoapySDR import * #SOAPY_SDR_ constants #####
+#import SoapySDR #####
+#from SoapySDR import * #SOAPY_SDR_ constants #####
 
 # define classes
 class RfEar(object):

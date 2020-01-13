@@ -14,14 +14,14 @@ x0 = [300, 500, 0]
 xn = [3000, 1150, 600]
 dxdyda = [50, 50, 50]
 
-sdr_type = 'AirSpy'  # 'AirSpy' / 'NooElec'
+sdr_type = 'NooElec'  # 'AirSpy' / 'NooElec'
 
-rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
+# rf_tools.wp_generator(wp_filename_rel_path, x0, xn, dxdyda, 2, True)
 
 # rf_tools.analyze_measdata_from_file('lin')
 
-# Rf = rf.RfEar(sdr_type, 434.0e6, 1e5)  # NooElec
-Rf = rf.RfEar(sdr_type, 434.0e6, 3e4)  # AirSpy
+Rf = rf.RfEar(sdr_type, 434.0e6, 1e5)  # NooElec
+# Rf = rf.RfEar(sdr_type, 434.0e6, 3e4)  # AirSpy
 
 # freq6tx = [433.975e6, 434.52e6, 434.61e6, 434.12e6, 434.275e6, 434.42e6]
 plt.ion()
