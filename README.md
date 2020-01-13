@@ -1,5 +1,29 @@
 # Radio Frequency Underwater Localization @433MHz using SDR
 
+Short installation guide:
+
+```
+sudo apt-get update
+sudo apt-get install cmake build-essential python-pip libusb-1.0-0-dev python-numpy git pandoc
+```
+Download and install RTL-SDR library:
+```
+cd ~ (navigate to your src-directory)
+git clone git://git.osmocom.org/rtl-sdr.git
+cd rtl-sdr
+mkdir build
+cd build
+cmake ../ -DINSTALL_UDEV_RULES=ON -DDETACH_KERNEL_DRIVER=ON
+make
+sudo make install
+sudo ldconfig
+```
+Install Python RTL-SDR wrapper
+```
+sudo pip install pyrtlsdr
+```
+From here on you should be able to run `rf.py`.
+
 
 Feel free to use our code for your own work.
 If you use this code, please drop a message to daniel.duecker@tuhh.de to maintain a research in rf-localization using software defined radio and cite:
