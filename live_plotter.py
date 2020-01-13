@@ -1,14 +1,10 @@
 import socket_server
-import estimator
 import estimator_plot_tools
-import numpy as np
 import time as t
 
 
 """ TX position StillWasserBecker """
-#tx_pos = [[520.0, 430.0], [1540.0, 430.0], [2570.0, 430.0], [2570.0, 1230.0], [1540.0, 1230.0], [530.0, 1230.0]]
-""" TX position - origin at Beacon #1 """
-tx_pos = tx_6pos = [[0, 0], [1000, 0], [2000, 0], [2000, 900], [1000, 900], [0, 900]]
+tx_pos = [[520.0, 430.0], [1540.0, 430.0], [2570.0, 430.0], [2570.0, 1230.0], [1540.0, 1230.0], [530.0, 1230.0]]
 
 ekf_plotter = estimator_plot_tools.EKF_Plot(tx_pos, bplot_circles=False)
 
@@ -16,14 +12,13 @@ ekf_plotter = estimator_plot_tools.EKF_Plot(tx_pos, bplot_circles=False)
 WARNING!!!!!!
 IF YOU CHANGE THE ALPHA + GAMMA VALUES IN EKF YOU HAVE!!!! to change them here MANUALLY!!!
 """
-tx_alpha = [0.01149025464796399, 0.016245419273983631, 0.011352095690562954, 0.012125937076390217, 0.0092717529591962722, 0.01295918160582895]
-tx_gamma = [-0.49471304043015696, -1.2482393190627841, -0.17291318936462172, -0.61587988305564456, 0.99831151034040444, 0.85711994311461936]
+tx_alpha = [0.0114, 0.0162, 0.0113, 0.0121, 0.0092, 0.0129]
+tx_gamma = [-0.4947, -1.2482, -0.1729, -0.6158, 0.9983, 0.8571]
 """
 WARNING!!!!!!
 IF YOU CHANGE THE ALPHA + GAMMA VALUES IN EKF YOU HAVE!!!! to change them here MANUALLY!!!
 """
 server_ip = '192.168.0.100'  # thinkpad ethernet
-#server_ip = '192.168.0.101'  # thinkpad wifi-intern
 server_port = 50008
 
 soc_server = socket_server.SocServer(server_ip, server_port)

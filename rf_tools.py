@@ -1,10 +1,8 @@
 import numpy as np
-import scipy
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import curve_fit
 from scipy.special import lambertw
-import socket
+
 
 import hippocampus_toolbox as hc_tools
 """
