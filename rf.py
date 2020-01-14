@@ -335,7 +335,7 @@ class RfEar(object):
         freqtx = self.get_freqtx()
         freq_peaks, rss_peaks = self.get_rss_peaks_at_freqtx(freqtx)
 
-        return freq_peaks, rss_peaks
+        return np.asarray(freq_peaks).round(2), np.asarray(rss_peaks).round(4)
 
     def take_measurement(self, meastime):
         """ Takes measurements over defined period of time
